@@ -50,6 +50,7 @@
 #endif
 #define printf_format	__attribute__((format(printf, 1, 2)))
 #else
+#define QUIET
 #define printf_format
 #endif
 
