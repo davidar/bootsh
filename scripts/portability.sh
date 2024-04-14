@@ -18,6 +18,9 @@ if [ "$(uname)" == "Darwin" ]
 then
   CFLAGS+=" -Wno-deprecated-declarations"
   : ${LDOPTIMIZE:=-Wl,-dead_strip} ${STRIP:=strip}
+elif [ -n "$("$CROSS_COMPILE$CC" --version | grep -w tcc)" ]
+then
+  : ${STRIP:=strip} # TCC doesn't support -Wl,--gc-sections
 else
   : ${LDOPTIMIZE:=-Wl,--gc-sections -Wl,--as-needed} ${STRIP:=strip -s -R .note* -R .comment}
 fi
