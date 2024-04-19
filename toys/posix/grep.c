@@ -7,7 +7,7 @@
  * Posix doesn't even specify -r: too many deviations to document.
  * TODO: -i is only ascii case insensitive, not unicode.
 
-USE_GREP(NEWTOY(grep, "(line-buffered)(color):;(exclude-dir)*S(exclude)*M(include)*ZzEFHIab(byte-offset)h(no-filename)ino(only-matching)rRsvwc(count)L(files-without-match)l(files-with-matches)q(quiet)(silent)e*f*C#B#A#m#x[!wx][!EF]", TOYFLAG_BIN|TOYFLAG_ARGFAIL(2)|TOYFLAG_LINEBUF))
+USE_GREP(NEWTOY(grep, "(help)(version)(line-buffered)(color):;(exclude-dir)*S(exclude)*M(include)*ZzEFHIab(byte-offset)h(no-filename)ino(only-matching)rRsvwc(count)L(files-without-match)l(files-with-matches)q(quiet)(silent)e*f*C#B#A#m#x[!wx][!EF]", TOYFLAG_BIN|TOYFLAG_ARGFAIL(2)|TOYFLAG_LINEBUF|TOYFLAG_NOHELP))
 USE_EGREP(OLDTOY(egrep, grep, TOYFLAG_BIN|TOYFLAG_ARGFAIL(2)|TOYFLAG_LINEBUF))
 USE_FGREP(OLDTOY(fgrep, grep, TOYFLAG_BIN|TOYFLAG_ARGFAIL(2)|TOYFLAG_LINEBUF))
 
@@ -492,6 +492,15 @@ static int do_grep_r(struct dirtree *new)
 
 void grep_main(void)
 {
+  // Lie to autoconf when it asks stupid questions, so configure regexes
+  // that look for "GNU grep version %f" greater than some old buggy number
+  // don't fail us for not matching their narrow expectations.
+  if (FLAG(version)) {
+    xprintf("This is not GNU grep version 42.5\n");
+    return;
+  // Handling our own --version means we handle our own --help too.
+  } else if (FLAG(help)) return show_help(stdout, 0);
+
   char **ss = toys.optargs;
 
   TT.fixed = xzalloc(256*sizeof(*TT.fixed));
