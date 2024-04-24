@@ -37,7 +37,7 @@ static void login_timeout_handler(int sig __attribute__((unused)))
 
 void login_main(void)
 {
-  int count, tty = tty_fd();
+  int count, tty = tty_fd_();
   char *username, *pass = 0, *ss;
   struct passwd *pwd = 0;
 

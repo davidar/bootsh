@@ -1299,7 +1299,7 @@ static void common_setup(void)
 
   TT.ticks = sysconf(_SC_CLK_TCK); // units for starttime/uptime
 
-  if (-1 != (i = tty_fd())) {
+  if (-1 != (i = tty_fd_())) {
     struct stat st;
 
     if (!fstat(i, &st)) TT.tty = st.st_rdev;

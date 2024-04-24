@@ -21,7 +21,7 @@ config RESET
 
 void reset_main(void)
 {
-  int fd = tty_fd();
+  int fd = tty_fd_();
 
   // man 4 console_codes: reset terminal is ESC (no left bracket) c
   // DEC private mode set enable wraparound sequence.

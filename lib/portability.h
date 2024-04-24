@@ -118,8 +118,8 @@ char *strptime(const char *buf, const char *format, struct tm *tm);
 // the standard name to the renamed function with the standard behavior.
 
 char *dirname(char *path);
-char *__xpg_basename(char *path);
-static inline char *basename(char *path) { return __xpg_basename(path); }
+char *__xpg_basename(const char *path);
+static inline char *basename(const char *path) { return __xpg_basename(path); }
 char *strcasestr(const char *haystack, const char *needle);
 void *memmem(const void *haystack, size_t haystack_length,
   const void *needle, size_t needle_length);

@@ -314,7 +314,7 @@ int draw_trim_esc(char *str, int padto, int width, char *escmore,
 int draw_trim(char *str, int padto, int width);
 
 // tty.c
-int tty_fd(void);
+int tty_fd_(void);
 int terminal_size(unsigned *xx, unsigned *yy);
 int terminal_probesize(unsigned *xx, unsigned *yy);
 #define KEY_UP 0
