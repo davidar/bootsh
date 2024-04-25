@@ -80,7 +80,7 @@ int xasprintf(char **, const char *, ...);
 #ifndef USE_GLIBC_STDIO
 void doformat(struct output *, const char *, va_list);
 #endif
-int xwrite(int, const void *, size_t);
+int xwrite_(int, const void *, size_t);
 #ifdef notyet
 #ifdef USE_GLIBC_STDIO
 void initstreams(void);

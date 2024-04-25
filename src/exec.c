@@ -114,6 +114,11 @@ shellexec(char **argv, const char *path, int idx)
 	int exerrno;
 
 	envp = environment();
+
+	if (toy_find(argv[0])) {
+		toy_exec(argv);
+	}
+
 	if (strchr(argv[0], '/') != NULL) {
 		tryexec(argv[0], argv, envp);
 		e = errno;
@@ -494,6 +499,12 @@ loop:
 		cmdp->param.index = idx;
 		INTON;
 		goto success;
+	}
+
+	if (toy_find(name)) {
+		entry->u.index = -1;
+		entry->cmdtype = CMDNORMAL;
+		return;
 	}
 
 	/* We failed.  If there was an entry for this command, delete it */

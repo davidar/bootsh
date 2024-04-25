@@ -187,7 +187,7 @@ alloc:
 	if (nleft > len)
 		goto buffered;
 
-	if ((xwrite(dest->fd, p, len))) {
+	if ((xwrite_(dest->fd, p, len))) {
 #ifdef notyet
 err:
 #endif
@@ -249,7 +249,7 @@ flushout(struct output *dest)
 	if (!len || dest->fd < 0)
 		return;
 	dest->nextc = dest->buf;
-	if ((xwrite(dest->fd, dest->buf, len)))
+	if ((xwrite_(dest->fd, dest->buf, len)))
 		dest->flags |= OUTPUT_ERR;
 #endif
 }
@@ -353,7 +353,7 @@ out:
  */
 
 int
-xwrite(int fd, const void *p, size_t n)
+xwrite_(int fd, const void *p, size_t n)
 {
 	const char *buf = p;
 
