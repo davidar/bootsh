@@ -1427,7 +1427,7 @@ char *getgroupname(gid_t gid)
 // At EOF calls function(0, 0)
 void do_lines(int fd, char delim, void (*call)(char **pline, long len))
 {
-  FILE *fp = fd ? xfdopen(fd, "r") : stdin;
+  FILE *fp = xfdopen(fd, "r");
 
   for (;;) {
     char *line = 0;
@@ -1442,7 +1442,7 @@ void do_lines(int fd, char delim, void (*call)(char **pline, long len))
   }
   call(0, 0);
 
-  if (fd) fclose(fp);
+  fclose(fp);
 }
 
 // Return unix time in milliseconds
