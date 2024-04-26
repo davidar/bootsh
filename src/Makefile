@@ -3,18 +3,18 @@ SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	exec.c expand.c \
 	input.c jobs.c mail.c main.c memalloc.c miscbltin.c \
 	mystring.c options.c output.c parser.c redir.c show.c \
-	signames.c trap.c var.c toybox.c
+	signames.c trap.c var.c toybox.c tcc.o
 GENSRCS= builtins.c nodes.c syntax.c init.c
 GENHDRS= builtins.h nodes.h syntax.h token.h token_vars.h
 SRCS= ${SHSRCS} ${GENSRCS} ${GENHDRS}
-OBJS= ${SRCS:.c=.o} ../../toybox/generated/obj/*.o
+OBJS= ${SRCS:.c=.o}
 
 CFLAGS+= -DHAVE_CONFIG_H -I. -I.. -include ../config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall -g -O2
 
 all: dash
 
 dash: ${GENHDRS} ${OBJS}
-	${CC} -o $@ ${OBJS} ${LDFLAGS} ${LIBS}
+	${CC} -o $@ ${OBJS} ../../toybox/generated/obj/*.o ../../tcc/libtcc.a ${LDFLAGS} ${LIBS}
 
 CLEANFILES= ${GENSRCS} ${GENHDRS} ${OBJS} dash mknodes mksyntax mkinit
 
