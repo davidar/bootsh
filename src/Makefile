@@ -5,7 +5,7 @@ SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	mystring.c options.c output.c parser.c redir.c show.c \
 	signames.c trap.c var.c toybox.c
 GENSRCS= builtins.c nodes.c syntax.c init.c
-GENHDRS= builtins.h nodes.h syntax.h token.h
+GENHDRS= builtins.h nodes.h syntax.h token.h token_vars.h
 SRCS= ${SHSRCS} ${GENSRCS} ${GENHDRS}
 OBJS= ${SRCS:.c=.o} ../../toybox/generated/obj/*.o
 
@@ -38,7 +38,7 @@ mksyntax: mksyntax.c token.h
 syntax.c syntax.h: mksyntax
 	./mksyntax
 
-token.h: mktokens
+token.h token_vars.h: mktokens
 	sh ./mktokens
 
 mkinit: mkinit.c

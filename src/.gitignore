@@ -9,3 +9,4 @@ mksyntax
 nodes.[ch]
 syntax.[ch]
 token.h
+token_vars.h
