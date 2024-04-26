@@ -3,7 +3,7 @@
  * Copyright 2006 Rob Landley <rob@landley.net>
  */
 
-#include "/src/toybox/toys.h"
+#include "../../toybox/toys.h"
 
 // Populate toy_list[].
 
@@ -14,7 +14,7 @@
   {#name, oldname##_main, OPTSTR_##oldname, flags},
 
 struct toy_list toy_list[] = {
-#include "/src/toybox/generated/newtoys.h"
+#include "../../toybox/generated/newtoys.h"
 };
 
 // global context for this command.
@@ -57,7 +57,7 @@ struct toy_list *toy_find(char *name)
 #define NEWTOY(name, opts, flags) opts ||
 #define OLDTOY(name, oldname, flags) OPTSTR_##oldname ||
 static const int NEED_OPTIONS =
-#include "/src/toybox/generated/newtoys.h"
+#include "../../toybox/generated/newtoys.h"
 0;  // Ends the opts || opts || opts...
 
 // Populate help text array
@@ -71,13 +71,13 @@ static const int NEED_OPTIONS =
 #define OLDTOY(name, oldname, flags) HELP_##oldname "\0"
 #endif
 
-#include "/src/toybox/generated/help.h"
+#include "../../toybox/generated/help.h"
 static const char help_data[] =
-#include "/src/toybox/generated/newtoys.h"
+#include "../../toybox/generated/newtoys.h"
 ;
 
 #if CFG_TOYBOX_ZHELP
-#include "/src/toybox/generated/zhelp.h"
+#include "../../toybox/generated/zhelp.h"
 #else
 static char *zhelp_data = 0;
 #define ZHELP_LEN 0
