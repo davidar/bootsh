@@ -1,23 +1,19 @@
 FROM scratch
 
-COPY rootfs/seed/bin/sh /bin/sh
-COPY rootfs/seed/usr/local/musl/include /include
-COPY rootfs/seed/usr/local/musl/lib /lib
-COPY rootfs/seed/usr/local/lib/tcc /local/lib/tcc
+COPY rootfs/seed/ /
 
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu
+RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && mkdir /tmp
 
 COPY test/test.c /src/test.c
 WORKDIR /src
-RUN cc -o test test.c && ./test && rm ./test
+RUN cc -print-search-dirs && cc -o test test.c && ./test && rm ./test
 
-RUN mkdir -p /tmp /usr/local/bin; \
-    for cmd in `sh -c toybox` cc; do \
-        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
-        chmod +x /usr/local/bin/$cmd; \
+RUN for cmd in `sh -c toybox` cc; do \
+        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
+        chmod +x /bin/$cmd; \
     done
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
@@ -25,13 +21,13 @@ WORKDIR /src
 RUN tar -xf make-4.4.tar.gz
 WORKDIR /src/make-4.4
 RUN ./configure --disable-dependency-tracking LD=cc AR="cc -ar" && \
-    ./build.sh && ./make MAKEINFO=true && ./make MAKEINFO=true install
+    ./build.sh && ./make && ./make install
 
 ADD https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz /src/bash-5.2.21.tar.gz
 WORKDIR /src
 RUN tar -xf bash-5.2.21.tar.gz
 WORKDIR /src/bash-5.2.21
-RUN ./configure --prefix=/ --without-bash-malloc LD=cc AR="cc -ar" && make -j$(nproc) && make install
+RUN ./configure --prefix=/ --without-bash-malloc LD=cc AR="cc -ar" && make && make install
 
 COPY src /src/bootsh/src
 COPY lib /src/bootsh/lib

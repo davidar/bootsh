@@ -1,41 +1,55 @@
-SEEDFS = $(CURDIR)/rootfs/seed
+SEED0 = $(CURDIR)/rootfs/seed0
+SEED = $(CURDIR)/rootfs/seed
 
-.PHONY: seed test bootstrap
+TCC_CONFIG = --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no
+
+.PHONY: all seed test bootstrap
+
+all: clean seed test
+
+clean:
+	$(MAKE) -C lib/tcc clean
+	$(MAKE) -C lib/musl clean
+	$(MAKE) -C lib/toybox clean
+	$(MAKE) -C src clean
 
 seed:
-	rm -rf $(SEEDFS)
-	cd lib/tcc && ./configure && $(MAKE) && $(MAKE) DESTDIR=$(SEEDFS) install
-	cd lib/musl && ./configure --target=x86_64 \
-			CC=$(SEEDFS)/usr/local/bin/tcc \
-			AR="$(SEEDFS)/usr/local/bin/tcc -ar" \
+	rm -rf $(SEED0)
+	cd lib/tcc && ./configure $(TCC_CONFIG) && $(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
+	cd lib/musl && ./configure --prefix=/ --target=x86_64 \
+			CC=$(SEED0)/bin/tcc \
+			AR="$(SEED0)/bin/tcc -ar" \
 			RANLIB=echo \
-			LIBCC=$(SEEDFS)/usr/local/lib/tcc/libtcc1.a && \
-		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=$(SEEDFS) install
-	echo "GROUP ( $(SEEDFS)/usr/local/musl/lib/libc.a $(SEEDFS)/usr/local/lib/tcc/libtcc1.a )" > $(SEEDFS)/libc.ld
-	cd lib/tcc && make clean && ./configure \
-			--extra-cflags="-nostdinc -nostdlib -I$(SEEDFS)/usr/local/musl/include -DCONFIG_TCC_STATIC" \
-			--extra-ldflags="-nostdlib $(SEEDFS)/usr/local/musl/lib/crt1.o $(SEEDFS)/libc.ld -static" \
-			--config-ldl=no --config-debug=yes --config-bcheck=no && \
-		$(MAKE) && $(MAKE) DESTDIR=$(SEEDFS) install
+			LIBCC=$(SEED0)/lib/tcc/libtcc1.a && \
+		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=$(SEED0) install
+	echo "GROUP ( $(SEED0)/lib/libc.a $(SEED0)/lib/tcc/libtcc1.a )" > $(SEED0)/libc.ld
+	cd lib/tcc && make clean && ./configure $(TCC_CONFIG) \
+			--extra-cflags="-nostdinc -nostdlib -I$(SEED0)/include -DCONFIG_TCC_STATIC" \
+			--extra-ldflags="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static" && \
+		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
 	cd lib/toybox && ln -sf ../../toybox.config .config && $(MAKE) \
 			NOSTRIP=1 \
-			CC=$(SEEDFS)/usr/local/bin/tcc \
-			CFLAGS="-nostdinc -nostdlib -I$(SEEDFS)/usr/local/musl/include -I/usr/include -I/usr/include/x86_64-linux-gnu -g" \
-			LDFLAGS="-nostdlib $(SEEDFS)/usr/local/musl/lib/crt1.o $(SEEDFS)/libc.ld -static"
-	cd src && CC=$(SEEDFS)/usr/local/bin/tcc \
-			CFLAGS="-nostdinc -I$(SEEDFS)/usr/local/musl/include" \
+			CC=$(SEED0)/bin/tcc \
+			CFLAGS="-nostdinc -nostdlib -I$(SEED0)/include -I/usr/include -I/usr/include/x86_64-linux-gnu -g" \
+			LDFLAGS="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static"
+	cd src && CC=$(SEED0)/bin/tcc \
+			CFLAGS="-nostdinc -I$(SEED0)/include" \
 			LDFLAGS="-nostdlib -static" \
-			LIBS="$(SEEDFS)/usr/local/musl/lib/crt1.o $(SEEDFS)/libc.ld" \
+			LIBS="$(SEED0)/lib/crt1.o $(SEED0)/libc.ld" \
 			$(MAKE)
-	mkdir -p $(SEEDFS)/bin
-	cp src/dash $(SEEDFS)/bin/sh
+
+	rm -rf $(SEED)
+	mkdir -p $(SEED)/bin
+	cp src/dash $(SEED)/bin/sh
+	cp -r $(SEED0)/include $(SEED)/include
+	cp -r $(SEED0)/lib $(SEED)/lib
 
 test:
 	$(MAKE) -C test
 
 bootstrap:
-	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc --config-ldl=no --config-debug=yes --config-bcheck=no && \
-		$(MAKE) && $(MAKE) install && rm /usr/local/bin/tcc
+	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \
+		$(MAKE) && $(MAKE) install && rm /bin/tcc
 	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc AR="cc -ar" RANLIB=echo && \
 		$(MAKE) CFLAGS=-g && $(MAKE) install
 	cd lib/toybox && $(MAKE) clean && $(MAKE)

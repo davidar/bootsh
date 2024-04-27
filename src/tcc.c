@@ -387,8 +387,8 @@ redo:
 
     while (s->new_undef_sym) {
         s->new_undef_sym = 0;
-        ld_add_file(s, "/usr/local/musl/lib/libc.a");
-        ld_add_file(s, "/usr/local/lib/tcc/libtcc1.a");
+        ld_add_file(s, "/lib/libc.a");
+        ld_add_file(s, "/lib/tcc/libtcc1.a");
     }
 
     if (s->do_bench)
