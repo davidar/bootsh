@@ -497,7 +497,9 @@ static void bt_link(TCCState *s1)
 {
 #ifdef CONFIG_TCC_BACKTRACE
     rt_context *rc;
+#ifdef CONFIG_TCC_BCHECK
     void *p;
+#endif
 
     if (!s1->do_backtrace)
         return;
