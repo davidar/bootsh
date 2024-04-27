@@ -48,7 +48,7 @@ test:
 	$(MAKE) -C test
 
 diff:
-	diffoscope --exclude-directory-metadata=yes rootfs/bootstrap-0 rootfs/bootstrap-1
+	diffoscope --exclude-directory-metadata=yes rootfs/bootstrap-1 rootfs/bootstrap-2
 
 bootstrap:
 	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \

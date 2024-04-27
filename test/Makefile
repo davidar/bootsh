@@ -1,4 +1,4 @@
-all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1
+all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1 build-bootstrap-1 bootstrap-2
 
 build-%:
 	docker build .. -f Dockerfile -t bootsh-test --progress=plain --build-arg ROOTFS=rootfs/$*
