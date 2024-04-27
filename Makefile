@@ -61,3 +61,5 @@ bootstrap:
 	cp src/dash /out/bin/sh
 	cp -r /dest/include /out/include
 	cp -r /dest/lib /out/lib
+	rm /out/lib/*.so*
+	rm /out/lib/libtcc.a
