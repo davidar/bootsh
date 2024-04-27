@@ -1,11 +1,12 @@
-all: build run
+all: build rootfs
 
 build:
 	docker build .. -f Dockerfile -t bootsh-test --progress=plain
 
 rootfs:
-	ID=$$(docker create bootsh-test) && rm -rf rootfs && mkdir -p rootfs && \
-		docker export $$ID | tar -x -C rootfs && docker rm $$ID
+	rm -rf ../rootfs/bootstrap
+	mkdir -p ../rootfs/bootstrap
+	ID=$$(docker create bootsh-test) && docker export $$ID | tar -C ../rootfs/bootstrap --strip-components=1 -x out && docker rm $$ID
 
 run:
 	docker run --name bootsh-test --rm -it bootsh-test

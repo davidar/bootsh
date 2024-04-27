@@ -49,9 +49,12 @@ test:
 
 bootstrap:
 	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \
-		$(MAKE) && $(MAKE) install && rm /bin/tcc
+		$(MAKE) && $(MAKE) DESTDIR=/dest install
 	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc AR="cc -ar" RANLIB=echo && \
-		$(MAKE) CFLAGS=-g && $(MAKE) install
+		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
 	cd lib/toybox && $(MAKE) clean && $(MAKE)
 	cd src && $(MAKE) clean && $(MAKE)
-	cp -f src/dash /bin/sh
+	mkdir -p /out/bin
+	cp src/dash /out/bin/sh
+	cp -r /dest/include /out/include
+	cp -r /dest/lib /out/lib
