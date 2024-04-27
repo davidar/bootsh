@@ -1,6 +1,6 @@
 SEEDFS = $(CURDIR)/rootfs/seed
 
-.PHONY: seed test
+.PHONY: seed test bootstrap
 
 seed:
 	rm -rf $(SEEDFS)
@@ -32,3 +32,12 @@ seed:
 
 test:
 	$(MAKE) -C test
+
+bootstrap:
+	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc --config-ldl=no --config-debug=yes --config-bcheck=no && \
+		$(MAKE) && $(MAKE) install && rm /usr/local/bin/tcc
+	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc AR="cc -ar" RANLIB=echo && \
+		$(MAKE) CFLAGS=-g && $(MAKE) install
+	cd lib/toybox && $(MAKE) clean && $(MAKE)
+	cd src && $(MAKE) clean && $(MAKE)
+	cp -f src/dash /bin/sh

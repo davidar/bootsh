@@ -28,6 +28,8 @@
 // #endif
 #include "../lib/tcc/tcctools.c"
 
+int ld_add_file(TCCState *s1, const char filename[]);
+
 static const char help[] =
     "Tiny C Compiler "TCC_VERSION" - Copyright (C) 2001-2006 Fabrice Bellard\n"
     "Usage: tcc [options...] [-o outfile] [-c] infile(s)...\n"

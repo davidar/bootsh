@@ -14,25 +14,8 @@ COPY test/test.c /src/test.c
 WORKDIR /src
 RUN cc -o test test.c && ./test && rm ./test
 
-# COPY src/tcc /src/tcc
-# COPY src/tcc-boot.sh /src/tcc/boot.sh
-# WORKDIR /src/tcc
-# RUN ./boot.sh
-
-# COPY sbase /src/sbase
-# WORKDIR /src/sbase
-# RUN bmake
-# RUN bmake install PREFIX=/usr/local/sbase
-# RUN ln -sv /usr/local/sbase/bin/expr /usr/bin/expr
-# RUN ln -sv /usr/local/sbase/bin/tr /usr/bin/tr
-
-# COPY awk /src/awk
-# WORKDIR /src/awk
-# RUN bmake YACC="yacc -d -b awkgram"
-# RUN cp a.out /usr/bin/awk
-
 RUN mkdir -p /tmp /usr/local/bin; \
-    for cmd in cc grep sed awk rm mkdir cp echo true chmod ls; do \
+    for cmd in `sh -c toybox` cc; do \
         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
         chmod +x /usr/local/bin/$cmd; \
     done
@@ -44,67 +27,17 @@ WORKDIR /src/make-4.4
 RUN ./configure --disable-dependency-tracking LD=cc AR="cc -ar" && \
     ./build.sh && ./make MAKEINFO=true && ./make MAKEINFO=true install
 
-# COPY src/tcc /src/tcc
-# WORKDIR /src/tcc
-# RUN make clean
-# RUN ./configure --cc=cc --config-ldl=no --config-debug=yes --config-bcheck=no
-# RUN make -j$(nproc)
-# RUN make install
-
-# COPY src/test.c /src/test.c
-# WORKDIR /src
-# RUN /usr/local/bin/tcc -o test test.c
-# RUN ./test
-# RUN rm ./test
-
-# RUN rm /usr/local/bin/tcc
-
-# COPY src/musl /src/musl
-# WORKDIR /src/musl
-# RUN rm -rf /usr/local/musl
-# RUN ./configure CC=cc AR="cc -ar" RANLIB=echo
-# RUN make -j$(nproc) CFLAGS=-g
-# RUN make install
-
 ADD https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz /src/bash-5.2.21.tar.gz
 WORKDIR /src
 RUN tar -xf bash-5.2.21.tar.gz
 WORKDIR /src/bash-5.2.21
 RUN ./configure --prefix=/ --without-bash-malloc LD=cc AR="cc -ar" && make -j$(nproc) && make install
 
-# RUN for cmd in sort xargs readlink tr uname cmp dirname basename head wc cat egrep fold tee gzip od ln; do \
-#         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
-#         chmod +x /usr/local/bin/$cmd; \
-#     done
-
-# COPY src/toybox /src/toybox
-# COPY src/toybox.config /src/toybox/.config
-# WORKDIR /src/toybox
-# RUN make clean
-# RUN make -j$(nproc)
-# # RUN PREFIX=/usr/local/toybox/bin make install_flat
-# # RUN cp -f /usr/local/toybox/bin/toybox /usr/local/bin/toybox
-# RUN rm generated/obj/main.o
-
-# COPY src/dash /src/dash
-# WORKDIR /src/dash/src
-# RUN make
-# RUN cp -f dash /bin/sh
-
-# # WORKDIR /src/oksh
-# # RUN ./configure
-# # RUN make -j$(nproc)
-# # RUN make install
-
-# WORKDIR /src
-# RUN cc -o test test.c
-# RUN ./test
-# RUN rm ./test
-
-# RUN for cmd in comm expr touch uniq mv; do \
-#         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
-#         chmod +x /usr/local/bin/$cmd; \
-#     done
+COPY src /src/bootsh/src
+COPY lib /src/bootsh/lib
+COPY Makefile toybox.config config.h /src/bootsh/
+WORKDIR /src/bootsh
+RUN make bootstrap
 
 # COPY ports/lang/perl5 /src/perl5
 # COPY ports/lang/perl5.patch /tmp/perl5.patch
