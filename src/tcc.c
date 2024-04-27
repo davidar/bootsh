@@ -22,11 +22,11 @@
  * THE SOFTWARE.
  */
 
-#include "../../tcc/tcc.h"
+#include "../lib/tcc/tcc.h"
 // #if ONE_SOURCE
-// # include "../../tcc/libtcc.c"
+// # include "../lib/tcc/libtcc.c"
 // #endif
-#include "../../tcc/tcctools.c"
+#include "../lib/tcc/tcctools.c"
 
 static const char help[] =
     "Tiny C Compiler "TCC_VERSION" - Copyright (C) 2001-2006 Fabrice Bellard\n"

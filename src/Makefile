@@ -15,7 +15,7 @@ CFLAGS+= '-DCONFIG_TRIPLET="x86_64-linux-gnu"' -DTCC_TARGET_X86_64 -DCONFIG_TCC_
 all: dash
 
 dash: ${GENHDRS} ${OBJS}
-	${CC} -o $@ ${OBJS} ../../toybox/generated/obj/*.o ../../tcc/libtcc.a ${LDFLAGS} ${LIBS}
+	${CC} -o $@ ${OBJS} ../lib/toybox/generated/obj/*.o ../lib/tcc/libtcc.a ${LDFLAGS} ${LIBS}
 
 CLEANFILES= ${GENSRCS} ${GENHDRS} ${OBJS} dash mknodes mksyntax mkinit
 
