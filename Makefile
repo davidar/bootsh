@@ -3,9 +3,9 @@ SEED = $(CURDIR)/rootfs/seed
 
 TCC_CONFIG = --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no
 
-.PHONY: all seed test bootstrap
+.PHONY: all seed test diff bootstrap
 
-all: clean seed test
+all: clean seed test diff
 
 clean:
 	$(MAKE) -C lib/tcc clean
@@ -46,6 +46,9 @@ seed:
 
 test:
 	$(MAKE) -C test
+
+diff:
+	diffoscope --exclude-directory-metadata=yes rootfs/bootstrap-0 rootfs/bootstrap-1
 
 bootstrap:
 	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \

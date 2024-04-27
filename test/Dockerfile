@@ -1,6 +1,7 @@
 FROM scratch
 
-COPY rootfs/seed/ /
+ARG ROOTFS
+COPY $ROOTFS /
 
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]

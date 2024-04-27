@@ -1,12 +1,12 @@
-all: build rootfs
+all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1
 
-build:
-	docker build .. -f Dockerfile -t bootsh-test --progress=plain
+build-%:
+	docker build .. -f Dockerfile -t bootsh-test --progress=plain --build-arg ROOTFS=rootfs/$*
 
-rootfs:
-	rm -rf ../rootfs/bootstrap
-	mkdir -p ../rootfs/bootstrap
-	ID=$$(docker create bootsh-test) && docker export $$ID | tar -C ../rootfs/bootstrap --strip-components=1 -x out && docker rm $$ID
+bootstrap-%:
+	rm -rf ../rootfs/bootstrap-$*
+	mkdir -p ../rootfs/bootstrap-$*
+	ID=$$(docker create bootsh-test) && docker export $$ID | tar -C ../rootfs/bootstrap-$* --strip-components=1 -x out && docker rm $$ID
 
 run:
 	docker run --name bootsh-test --rm -it bootsh-test
