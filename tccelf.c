@@ -3891,7 +3891,7 @@ static int ld_next(TCCState *s1, char *name, int name_size)
     return c;
 }
 
-static int ld_add_file(TCCState *s1, const char filename[])
+int ld_add_file(TCCState *s1, const char filename[])
 {
     if (filename[0] == '/') {
         if (CONFIG_SYSROOT[0] == '\0'
