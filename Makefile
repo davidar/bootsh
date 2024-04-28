@@ -1,7 +1,7 @@
 SEED0 = $(CURDIR)/rootfs/seed0
 SEED = $(CURDIR)/rootfs/seed
 
-TCC_CONFIG = --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no
+TCC_CONFIG = --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no
 
 .PHONY: all seed test diff bootstrap
 
@@ -47,7 +47,7 @@ seed:
 	cp src/dash $(SEED)/bin/sh
 	cp -r $(SEED0)/include $(SEED)/include
 	cp -r $(SEED0)/lib $(SEED)/lib
-	rm $(SEED)/lib/tcc/libtcc1.a
+	rm -rf $(SEED)/lib/tcc
 
 test:
 	$(MAKE) -C test
@@ -72,4 +72,4 @@ bootstrap:
 	cp -r /dest/lib /out/lib
 	rm /out/lib/*.so*
 	rm /out/lib/libtcc.a
-	rm /out/lib/tcc/libtcc1.a
+	rm -rf /out/lib/tcc
