@@ -361,11 +361,11 @@ tcc-doc.html: tcc-doc.texi
 tcc-doc.info: tcc-doc.texi
 	$(call run-if,makeinfo,$< || true)
 
-tcc.1 : tcc-doc.pod
-	$(call run-if,pod2man,--section=1 --center="Tiny C Compiler" \
-		--release="$(VERSION)" $< >$@)
-%.pod : %.texi
-	$(call run-if,perl,$(TOPSRC)/texi2pod.pl $< $@)
+# tcc.1 : tcc-doc.pod
+# 	$(call run-if,pod2man,--section=1 --center="Tiny C Compiler" \
+# 		--release="$(VERSION)" $< >$@)
+# %.pod : %.texi
+# 	$(call run-if,perl,$(TOPSRC)/texi2pod.pl $< $@)
 
 doc : $(TCCDOCS)
 
