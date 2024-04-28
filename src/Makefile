@@ -3,7 +3,21 @@ SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	exec.c expand.c \
 	input.c jobs.c mail.c main.c memalloc.c miscbltin.c \
 	mystring.c options.c output.c parser.c redir.c show.c \
-	signames.c trap.c var.c toybox.c tcc.o
+	signames.c trap.c var.c \
+	toybox.c tcc.o ar.c \
+	../lib/elf/findelfsectionbyname.c \
+	../lib/elf/getelfprogramheaderaddress.c \
+	../lib/elf/getelfsectionaddress.c \
+	../lib/elf/getelfsectionheaderaddress.c \
+	../lib/elf/getelfsectionname.c \
+	../lib/elf/getelfsectionnamestringtable.c \
+	../lib/elf/getelfsegmentaddress.c \
+	../lib/elf/getelfstring.c \
+	../lib/elf/getelfstringtable.c \
+	../lib/elf/getelfsymbols.c \
+	../lib/elf/getelfsymboltable.c \
+	../lib/elf/iself64binary.c \
+	../lib/elf/iselfsymbolcontent.c
 GENSRCS= builtins.c nodes.c syntax.c init.c
 GENHDRS= builtins.h nodes.h syntax.h token.h token_vars.h
 SRCS= ${SHSRCS} ${GENSRCS} ${GENHDRS}

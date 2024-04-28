@@ -55,9 +55,9 @@ diff:
 	diffoscope --exclude-directory-metadata=yes rootfs/bootstrap-1 rootfs/bootstrap-2
 
 bootstrap:
-	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \
+	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc --ar=ar $(TCC_CONFIG) && \
 		$(MAKE) && $(MAKE) DESTDIR=/dest install
-	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc AR="cc -ar" RANLIB=echo && \
+	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc RANLIB=echo && \
 		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
 	cd lib/toybox && $(MAKE) clean && $(MAKE)
 	echo "#define LIBTCC1A_LEN $$(wc -c < /dest/lib/tcc/libtcc1.a)" > src/libtcc1a.h

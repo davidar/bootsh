@@ -278,7 +278,7 @@ static unsigned getclock_ms(void)
 #endif
 }
 
-int tcc_main(char **argv0)
+int tcc_main(int argc0, char **argv0)
 {
     TCCState *s, *s1;
     int ret, opt, n = 0, t = 0, done;
@@ -286,8 +286,6 @@ int tcc_main(char **argv0)
     const char *first_file;
     int argc; char **argv;
     FILE *ppfp = stdout;
-    int argc0;
-    for (argc0 = 0; argv0[argc0]; argc0++);
 
 redo:
     argc = argc0, argv = argv0;
@@ -317,7 +315,8 @@ redo:
         if (s->verbose)
             printf("%s", version);
         if (opt == OPT_AR)
-            return tcc_tool_ar(s, argc, argv);
+            exit(1);
+            // return tcc_tool_ar(s, argc, argv);
 #ifdef TCC_TARGET_PE
         if (opt == OPT_IMPDEF)
             return tcc_tool_impdef(s, argc, argv);
