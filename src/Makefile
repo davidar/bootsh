@@ -16,7 +16,7 @@ all: dash
 
 dash: ${GENHDRS} ${OBJS}
 	rm -f ../lib/toybox/generated/obj/main.o
-	${CC} -o $@ ${OBJS} ../lib/toybox/generated/obj/*.o ../lib/tcc/libtcc.a ${LDFLAGS} ${LIBS}
+	${CC} -o $@ ${OBJS} ../lib/toybox/generated/obj/*.o ../lib/tcc/libtcc.a ${LDFLAGS} ${LIBS} -g
 
 CLEANFILES= ${GENSRCS} ${GENHDRS} ${OBJS} dash mknodes mksyntax mkinit
 

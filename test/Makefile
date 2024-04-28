@@ -1,7 +1,11 @@
 all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1 build-bootstrap-1 bootstrap-2
+# all: build-seed run
 
 build-%:
-	docker build .. -f Dockerfile -t bootsh-test --progress=plain --build-arg ROOTFS=rootfs/$*
+	docker build .. -f Dockerfile -t bootsh-test --progress=plain --build-arg ROOTFS=rootfs/$* --target bootstrap
+
+bootgcc:
+	docker build .. -f Dockerfile --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target gcc
 
 bootstrap-%:
 	rm -rf ../rootfs/bootstrap-$*
