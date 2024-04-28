@@ -79,9 +79,8 @@ static const char help[] =
 #if defined(TCC_TARGET_I386) || defined(TCC_TARGET_X86_64)
     "  -m32/64      defer to i386/x86_64 cross compiler\n"
 #endif
-    "Tools:\n"
-    "  create library  : tcc -ar [crstvx] lib [files]\n"
 #ifdef TCC_TARGET_PE
+    "Tools:\n"
     "  create def file : tcc -impdef lib.dll [-v] [-o lib.def]\n"
 #endif
     ;
@@ -306,8 +305,6 @@ redo:
             return tcc_tool_cross(s, argv, opt);
         if (s->verbose)
             printf("%s", version);
-        if (opt == OPT_AR)
-            return tcc_tool_ar(s, argc, argv);
 #ifdef TCC_TARGET_PE
         if (opt == OPT_IMPDEF)
             return tcc_tool_impdef(s, argc, argv);

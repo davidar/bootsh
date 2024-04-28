@@ -10,7 +10,8 @@ X = $(if $(CROSS_TARGET),$(CROSS_TARGET)-)
 
 XTCC ?= $(TOP)/$(X)tcc$(EXESUF)
 XCC = $(XTCC)
-XAR = $(XTCC) -ar
+# XAR = $(XTCC) -ar
+XAR = $(AR)
 XFLAGS-unx = -B$(TOPSRC)
 XFLAGS-win = -B$(TOPSRC)/win32 -I$(TOPSRC)/include
 XFLAGS = $(XFLAGS$(XCFG)) -I$(TOP)

@@ -63,6 +63,8 @@
 #define TCC_SEM_IMPL 1
 #include "tcc.h"
 
+#include <sys/mman.h>
+
 /********************************************************/
 /* global variables */
 
@@ -1536,7 +1538,6 @@ enum {
     TCC_OPTION_MMD,
     TCC_OPTION_MP,
     TCC_OPTION_x,
-    TCC_OPTION_ar,
     TCC_OPTION_impdef,
     TCC_OPTION_dynamiclib,
     TCC_OPTION_flat_namespace,
@@ -1618,7 +1619,6 @@ static const TCCOption tcc_options[] = {
     { "MMD", TCC_OPTION_MMD, 0},
     { "MP", TCC_OPTION_MP, 0},
     { "x", TCC_OPTION_x, TCC_OPTION_HAS_ARG },
-    { "ar", TCC_OPTION_ar, 0},
 #ifdef TCC_TARGET_PE
     { "impdef", TCC_OPTION_impdef, 0},
 #endif
@@ -2140,8 +2140,6 @@ dorun:
 	    s->current_version = parse_version(s, optarg);;
             break;
 #endif
-        case TCC_OPTION_ar:
-            x = OPT_AR;
         extra_action:
             arg_start = optind - 1;
             if (arg_start != noaction)
