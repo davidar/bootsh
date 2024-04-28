@@ -27,6 +27,10 @@ seed:
 			--extra-cflags="-nostdinc -nostdlib -I$(SEED0)/include -DCONFIG_TCC_STATIC" \
 			--extra-ldflags="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static" && \
 		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
+	echo "#define LIBTCC1A_LEN $$(wc -c < $(SEED0)/lib/tcc/libtcc1.a)" > src/libtcc1a.h
+	gzip -9 < $(SEED0)/lib/tcc/libtcc1.a | od -Anone -vtx1 | \
+		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
+		>> src/libtcc1a.h
 	cd lib/toybox && ln -sf ../../toybox.config .config && $(MAKE) \
 			NOSTRIP=1 \
 			CC=$(SEED0)/bin/tcc \
@@ -43,6 +47,7 @@ seed:
 	cp src/dash $(SEED)/bin/sh
 	cp -r $(SEED0)/include $(SEED)/include
 	cp -r $(SEED0)/lib $(SEED)/lib
+	rm $(SEED)/lib/tcc/libtcc1.a
 
 test:
 	$(MAKE) -C test
@@ -56,6 +61,10 @@ bootstrap:
 	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc AR="cc -ar" RANLIB=echo && \
 		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
 	cd lib/toybox && $(MAKE) clean && $(MAKE)
+	echo "#define LIBTCC1A_LEN $$(wc -c < /dest/lib/tcc/libtcc1.a)" > src/libtcc1a.h
+	gzip -9 < /dest/lib/tcc/libtcc1.a | od -Anone -vtx1 | \
+		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
+		>> src/libtcc1a.h
 	cd src && $(MAKE) clean && $(MAKE)
 	mkdir -p /out/bin
 	cp src/dash /out/bin/sh
@@ -63,3 +72,4 @@ bootstrap:
 	cp -r /dest/lib /out/lib
 	rm /out/lib/*.so*
 	rm /out/lib/libtcc.a
+	rm /out/lib/tcc/libtcc1.a

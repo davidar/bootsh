@@ -60,6 +60,13 @@
 #include "exec.h"
 #include "cd.h"
 
+#include "libtcc1a.h"
+
+const char* libtcc1a = NULL;
+const int libtcc1a_len = LIBTCC1A_LEN;
+
+long long gunzip_mem(char *inbuf, int inlen, char *outbuf, int outlen);
+
 #define PROFILE 0
 
 int rootpid;
@@ -93,6 +100,8 @@ main(int argc, char **argv)
 	volatile int state;
 	struct stackmark smark;
 	int login;
+
+	gunzip_mem(libtcc1a_data, sizeof(libtcc1a_data), libtcc1a = malloc(LIBTCC1A_LEN), LIBTCC1A_LEN);
 
 #ifdef __GLIBC__
 	dash_errno = __errno_location();

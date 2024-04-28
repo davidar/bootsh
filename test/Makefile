@@ -1,4 +1,4 @@
-all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1 build-bootstrap-1 bootstrap-2
+all: build-seed bootstrap-0 build-bootstrap-0 bootstrap-1 build-bootstrap-1 bootstrap-2 bootgcc
 # all: build-seed run
 
 build-%:
