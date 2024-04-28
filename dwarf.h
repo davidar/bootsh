@@ -292,6 +292,12 @@
 #define	DW_FORM_sec_offset		0x17
 #define	DW_FORM_exprloc			0x18
 #define	DW_FORM_flag_present		0x19
+#define	DW_FORM_strx			0x1a
+#define	DW_FORM_addrx			0x1b
+#define	DW_FORM_ref_sup4		0x1c
+#define	DW_FORM_strp_sup		0x1d
+#define	DW_FORM_data16			0x1e
+#define	DW_FORM_line_strp		0x1f
 #define	DW_FORM_ref_sig8		0x20
 #define	DW_FORM_GNU_ref_alt		0x1f20
 #define	DW_FORM_GNU_strp_alt		0x1f21
@@ -668,5 +674,30 @@
 #define	DW_EH_PE_funcrel		0x40
 #define	DW_EH_PE_aligned		0x50
 #define	DW_EH_PE_omit			0xff
+
+/*
+ * DWARF Unit Header Types.
+ */
+
+#define	DW_UT_compile			0x01
+#define	DW_UT_type			0x02
+#define	DW_UT_partial			0x03
+#define	DW_UT_skeleton			0x04
+#define	DW_UT_split_compile		0x05
+#define	DW_UT_split_type		0x06
+#define	DW_UT_lo_user			0x80
+#define	DW_UT_hi_user			0xff
+
+/*
+ * DWARF line content descriptions.
+ */
+
+#define	DW_LNCT_path			0x1
+#define	DW_LNCT_directory_index		0x2
+#define	DW_LNCT_timestamp		0x3
+#define	DW_LNCT_size			0x4
+#define	DW_LNCT_MD5			0x5
+#define	DW_LNCT_lo_user			0x2000
+#define	DW_LNCT_hi_user			0x3fff
 
 #endif /* !_DWARF_H_ */
