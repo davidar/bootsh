@@ -374,7 +374,19 @@ redo:
         struct filespec *f = s->files[n];
         s->filetype = f->type;
         if (f->type & AFF_TYPE_LIB) {
-            ret = tcc_add_library_err(s, f->name);
+            if (!strcmp(f->name, "crypt")
+             || !strcmp(f->name, "dl")
+             || !strcmp(f->name, "m")
+             || !strcmp(f->name, "pthread")
+             || !strcmp(f->name, "resolv")
+             || !strcmp(f->name, "rt")
+             || !strcmp(f->name, "util")
+             || !strcmp(f->name, "xnet")) {
+                // these are just stubs
+                ret = 0;
+            } else {
+                ret = tcc_add_library_err(s, f->name);
+            }
         } else {
             if (1 == s->verbose)
                 printf("-> %s\n", f->name);

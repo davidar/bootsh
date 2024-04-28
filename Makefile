@@ -43,11 +43,10 @@ seed:
 			$(MAKE)
 
 	rm -rf $(SEED)
-	mkdir -p $(SEED)/bin
+	mkdir -p $(SEED)/bin $(SEED)/lib
 	cp src/dash $(SEED)/bin/sh
 	cp -r $(SEED0)/include $(SEED)/include
-	cp -r $(SEED0)/lib $(SEED)/lib
-	rm -rf $(SEED)/lib/tcc
+	cp $(SEED0)/lib/libc.a $(SEED0)/lib/crt?.o $(SEED)/lib/
 
 test:
 	$(MAKE) -C test
@@ -66,10 +65,7 @@ bootstrap:
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
 		>> src/libtcc1a.h
 	cd src && $(MAKE) clean && $(MAKE)
-	mkdir -p /out/bin
+	mkdir -p /out/bin /out/lib
 	cp src/dash /out/bin/sh
 	cp -r /dest/include /out/include
-	cp -r /dest/lib /out/lib
-	rm /out/lib/*.so*
-	rm /out/lib/libtcc.a
-	rm -rf /out/lib/tcc
+	cp /dest/lib/libc.a /dest/lib/crt?.o /out/lib/
