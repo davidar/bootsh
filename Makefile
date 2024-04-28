@@ -1,7 +1,7 @@
 SEED0 = $(CURDIR)/rootfs/seed0
 SEED = $(CURDIR)/rootfs/seed
 
-TCC_CONFIG = --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no
+TCC_CONFIG = --ar=ar --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no
 
 .PHONY: all seed test diff bootstrap
 
@@ -17,10 +17,7 @@ seed:
 	rm -rf $(SEED0)
 	cd lib/tcc && ./configure $(TCC_CONFIG) && $(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
 	cd lib/musl && ./configure --prefix=/ --target=x86_64 \
-			CC=$(SEED0)/bin/tcc \
-			AR="$(SEED0)/bin/tcc -ar" \
-			RANLIB=echo \
-			LIBCC=$(SEED0)/lib/tcc/libtcc1.a && \
+			CC=$(SEED0)/bin/tcc AR=ar RANLIB=echo LIBCC=$(SEED0)/lib/tcc/libtcc1.a && \
 		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=$(SEED0) install
 	echo "GROUP ( $(SEED0)/lib/libc.a $(SEED0)/lib/tcc/libtcc1.a )" > $(SEED0)/libc.ld
 	cd lib/tcc && make clean && ./configure $(TCC_CONFIG) \
@@ -55,7 +52,7 @@ diff:
 	diffoscope --exclude-directory-metadata=yes rootfs/bootstrap-1 rootfs/bootstrap-2
 
 bootstrap:
-	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc --ar=ar $(TCC_CONFIG) && \
+	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \
 		$(MAKE) && $(MAKE) DESTDIR=/dest install
 	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc RANLIB=echo && \
 		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
