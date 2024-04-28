@@ -709,9 +709,32 @@ ST_FUNC void tcc_close(void)
     tcc_free(bf);
 }
 
+static int tcc_open_memfd(TCCState *s1, const char *filename, const char *data, int size)
+{
+    int fd = memfd_create(filename, 0);
+    do {
+        int ret = write(fd, data, size);
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            tcc_error_noabort("could not write to memfd");
+            exit(1);
+        }
+        size -= ret;
+        data += ret;
+    } while (size > 0);
+    lseek(fd, 0, SEEK_SET);
+    return fd;
+}
+
+extern const char *libtcc1a;
+extern const int libtcc1a_len;
+
 static int _tcc_open(TCCState *s1, const char *filename)
 {
     int fd;
+    if (libtcc1a && strstr(filename, "libtcc1.a")) {
+        return tcc_open_memfd(s1, "libtcc1a", libtcc1a, libtcc1a_len);
+    }
     if (strcmp(filename, "-") == 0)
         fd = 0, filename = "<stdin>";
     else
