@@ -15,4 +15,6 @@
 .Trash*
 *[Tt]humbs.db
 
+*.o
+
 /rootfs/

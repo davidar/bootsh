@@ -1,0 +1,14 @@
+/tcctest[1234]
+/tcctest.gcc
+/*.out*
+/*.txt
+/*.gcc
+/*-cc*
+/*-tcc*
+/libtcc_test
+/libtcc_test_mt
+/asm-c-connect
+/asm-c-connect-sep
+/vla_test
+/hello
+/tests2/fred.txt

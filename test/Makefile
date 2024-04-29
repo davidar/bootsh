@@ -13,7 +13,7 @@ bootstrap-%:
 	ID=$$(docker create bootsh-test) && docker export $$ID | tar -C ../rootfs/bootstrap-$* --strip-components=1 -x out && docker rm $$ID
 
 run:
-	docker run --name bootsh-test --rm -it bootsh-test
+	docker run --name bootsh-test --rm -it -v $(CURDIR)/..:/src/bootsh -w /src/bootsh bootsh-test
 
 hello:
 	docker run --rm bootsh-test /usr/bin/hello
