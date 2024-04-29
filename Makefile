@@ -15,13 +15,14 @@ clean:
 
 seed:
 	rm -rf $(SEED0)
-	cd lib/tcc && ./configure $(TCC_CONFIG) && $(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
+	cd lib/tcc && ./configure $(TCC_CONFIG) --extra-cflags="-Wall -O0" && \
+		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
 	cd lib/musl && ./configure --prefix=/ --target=x86_64 \
 			CC=$(SEED0)/bin/tcc AR=ar RANLIB=echo LIBCC=$(SEED0)/lib/tcc/libtcc1.a && \
 		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=$(SEED0) install
 	echo "GROUP ( $(SEED0)/lib/libc.a $(SEED0)/lib/tcc/libtcc1.a )" > $(SEED0)/libc.ld
 	cd lib/tcc && make clean && ./configure $(TCC_CONFIG) \
-			--extra-cflags="-nostdinc -nostdlib -I$(SEED0)/include -DCONFIG_TCC_STATIC" \
+			--extra-cflags="-Wall -O0 -nostdinc -nostdlib -I$(SEED0)/include -DCONFIG_TCC_STATIC" \
 			--extra-ldflags="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static" && \
 		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
 	echo "#define LIBTCC1A_LEN $$(wc -c < $(SEED0)/lib/tcc/libtcc1.a)" > src/libtcc1a.h
