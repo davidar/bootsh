@@ -90,7 +90,7 @@ Additional information is available for the Windows port in tcc-win32.txt.
 License:
 -------
 
-TCC is distributed under the GNU Lesser General Public License (see
-COPYING file).
+This version of TCC is distributed under the MIT License (see the RELICENSING file).
+All LGPL code has been removed, and replaced by MIT or BSD licensed code.
 
 Fabrice Bellard.
