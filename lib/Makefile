@@ -45,9 +45,29 @@ $(X)BT_O += runmain.o tcov.o
 
 DSO_O = dsohandle.o
 
-I386_O = libtcc1.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
-X86_64_O = libtcc1.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
-ARM_O = libtcc1.o armeabi.o alloca.o armflush.o stdatomic.o atomic.o builtin.o $(BT_O)
+RT_BUILTINS = \
+	divdi3 \
+	moddi3 \
+	udivdi3 \
+	umoddi3 \
+	ashrdi3 \
+	lshrdi3 \
+	ashldi3 \
+	floatundisf \
+	floatundidf \
+	floatundixf \
+	fixunssfdi \
+	fixsfdi \
+	fixunsdfdi \
+	fixdfdi \
+	fixunsxfdi \
+	fixxfdi \
+
+RT_O = $(addprefix compiler-rt/lib/builtins/,$(RT_BUILTINS:=.o))
+
+I386_O = $(RT_O) alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
+X86_64_O = $(RT_O) lib-x86_64.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
+ARM_O = $(RT_O) armeabi.o alloca.o armflush.o stdatomic.o atomic.o builtin.o $(BT_O)
 ARM64_O = lib-arm64.o stdatomic.o atomic.o builtin.o $(BT_O)
 RISCV64_O = lib-arm64.o stdatomic.o atomic.o builtin.o $(BT_O)
 WIN_O = crt1.o crt1w.o wincrt1.o wincrt1w.o dllcrt1.o dllmain.o
