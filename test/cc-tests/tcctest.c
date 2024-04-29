@@ -67,13 +67,13 @@ typedef __SIZE_TYPE__ uintptr_t;
 #include "tcctest.h"
 
 /* Test two more ways to include a file named like a pp-number */
-#define INC(name) <tests/name.h>
+#define INC(name) <./name.h>
 #define funnyname 42test.h
-#define incdir tests/
+#define incdir ./
 #ifdef __clang__
 /* clang's preprocessor is broken in this regard and adds spaces
    to the tokens 'incdir' and 'funnyname' when expanding */
-#define incname <tests/42test.h>
+#define incname <./42test.h>
 #else
 #define incname < incdir funnyname >
 #endif

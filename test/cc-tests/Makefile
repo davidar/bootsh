@@ -9,7 +9,7 @@
 
 # TOPSRC = ..
 TCC_LOCAL = cc
-TCC = cc -I../../lib/tcc
+TCC = cc -I.
 # CC = cc
 
 # what tests to run

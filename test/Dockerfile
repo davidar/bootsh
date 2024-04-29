@@ -30,6 +30,10 @@ RUN tar -xf bash-5.2.21.tar.gz
 WORKDIR /src/bash-5.2.21
 RUN ./configure --prefix=/ --without-bash-malloc LD=cc && make && make install
 
+COPY test/cc-tests /src/cc-tests
+WORKDIR /src/cc-tests
+RUN make
+
 
 FROM base AS bootstrap
 
