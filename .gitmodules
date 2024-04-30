@@ -7,3 +7,6 @@
 [submodule "toybox"]
 	path = lib/toybox
 	url = https://github.com/davidar/toybox.git
+[submodule "musl-cross-make"]
+	path = lib/musl-cross-make
+	url = https://github.com/richfelker/musl-cross-make.git

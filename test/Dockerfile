@@ -117,20 +117,60 @@ RUN tar -xf ../mpfr-2.4.2.tar.bz2 && \
     ln -sf mpfr-2.4.2 mpfr && \
     ln -sf gmp-4.3.2 gmp && \
     ln -sf mpc-0.8.1 mpc && \
-    ./configure CFLAGS=-O2 CFLAGS_FOR_TARGET=-O2 \
-        --enable-languages=c \
+    ./configure \
         --disable-bootstrap \
-        --disable-libquadmath --disable-decimal-float --disable-fixed-point \
-        --disable-lto \
+        --disable-decimal-float \
+        --disable-fixed-point \
         --disable-libgomp \
-        --disable-multilib \
-        --disable-multiarch \
+        --disable-libitm \
         --disable-libmudflap \
+        --disable-libquadmath \
         --disable-libssp \
+        --disable-lto \
+        --disable-multiarch \
+        --disable-multilib \
         --disable-nls \
+        --enable-languages=c \
         --host x86_64-linux --build x86_64-linux && \
-    make && \
-    make install
+    make && make install
 
 WORKDIR /src
 RUN gcc -o test test.c -static && ./test && rm ./test
+
+ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz /src/musl-1.2.5.tar.gz
+WORKDIR /src
+RUN tar -xf musl-1.2.5.tar.gz
+WORKDIR /src/musl-1.2.5
+RUN rm -rf /lib /include
+RUN ./configure --prefix=/ --enable-wrapper=all && make -j$(nproc) && make install
+RUN ln -s /lib/ld-musl-x86_64.so.1 /bin/ldd
+RUN ln -s /lib/ld-musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
+
+WORKDIR /src
+RUN musl-gcc -o test test.c && ldd ./test && ./test && rm ./test
+
+WORKDIR /src/gcc-4.6.4
+RUN make distclean && \
+    sed -i 's|"os/gnu-linux"|"os/generic"|' libstdc++-v3/configure.host && \
+    ./configure CC=musl-gcc CPP=/usr/local/bin/cpp AR=/usr/local/bin/ar LD=/usr/local/bin/ld \
+        --disable-bootstrap \
+        --disable-decimal-float \
+        --disable-fixed-point \
+        --disable-libgomp \
+        --disable-libitm \
+        --disable-libmudflap \
+        --disable-libquadmath \
+        --disable-libssp \
+        --disable-lto \
+        --disable-multiarch \
+        --disable-multilib \
+        --disable-nls \
+        --enable-languages=c,c++ \
+        --host x86_64-linux --build x86_64-linux && \
+    make -j$(nproc) && make install
+
+ENV LD_LIBRARY_PATH=/lib:/usr/local/lib:/usr/local/lib64
+
+COPY test/test.cc /src/test.cc
+WORKDIR /src
+RUN g++ -o test test.cc && ldd ./test && ./test && rm ./test
