@@ -6,7 +6,11 @@ build-%:
 
 bootgcc:
 	docker build .. -f Dockerfile -t bootgcc --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target gcc
-	docker run --name bootsh-test --rm -it bootgcc /bin/bash
+	docker run --rm -it bootgcc /bin/bash
+
+bootllvm:
+	docker build .. -f Dockerfile -t bootllvm --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target llvm
+	docker run --rm -it bootllvm /bin/sh
 
 bootstrap-%:
 	rm -rf ../rootfs/bootstrap-$*

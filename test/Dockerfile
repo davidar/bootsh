@@ -188,3 +188,50 @@ ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-
 ADD https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=3d5db9ebe860 sources/config.sub
 RUN tar -xf sources/kernel-headers-4.19.88-1.tar.gz && mv -f kernel-headers-4.19.88-1 linux-headers-4.19.88-1.orig && \
     sed -i s/xvf/xf/g Makefile && touch sources/* *.orig && make -j$(nproc) && make install
+
+
+FROM scratch AS llvm
+
+ARG ROOTFS
+COPY $ROOTFS/bin/sh /bin/sh
+
+SHELL ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
+
+COPY --from=gcc /opt/cross /opt/cross
+
+ENV CC=/opt/cross/bin/x86_64-linux-musl-gcc
+ENV CXX=/opt/cross/bin/x86_64-linux-musl-g++
+ENV LD_LIBRARY_PATH=/opt/cross/x86_64-linux-musl/lib/
+
+RUN mkdir -p /bin /lib /lib64 /tmp && \
+    ln -s /opt/cross/x86_64-linux-musl/lib/libc.so /bin/ldd && \
+    ln -s /opt/cross/x86_64-linux-musl/lib/libc.so /lib/ld-musl-x86_64.so.1 && \
+    ln -s /opt/cross/x86_64-linux-musl/lib/libc.so /lib64/ld-linux-x86-64.so.2 && \
+    rm /opt/cross/x86_64-linux-musl/lib/ld-musl-x86_64.so.1
+
+RUN for cmd in `sh -c toybox` cc ar; do \
+        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
+        chmod +x /bin/$cmd; \
+    done
+
+# RUN file /bin/ldd && /bin/ldd /opt/cross/bin/x86_64-linux-musl-gcc && /opt/cross/bin/x86_64-linux-musl-gcc -print-search-dirs
+
+# COPY test/test.c /src/test.c
+# COPY test/test.cc /src/test.cc
+# WORKDIR /src
+# RUN /opt/cross/bin/x86_64-linux-musl-gcc -o test test.c && ldd ./test && ./test && rm ./test
+# RUN /opt/cross/bin/x86_64-linux-musl-g++ -o test test.cc && ldd ./test && ./test && rm ./test
+
+ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
+WORKDIR /src
+RUN tar -xf make-4.4.tar.gz
+WORKDIR /src/make-4.4
+RUN ./configure --disable-dependency-tracking && \
+    ./build.sh && ./make && ./make install
+
+ADD https://github.com/Kitware/CMake/releases/download/v3.29.2/cmake-3.29.2.tar.gz /src/cmake-3.29.2.tar.gz
+WORKDIR /src
+RUN tar -xf cmake-3.29.2.tar.gz
+WORKDIR /src/cmake-3.29.2
+RUN ./bootstrap --parallel=$(nproc) -- -DCMAKE_USE_OPENSSL=OFF && make -j$(nproc) && make install
