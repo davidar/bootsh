@@ -235,3 +235,33 @@ WORKDIR /src
 RUN tar -xf cmake-3.29.2.tar.gz
 WORKDIR /src/cmake-3.29.2
 RUN ./bootstrap --parallel=$(nproc) -- -DCMAKE_USE_OPENSSL=OFF && make -j$(nproc) && make install
+
+RUN mkdir -p /usr/lib && ln -s /opt/cross/x86_64-linux-musl/lib /usr/lib/x86_64-linux-gnu
+
+ADD https://raw.githubusercontent.com/pts/muxzcat/master/muxzcat.c /src/muxzcat.c
+RUN cc -o /bin/xzcat /src/muxzcat.c
+
+ADD http://zlib.net/zlib-1.3.1.tar.gz /src/zlib-1.3.1.tar.gz
+WORKDIR /src
+RUN tar -xf zlib-1.3.1.tar.gz
+WORKDIR /src/zlib-1.3.1
+RUN ./configure && make -j$(nproc) && make install
+
+ADD https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz /src/Python-3.12.3.tgz
+WORKDIR /src
+RUN tar -xf Python-3.12.3.tgz
+WORKDIR /src/Python-3.12.3
+RUN ./configure --without-ensurepip && make -j$(nproc) && make install
+
+ADD https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.4/llvm-project-18.1.4.src.tar.xz /src/llvm-project-18.1.4.src.tar.xz
+WORKDIR /src
+RUN tar -xf llvm-project-18.1.4.src.tar.xz
+WORKDIR /src/llvm-project-18.1.4.src
+RUN mkdir build && cd build && \
+    cmake -G "Unix Makefiles" \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DCMAKE_INSTALL_PREFIX=/opt/llvm \
+        -DLLVM_ENABLE_PROJECTS="clang;lld" \
+        -DLLVM_ENABLE_RUNTIMES="compiler-rt;libcxx;libcxxabi;libunwind" \
+        ../llvm && \
+    make -j$(nproc) && make install
