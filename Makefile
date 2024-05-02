@@ -41,10 +41,10 @@ seed:
 			$(MAKE)
 
 	rm -rf $(SEED)
-	mkdir -p $(SEED)/bin $(SEED)/lib
+	mkdir -p $(SEED)/bin # $(SEED)/lib
 	cp src/dash $(SEED)/bin/sh
-	cp -r $(SEED0)/include $(SEED)/include
-	cp $(SEED0)/lib/libc.a $(SEED0)/lib/crt?.o $(SEED)/lib/
+	# cp -r $(SEED0)/include $(SEED)/include
+	# cp $(SEED0)/lib/libc.a $(SEED0)/lib/crt?.o $(SEED)/lib/
 
 test:
 	$(MAKE) -C test
@@ -55,15 +55,15 @@ diff:
 bootstrap:
 	cd lib/tcc && $(MAKE) clean && ./configure --cc=cc $(TCC_CONFIG) && \
 		$(MAKE) && $(MAKE) DESTDIR=/dest install
-	cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc RANLIB=echo && \
-		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
+	# cd lib/musl && $(MAKE) clean && ./configure --prefix=/ CC=cc RANLIB=echo && \
+	# 	$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=/dest install
 	cd lib/toybox && $(MAKE) clean && $(MAKE)
 	echo "#define LIBTCC1A_LEN $$(wc -c < /dest/lib/tcc/libtcc1.a)" > src/libtcc1a.h
 	gzip -9 < /dest/lib/tcc/libtcc1.a | od -Anone -vtx1 | \
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
 		>> src/libtcc1a.h
 	cd src && $(MAKE) clean && $(MAKE)
-	mkdir -p /out/bin /out/lib
+	mkdir -p /out/bin # /out/lib
 	cp src/dash /out/bin/sh
-	cp -r /dest/include /out/include
-	cp /dest/lib/libc.a /dest/lib/crt?.o /out/lib/
+	# cp -r /dest/include /out/include
+	# cp /dest/lib/libc.a /dest/lib/crt?.o /out/lib/

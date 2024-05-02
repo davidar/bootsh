@@ -1,10 +1,14 @@
 FROM scratch AS base
 
 ARG ROOTFS
-COPY $ROOTFS /
+COPY $ROOTFS/bin/sh /bin/sh
 
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
+
+COPY lib/musl /src/musl
+WORKDIR /src/musl
+RUN ./build.sh
 
 RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkdir /tmp
 
