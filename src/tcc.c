@@ -169,14 +169,6 @@ static char *default_outputfile(TCCState *s, const char *first_file)
         name = tcc_basename(first_file);
     snprintf(buf, sizeof(buf), "%s", name);
     ext = tcc_fileextension(buf);
-#ifdef TCC_TARGET_PE
-    if (s->output_type == TCC_OUTPUT_DLL)
-        strcpy(ext, ".dll");
-    else
-    if (s->output_type == TCC_OUTPUT_EXE)
-        strcpy(ext, ".exe");
-    else
-#endif
     if ((s->just_deps || s->output_type == TCC_OUTPUT_OBJ) && !s->option_r && *ext)
         strcpy(ext, ".o");
     else
@@ -186,19 +178,15 @@ static char *default_outputfile(TCCState *s, const char *first_file)
 
 static unsigned getclock_ms(void)
 {
-#ifdef _WIN32
-    return GetTickCount();
-#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec*1000 + (tv.tv_usec+500)/1000;
-#endif
 }
 
 int tcc_main(int argc0, char **argv0)
 {
     TCCState *s, *s1;
-    int ret, opt, n = 0, t = 0, done;
+    int ret, opt, n = 0, t = 0, done, tcc_run;
     unsigned start_time = 0, end_time = 0;
     const char *first_file;
     int argc; char **argv;
@@ -215,6 +203,8 @@ redo:
         return 1;
 
     s->static_link = 1;
+
+    tcc_run = s->output_type == TCC_OUTPUT_MEMORY;
 
     if (n == 0) {
         if (opt == OPT_PRINT_DIRS) {
@@ -246,7 +236,7 @@ redo:
     }
 
     set_environment(s);
-    if (s->output_type == 0)
+    if (s->output_type == 0 || s->output_type == TCC_OUTPUT_MEMORY)
         s->output_type = TCC_OUTPUT_EXE;
     tcc_set_output_type(s, s->output_type);
     s->ppfp = ppfp;
@@ -304,10 +294,13 @@ redo:
     } else if (s->output_type == TCC_OUTPUT_PREPROCESS) {
         ;
     } else if (0 == ret) {
-        if (s->output_type == TCC_OUTPUT_MEMORY) {
-#ifdef TCC_IS_NATIVE
-            ret = tcc_run(s, argc, argv);
-#endif
+        if (tcc_run) {
+            char tmpfname[] = "/tmp/.tccrunXXXXXX";
+            int fd = mkstemp(tmpfname);
+            s->outfile = tcc_strdup(tmpfname);
+            close(fd);
+            tcc_output_file(s, s->outfile);
+            execve(s->outfile, argv, environ);
         } else {
             if (!s->outfile)
                 s->outfile = default_outputfile(s, first_file);

@@ -14,7 +14,7 @@ RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkd
 
 COPY test/test.c /src/test.c
 WORKDIR /src
-RUN cc -print-search-dirs && cc -o test test.c && ./test && rm ./test
+RUN cc -print-search-dirs && cc -run test.c foo bar baz
 
 RUN for cmd in `sh -c toybox` cc ar; do \
         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
