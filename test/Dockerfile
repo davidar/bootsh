@@ -22,6 +22,7 @@ RUN for cmd in `sh -c toybox` cc ar; do \
     done
 
 COPY test/wak.c /bin/awk
+COPY test/muxzcat.c /bin/xzcat
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
 WORKDIR /src
@@ -52,9 +53,9 @@ RUN make bootstrap
 
 FROM base AS gcc
 
-ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.gz /src/perl-5.38.2.tar.gz
+ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz /src/perl-5.38.2.tar.xz
 WORKDIR /src
-RUN tar -xf perl-5.38.2.tar.gz
+RUN tar -xf perl-5.38.2.tar.xz
 WORKDIR /src/perl-5.38.2
 COPY test/perl5.patch /tmp/perl5.patch
 RUN patch -p1 < /tmp/perl5.patch && \
@@ -62,25 +63,25 @@ RUN patch -p1 < /tmp/perl5.patch && \
     make -j$(nproc) && \
     make install
 
-ADD https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.gz /src/m4-1.4.19.tar.gz
+ADD https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz /src/m4-1.4.19.tar.xz
 WORKDIR /src
-RUN tar -xf m4-1.4.19.tar.gz
+RUN tar -xf m4-1.4.19.tar.xz
 WORKDIR /src/m4-1.4.19
 RUN ./configure LD=cc && \
     make && \
     make install
 
-ADD https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz /src/autoconf-2.69.tar.gz
+ADD https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz /src/autoconf-2.69.tar.xz
 WORKDIR /src
-RUN tar -xf autoconf-2.69.tar.gz
+RUN tar -xf autoconf-2.69.tar.xz
 WORKDIR /src/autoconf-2.69
 RUN ./configure && \
     make && \
     make install
 
-ADD https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz /src/automake-1.16.5.tar.gz
+ADD https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.xz /src/automake-1.16.5.tar.xz
 WORKDIR /src
-RUN tar -xf automake-1.16.5.tar.gz
+RUN tar -xf automake-1.16.5.tar.xz
 WORKDIR /src/automake-1.16.5
 RUN ./configure && \
     make && \
@@ -94,17 +95,17 @@ RUN ./configure && \
 #     make && \
 #     make install
 
-ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.gz /src/gawk-5.3.0.tar.gz
+ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
 WORKDIR /src
-RUN tar -xf gawk-5.3.0.tar.gz
+RUN tar -xf gawk-5.3.0.tar.xz
 WORKDIR /src/gawk-5.3.0
 RUN ./configure --disable-shared LD=cc && \
     make && \
     make install
 
-ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.gz /src/binutils-2.39.tar.gz
+ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz /src/binutils-2.39.tar.xz
 WORKDIR /src
-RUN tar -xf binutils-2.39.tar.gz
+RUN tar -xf binutils-2.39.tar.xz
 WORKDIR /src/binutils-2.39
 RUN ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
     make MAKEINFO=true && \
