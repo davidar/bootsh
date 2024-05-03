@@ -14,12 +14,14 @@ RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkd
 
 COPY test/test.c /src/test.c
 WORKDIR /src
-RUN cc -print-search-dirs && cc -run test.c foo bar baz
+RUN cc -v && cc -run test.c foo bar baz
 
 RUN for cmd in `sh -c toybox` cc ar; do \
         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
         chmod +x /bin/$cmd; \
     done
+
+COPY test/wak.c /bin/awk
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
 WORKDIR /src
@@ -138,9 +140,6 @@ RUN tar -xf ../mpfr-2.4.2.tar.bz2 && \
         --host x86_64-linux --build x86_64-linux && \
     make && make install
 
-WORKDIR /src
-RUN gcc -o test test.c -static && ./test && rm ./test
-
 ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz /src/musl-1.2.5.tar.gz
 WORKDIR /src
 RUN tar -xf musl-1.2.5.tar.gz
@@ -151,7 +150,7 @@ RUN ln -s /lib/ld-musl-x86_64.so.1 /bin/ldd
 RUN ln -s /lib/ld-musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 WORKDIR /src
-RUN musl-gcc -o test test.c && ldd ./test && ./test && rm ./test
+RUN musl-gcc -std=c99 -o test test.c && ldd ./test && ./test && rm ./test
 
 WORKDIR /src/gcc-4.6.4
 RUN make distclean && \

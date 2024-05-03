@@ -207,10 +207,11 @@ redo:
     tcc_run = s->output_type == TCC_OUTPUT_MEMORY;
 
     if (n == 0) {
-        if (opt == OPT_PRINT_DIRS) {
+        if (opt == OPT_V || opt == OPT_PRINT_DIRS) {
             /* initialize search dirs */
             set_environment(s);
             tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+            printf("Tiny C Compiler\n");
             print_search_dirs(s);
             return 0;
         }
