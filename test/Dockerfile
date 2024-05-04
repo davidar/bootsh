@@ -158,6 +158,8 @@ RUN ln -s /lib/ld-musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 WORKDIR /src
 RUN musl-gcc -std=c99 -o test test.c && ldd ./test && ./test && rm ./test
 
+RUN ln -s /lib /lib/x86_64-linux-gnu
+
 WORKDIR /src/gcc-4.6.4
 RUN make distclean && \
     sed -i 's|"os/gnu-linux"|"os/generic"|' libstdc++-v3/configure.host && \
