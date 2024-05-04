@@ -80,6 +80,8 @@ RUN patch -p1 < /tmp/perl5.patch && \
     make -j$(nproc) && \
     make install
 
+RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+
 ADD https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz /src/m4-1.4.19.tar.xz
 WORKDIR /src
 RUN tar -xf m4-1.4.19.tar.xz
