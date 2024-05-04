@@ -67,6 +67,14 @@ COPY Makefile toybox.config config.h /src/bootsh/
 WORKDIR /src/bootsh
 RUN make bootstrap
 
+COPY test/passwd.txt /etc/passwd
+COPY test/group.txt /etc/group
+RUN chmod 777 /tmp && chown -R user:user /src/bootsh/lib/toybox
+USER user
+ENV USER=user
+WORKDIR /src/bootsh/lib/toybox
+RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
+
 
 FROM base AS gcc
 
