@@ -1,0 +1,40 @@
+#define CFG_TOYBOX_ON_ANDROID 0
+#define USE_TOYBOX_ON_ANDROID(...)
+#define CFG_TOYBOX_FORK 1
+#define USE_TOYBOX_FORK(...) __VA_ARGS__
+
+#define CFG_TAR 1
+#define USE_TAR(...) __VA_ARGS__
+
+#define CFG_TOYBOX 0
+#define USE_TOYBOX(...)
+#define CFG_TOYBOX_SUID 1
+#define USE_TOYBOX_SUID(...) __VA_ARGS__
+#define CFG_TOYBOX_LSM_NONE 1
+#define USE_TOYBOX_LSM_NONE(...) __VA_ARGS__
+#define CFG_TOYBOX_SELINUX 0
+#define USE_TOYBOX_SELINUX(...)
+#define CFG_TOYBOX_SMACK 0
+#define USE_TOYBOX_SMACK(...)
+#define CFG_TOYBOX_LIBCRYPTO 0
+#define USE_TOYBOX_LIBCRYPTO(...)
+#define CFG_TOYBOX_LIBZ 0
+#define USE_TOYBOX_LIBZ(...)
+#define CFG_TOYBOX_FLOAT 1
+#define USE_TOYBOX_FLOAT(...) __VA_ARGS__
+#define CFG_TOYBOX_HELP 0
+#define USE_TOYBOX_HELP(...)
+#define CFG_TOYBOX_HELP_DASHDASH 0
+#define USE_TOYBOX_HELP_DASHDASH(...)
+#define CFG_TOYBOX_ZHELP 0
+#define USE_TOYBOX_ZHELP(...)
+#define CFG_TOYBOX_FREE 0
+#define USE_TOYBOX_FREE(...)
+#define CFG_TOYBOX_NORECURSE 0
+#define USE_TOYBOX_NORECURSE(...)
+#define CFG_TOYBOX_DEBUG 0
+#define USE_TOYBOX_DEBUG(...)
+#define CFG_TOYBOX_UID_SYS 100
+#define CFG_TOYBOX_UID_USR 500
+#define CFG_TOYBOX_FORCE_NOMMU 0
+#define USE_TOYBOX_FORCE_NOMMU(...)

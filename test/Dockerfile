@@ -27,17 +27,18 @@ COPY test/muxzcat.c /bin/xzcat
 COPY test/tar.c /bin/tar
 
 COPY lib/toybox /src/toybox
+COPY test/tar-generated /src/toybox/generated
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
 WORKDIR /src
-RUN /bin/tar -xf make-4.4.tar.gz
+RUN tar -xf make-4.4.tar.gz
 WORKDIR /src/make-4.4
 RUN ./configure --disable-dependency-tracking LD=cc && \
     ./build.sh && ./make && ./make install
 
 ADD https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz /src/bash-5.2.21.tar.gz
 WORKDIR /src
-RUN /bin/tar -xf bash-5.2.21.tar.gz
+RUN tar -xf bash-5.2.21.tar.gz
 WORKDIR /src/bash-5.2.21
 RUN ./configure --prefix=/ --without-bash-malloc LD=cc && make && make install
 
