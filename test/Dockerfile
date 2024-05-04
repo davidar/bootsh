@@ -7,16 +7,27 @@ SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
 COPY lib/musl /src/musl
+COPY build-musl.sh /src/musl/build.sh
 WORKDIR /src/musl
 RUN ./build.sh
 
 RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkdir /tmp
 
+COPY test/ar.c /src/ar.c
+COPY test/cosmopolitan /src/cosmopolitan
+
+RUN LIBC=$(find /src/musl/obj/src -name \*.o) && \
+    cc -I/src/cosmopolitan -c /src/ar.c -o /tmp/ar.o && \
+    cc -o /tmp/ar -nostdinc -nostdlib /lib/crt1.o /lib/crti.o /tmp/ar.o $LIBC /lib/crtn.o && \
+    /tmp/ar rcs /lib/libc.a $LIBC && \
+    rm /tmp/ar /tmp/ar.o && \
+    cp /src/ar.c /bin/ar
+
 COPY test/test.c /src/test.c
 WORKDIR /src
 RUN cc -v && cc -run test.c foo bar baz
 
-RUN for cmd in `sh -c toybox` cc ar; do \
+RUN for cmd in `sh -c toybox` cc; do \
         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
         chmod +x /bin/$cmd; \
     done
