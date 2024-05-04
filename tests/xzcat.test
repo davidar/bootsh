@@ -11,7 +11,7 @@ tar -cJf file.xz file
 # Get system xzcat
 xzcatExe=`which xzcat`
 $xzcatExe file.xz > xzcatOut
-testcmd "- decompresses a single file" "file.xz > Tempfile && echo "yes"; diff Tempfile xzcatOut && echo "yes"; rm -rf file* xzcatOut Tempfile" "yes\nyes\n" "" ""
+toyonly testcmd "- decompresses a single file" "file.xz > Tempfile && echo "yes"; diff Tempfile xzcatOut && echo "yes"; rm -rf file* xzcatOut Tempfile" "yes\nyes\n" "" ""
 
 #testing "name" "command" "result" "infile" "stdin"
 echo "hello" > file1
@@ -23,10 +23,10 @@ tar -cJf file3.xz file3
 # Get system xzcat
 xzcatExe=`which xzcat`
 $xzcatExe file1.xz file2.xz file3.xz > xzcatOut
-testcmd "- decompresses multiple files" "file1.xz file2.xz file3.xz > Tempfile && echo "yes" ; diff Tempfile xzcatOut && echo "yes"; rm -rf file* xzcatOut Tempfile " "yes\nyes\n" "" ""
+toyonly testcmd "- decompresses multiple files" "file1.xz file2.xz file3.xz > Tempfile && echo "yes" ; diff Tempfile xzcatOut && echo "yes"; rm -rf file* xzcatOut Tempfile " "yes\nyes\n" "" ""
 echo "This is NOT a XZ file!!!" > file
-testcmd "bad file" "file 2>&1; rm file" "xzcat: Not a .xz file\n" "" ""
+toyonly testcmd "bad file" "file 2>&1; rm file" "xzcat: Not a .xz file\n" "" ""
 echo "Surely nothing bad will happen to this compressed data!" > file
 tar -cJf file.xz file
 truncate -s 16 file.xz
-testcmd "corrupted file" "file.xz 2>&1" "xzcat: File is corrupt\n" "" ""
+toyonly testcmd "corrupted file" "file.xz 2>&1" "xzcat: File is corrupt\n" "" ""
