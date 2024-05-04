@@ -25,9 +25,9 @@ COPY test/sbang.sh /bin/sbang
 COPY test/wak.c /bin/awk
 COPY test/muxzcat.c /bin/xzcat
 COPY test/tar.c /bin/tar
+COPY test/tar.h /bin/tar.h
 
-COPY lib/toybox /src/toybox
-COPY test/tar-generated /src/toybox/generated
+COPY test/libtoys /lib/libtoys
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
 WORKDIR /src
@@ -150,15 +150,12 @@ ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz /src/musl-1.2.5.tar.gz
 WORKDIR /src
 RUN tar -xf musl-1.2.5.tar.gz
 WORKDIR /src/musl-1.2.5
-RUN rm -rf /lib /include
 RUN ./configure --prefix=/ --enable-wrapper=all && make -j$(nproc) && make install
 RUN ln -s /lib/ld-musl-x86_64.so.1 /bin/ldd
 RUN ln -s /lib/ld-musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 WORKDIR /src
 RUN musl-gcc -std=c99 -o test test.c && ldd ./test && ./test && rm ./test
-
-RUN ln -s /lib /lib/x86_64-linux-gnu
 
 WORKDIR /src/gcc-4.6.4
 RUN make distclean && \

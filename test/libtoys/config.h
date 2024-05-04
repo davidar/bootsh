@@ -2,10 +2,6 @@
 #define USE_TOYBOX_ON_ANDROID(...)
 #define CFG_TOYBOX_FORK 1
 #define USE_TOYBOX_FORK(...) __VA_ARGS__
-
-#define CFG_TAR 1
-#define USE_TAR(...) __VA_ARGS__
-
 #define CFG_TOYBOX 0
 #define USE_TOYBOX(...)
 #define CFG_TOYBOX_SUID 1
