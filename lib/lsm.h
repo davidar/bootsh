@@ -1,3 +1,5 @@
+#pragma once
+
 /* lsm.h - header file for lib directory
  *
  * Copyright 2015 Rob Landley <rob@landley.net>

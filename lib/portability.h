@@ -1,3 +1,5 @@
+#pragma once
+
 // Workarounds for horrible build environment idiosyncrasies.
 
 // Instead of polluting the code with strange #ifdefs to work around bugs

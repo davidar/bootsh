@@ -1,3 +1,5 @@
+#pragma once
+
 /* Toybox infrastructure.
  *
  * Copyright 2006 Rob Landley <rob@landley.net>

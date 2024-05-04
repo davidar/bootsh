@@ -1,3 +1,5 @@
+#pragma once
+
 /* lib.h - header file for lib directory
  *
  * Copyright 2006 Rob Landley <rob@landley.net>
