@@ -24,9 +24,10 @@ RUN for cmd in `sh -c toybox` cc ar; do \
 COPY test/sbang.sh /bin/sbang
 COPY test/wak.c /bin/awk
 COPY test/muxzcat.c /bin/xzcat
-COPY test/tar.c /bin/tar
-COPY test/tar.h /bin/tar.h
 
+COPY test/sed.c /bin/sed
+COPY test/tar.c /bin/tar
+COPY test/*.flags.h /bin/
 COPY test/libtoys /lib/libtoys
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz

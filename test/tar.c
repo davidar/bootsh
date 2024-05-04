@@ -63,7 +63,7 @@ config TAR
 
 #include "libtoys/toys.h"
 
-#include "tar.h"
+#include "tar.flags.h"
 
 struct tar_data {
   char *f, *C, *I;
@@ -1190,8 +1190,6 @@ void tar_main(void)
     close(TT.fd);
   }
 }
-
-// Populate toy_list[].
 
 struct toy_list toy_list[] = {
 {"tar", tar_main, OPTSTR_tar, TOYFLAG_USR|TOYFLAG_BIN},
