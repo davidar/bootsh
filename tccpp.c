@@ -1949,7 +1949,7 @@ ST_FUNC void preprocess(int is_bof)
         /* ignore gas line comment in an 'S' file. */
         if (saved_parse_flags & PARSE_FLAG_ASM_FILE)
             goto ignore;
-        if (tok == '!' && is_bof)
+        if (tok == '!')
             /* '!' is ignored at beginning to allow C scripts. */
             goto ignore;
         tcc_warning("Ignoring unknown preprocessing directive #%s", get_tok_str(tok, &tokc));
