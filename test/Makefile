@@ -15,6 +15,10 @@ sabotage-stage0:
 	mkdir -p ../rootfs/sabotage-stage0
 	ID=$$(docker create sabotage-stage0) && docker export $$ID | tar -C ../rootfs/sabotage-stage0 --strip-components=2 -x tmp/sabotage && docker rm $$ID
 
+sabotage-stage1:
+	docker build .. -f Dockerfile -t sabotage-stage1 --progress=plain --target sabotage-stage1
+	docker run --rm -it sabotage-stage1 /bin/sh
+
 bootllvm:
 	docker build .. -f Dockerfile -t bootllvm --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target llvm
 	docker run --rm -it bootllvm /bin/sh

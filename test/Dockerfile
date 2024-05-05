@@ -219,6 +219,18 @@ RUN cat "$K"/config.stage1 >> "$R"/src/config
 RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" "$R"/src/config
 
 
+FROM scratch AS sabotage-stage1
+
+COPY rootfs/sabotage-stage0 /
+# COPY rootfs/seed/bin/sh /bin/bootsh
+
+RUN strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so && \
+    ranlib /opt/stage0-musl/lib/*.a
+
+RUN butch install stage1           # Installs core system + build chain
+RUN /src/utils/clean-stage1.sh     # remove unneeded bootstrap packages
+RUN /src/utils/rebuild-stage1.sh   # rebuild core packages with the stage1 gcc
+
 
 FROM base AS gcc
 
