@@ -80,16 +80,6 @@ FROM base AS sabotage-stage0
 
 RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
 
-# ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz /src/perl-5.38.2.tar.xz
-# WORKDIR /src
-# RUN tar -xf perl-5.38.2.tar.xz
-# WORKDIR /src/perl-5.38.2
-# COPY test/perl5.patch /tmp/perl5.patch
-# RUN patch -p1 < /tmp/perl5.patch && \
-#     ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
-#     make -j$(nproc) && \
-#     make install
-
 ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
 WORKDIR /src
 RUN tar -xf gawk-5.3.0.tar.xz
@@ -105,6 +95,24 @@ WORKDIR /src/binutils-2.39
 RUN ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
     make MAKEINFO=true && \
     make MAKEINFO=true install
+
+ADD https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz /src/bzip2-1.0.8.tar.gz
+WORKDIR /src
+RUN tar -xf bzip2-1.0.8.tar.gz
+WORKDIR /src/bzip2-1.0.8
+RUN make -j$(nproc) CC=cc AR=/usr/local/bin/ar && make install
+
+ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz /src/kernel-headers-4.19.88-1.tar.gz
+WORKDIR /src
+RUN tar -xf kernel-headers-4.19.88-1.tar.gz
+WORKDIR /src/kernel-headers-4.19.88-1
+RUN make install ARCH=x86_64
+
+ADD test/busybox /src/busybox
+WORKDIR /src/busybox
+RUN make defconfig HOSTCC=cc && \
+    make -j$(nproc) HOSTCC=cc CC=cc && \
+    make install HOSTCC=cc CC=cc CONFIG_PREFIX=/opt/busybox
 
 
 ## set path to builddir (where you want your chroot).

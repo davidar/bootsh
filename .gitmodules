@@ -16,3 +16,6 @@
 [submodule "sabotage"]
 	path = test/sabotage
 	url = https://github.com/sabotage-linux/sabotage.git
+[submodule "busybox"]
+	path = test/busybox
+	url = https://git.busybox.net/busybox

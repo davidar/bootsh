@@ -23,6 +23,7 @@
  */
 
 #include "../lib/tcc/tcc.h"
+#include "../lib/tcc/tcctools.c"
 
 int ld_add_file(TCCState *s1, const char filename[]);
 
@@ -183,6 +184,21 @@ static unsigned getclock_ms(void)
     return tv.tv_sec*1000 + (tv.tv_usec+500)/1000;
 }
 
+int tcc_add_library_err_stubs(TCCState *s1, const char *libname) {
+    if (!strcmp(libname, "crypt") ||
+        !strcmp(libname, "dl") ||
+        !strcmp(libname, "m") ||
+        !strcmp(libname, "pthread") ||
+        !strcmp(libname, "resolv") ||
+        !strcmp(libname, "rt") ||
+        !strcmp(libname, "util") ||
+        !strcmp(libname, "xnet")) {
+        // these are just stubs
+        return 0;
+    }
+    return tcc_add_library_err(s1, libname);
+}
+
 int tcc_main(int argc0, char **argv0)
 {
     TCCState *s, *s1;
@@ -258,19 +274,7 @@ redo:
         struct filespec *f = s->files[n];
         s->filetype = f->type;
         if (f->type & AFF_TYPE_LIB) {
-            if (!strcmp(f->name, "crypt")
-             || !strcmp(f->name, "dl")
-             || !strcmp(f->name, "m")
-             || !strcmp(f->name, "pthread")
-             || !strcmp(f->name, "resolv")
-             || !strcmp(f->name, "rt")
-             || !strcmp(f->name, "util")
-             || !strcmp(f->name, "xnet")) {
-                // these are just stubs
-                ret = 0;
-            } else {
-                ret = tcc_add_library_err(s, f->name);
-            }
+            ret = tcc_add_library_err_stubs(s, f->name);
         } else {
             if (1 == s->verbose)
                 printf("-> %s\n", f->name);
@@ -283,8 +287,23 @@ redo:
 
     while (s->new_undef_sym) {
         s->new_undef_sym = 0;
-        ld_add_file(s, "/lib/libc.a");
+        if (!s->nostdlib) ld_add_file(s, "/lib/libc.a");
         ld_add_file(s, "/lib/tcc/libtcc1.a");
+
+        if (s->link_group) {
+            for (int i = 0; i < s->nb_files; i++) {
+                struct filespec *f = s->files[i];
+                s->filetype = f->type;
+                if (f->type & AFF_TYPE_LIB) {
+                    if (tcc_add_library_err_stubs(s, f->name))
+                        break;
+                } else {
+                    const char *ext = tcc_fileextension(f->name);
+                    if (ext[0] && !strcmp(ext+1, "a") && tcc_add_file(s, f->name))
+                        break;
+                }
+            }
+        }
     }
 
     if (s->do_bench)
@@ -307,6 +326,8 @@ redo:
                 s->outfile = default_outputfile(s, first_file);
             if (!s->just_deps && tcc_output_file(s, s->outfile))
                 ;
+            else if (s->gen_deps)
+                gen_makedeps(s, s->outfile, s->deps_outfile);
         }
     }
 

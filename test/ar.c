@@ -36,7 +36,7 @@
 #include "libc/intrin/formatoctal32.c"
 
 #include "libc/str/endswith.c"
-#include "libc/str/strlcpy.c"
+// #include "libc/str/strlcpy.c"
 
 #include "tool/build/lib/getargs.c"
 
