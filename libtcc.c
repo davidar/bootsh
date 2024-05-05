@@ -1494,6 +1494,15 @@ static int tcc_set_linker(TCCState *s, const char *option)
                 s->filetype &= ~AFF_WHOLE_ARCHIVE;
         } else if (link_option(option, "z=", &p)) {
             ignoring = 1;
+        } else if (link_option(option, "start-group", &p)) {
+            s->link_group = 1;
+            ignoring = 1;
+        } else if (link_option(option, "end-group", &p)) {
+            ignoring = 1;
+        } else if (link_option(option, "warn-common", &p)) {
+            ignoring = 1;
+        } else if (link_option(option, "verbose", &p)) {
+            ++s->verbose;
         } else if (p) {
             return 0;
         } else {

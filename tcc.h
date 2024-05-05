@@ -815,6 +815,8 @@ struct TCCState {
     unsigned char dflag; /* -dX value */
     unsigned char Pflag; /* -P switch (LINE_MACRO_OUTPUT_FORMAT) */
 
+    unsigned char link_group; /* -Wl,--start-group/--end-group */
+
 #ifdef TCC_TARGET_X86_64
     unsigned char nosse; /* For -mno-sse support. */
 #endif
