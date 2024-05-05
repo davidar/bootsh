@@ -13,7 +13,7 @@ clean:
 	$(MAKE) -C lib/toybox clean
 	$(MAKE) -C src clean
 
-seed:
+seed: clean
 	rm -rf $(SEED0)
 	cd lib/tcc && ./configure $(TCC_CONFIG) --extra-cflags="-Wall -O0" && \
 		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install

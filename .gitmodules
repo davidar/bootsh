@@ -13,3 +13,6 @@
 [submodule "cosmopolitan"]
 	path = test/cosmopolitan
 	url = https://github.com/jart/cosmopolitan.git
+[submodule "sabotage"]
+	path = test/sabotage
+	url = https://github.com/sabotage-linux/sabotage.git

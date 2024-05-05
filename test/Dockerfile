@@ -76,7 +76,145 @@ WORKDIR /src/bootsh/lib/toybox
 RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
 
 
+FROM base AS sabotage-stage0
+
+RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+
+# ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz /src/perl-5.38.2.tar.xz
+# WORKDIR /src
+# RUN tar -xf perl-5.38.2.tar.xz
+# WORKDIR /src/perl-5.38.2
+# COPY test/perl5.patch /tmp/perl5.patch
+# RUN patch -p1 < /tmp/perl5.patch && \
+#     ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
+#     make -j$(nproc) && \
+#     make install
+
+ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
+WORKDIR /src
+RUN tar -xf gawk-5.3.0.tar.xz
+WORKDIR /src/gawk-5.3.0
+RUN ./configure --disable-shared LD=cc && \
+    make && \
+    make install
+
+ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz /src/binutils-2.39.tar.xz
+WORKDIR /src
+RUN tar -xf binutils-2.39.tar.xz
+WORKDIR /src/binutils-2.39
+RUN ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
+    make MAKEINFO=true && \
+    make MAKEINFO=true install
+
+
+## set path to builddir (where you want your chroot).
+ENV SABOTAGE_BUILDDIR="/tmp/sabotage"
+
+## set your arch, or try `uname -m`
+#ENV A=i486
+ENV A=x86_64
+#ENV A=mips
+#ENV A=powerpc
+#ENV A=arm
+# arch specific flags to pass to the gcc build
+# your crosscompiler should be configured equivalently
+# if not provided, will be derived from the compiler config
+#ENV GCC_ARCH_CONFIG_FLAGS="--with-float=soft --with-fpu=vfp"
+
+ENV ARCH=$A
+
+## set the compiler environment
+ENV CC=cc
+ENV HOSTCC=cc
+
+## set your core count for faster builds, this is passed as -jXXX to make
+## stage0 builds in less than 2minutes using -j9 on an AMD 8core
+ENV MAKE_THREADS=16
+
+# SCP_MIRRORS is a newline-separated list where the default download template
+# tries to download source tarballs from if set (before doing regular download).
+# first %s passed is the tarball filename, second %s the local destination.
+# it's very flexible, you can even call a custom script that does the download
+# in a different way. if using scp, the used host key must allow login without
+# interactive password.
+# note that during stage1/2 no scp command will be available.
+#ENV SCP_MIRRORS='
+#scp -i ~/.ssh/host1_key user@host1:/src/tarballs/%s %s
+#scp -P 2222 -i ~/.ssh/host2_key user@host2:/src/tarballs/%s %s
+#'
+
+# internal paths
+# you should leave these all as-is, this is the intended way.
+# K is the directory where patches and configs are kept
+# C is the directory to place the downloaded tarballs
+# S is the directory to extract tarballs and place sources for building stage0
+# R is the directory underwhich the new filesystem will be created
+# LOGPATH is the directory to place logfiles of builds
+
+# needed to inherit $PWD from toplevel buildscript
+ENV H=/src/sabotage
+
+ENV K=$H/KEEP
+ENV C=$H/tarballs
+ENV R=$SABOTAGE_BUILDDIR
+ENV S=$R/src
+ENV LOGPATH=$S/logs
+
+ENV BUTCH_BUILD_TEMPLATE=$K/butch_build_template.txt
+ENV BUTCH_DOWNLOAD_TEMPLATE=$K/butch_download_template.txt
+
+# this is needed so packages can detect from which stage they're called
+ENV STAGE=0
+
+
+ADD test/sabotage $H
+
+# use: setup-rootfs.sh [no args, uses $H/config]
+# used for cross-compilation
+# this prepares a chroot-like directory containing the root file system
+
+RUN mkdir -p "$K" "$C" "$S" "$R" "$LOGPATH"
+
+WORKDIR $R
+RUN mkdir -p \
+        boot bin dev etc home lib mnt proc root share srv src sys tmp var \
+        src/logs src/build src/tarballs src/pkg src/KEEP \
+        var/log/sshd var/log/crond var/log/dmesg \
+        var/empty var/service var/lib var/run var/spool/cron/crontabs
+
+# usr and sbin are a mistake
+RUN ln -sfn . usr && ln -sfn bin sbin && ln -sfn ../tmp var/tmp
+
+RUN chmod 775 src/build && chmod 1777 tmp && chmod 700 root
+
+RUN cp -r "$K"/etc/* "$R"/etc/ && cp -r "$K"/boot/* "$R"/boot/ && chmod 0600 "$R"/etc/shadow
+
+
+RUN ln -s /proc/mounts "$R"/etc/mtab
+
+
+# use: update-chroot.sh [no args, uses $H/config]
+# updates the chroot /src with the contents of the current sabotage checkout
+
+RUN cp "$H"/COOKBOOK.md "$H"/LICENSE "$H"/README.md "$R"/src/ && \
+    cp "$H"/build-stage0 "$H"/enter-chroot "$R"/src/ && \
+    cp -r "$H"/KEEP "$H"/pkg "$H"/utils "$R"/src/
+
+
+ENV CONFIG=$H/config
+ENV BUTCHDB=$R/var/lib/butch.db
+ENV DEPS=build:stage0
+# RUN "$K"/bin/butch install stage0
+
+# RUN echo "export A=$A" > "$R"/src/config
+# RUN cat "$K"/config.stage1 >> "$R"/src/config
+# RUN [ -z "$MAKE_THREADS" ] || sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$MAKE_THREADS@" "$R"/src/config
+
+
+
 FROM base AS gcc
+
+RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
 
 ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz /src/perl-5.38.2.tar.xz
 WORKDIR /src
@@ -87,8 +225,6 @@ RUN patch -p1 < /tmp/perl5.patch && \
     ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
     make -j$(nproc) && \
     make install
-
-RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
 
 ADD https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz /src/m4-1.4.19.tar.xz
 WORKDIR /src

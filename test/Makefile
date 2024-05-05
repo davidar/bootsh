@@ -8,6 +8,10 @@ bootgcc:
 	docker build .. -f Dockerfile -t bootgcc --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target gcc
 	docker run --rm -it bootgcc /bin/bash
 
+sabotage-stage0:
+	docker build .. -f Dockerfile -t sabotage-stage0 --progress=plain --build-arg ROOTFS=rootfs/seed --target sabotage-stage0
+	docker run --rm -it -v $(CURDIR)/sabotage:/src/sabotage sabotage-stage0 /bin/bash
+
 bootllvm:
 	docker build .. -f Dockerfile -t bootllvm --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target llvm
 	docker run --rm -it bootllvm /bin/sh
