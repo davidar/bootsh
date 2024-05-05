@@ -212,11 +212,11 @@ RUN cp "$H"/COOKBOOK.md "$H"/LICENSE "$H"/README.md "$R"/src/ && \
 ENV CONFIG=$H/config
 ENV BUTCHDB=$R/var/lib/butch.db
 ENV DEPS=build:stage0
-# RUN "$K"/bin/butch install stage0
+RUN "$K"/bin/butch install stage0
 
-# RUN echo "export A=$A" > "$R"/src/config
-# RUN cat "$K"/config.stage1 >> "$R"/src/config
-# RUN [ -z "$MAKE_THREADS" ] || sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$MAKE_THREADS@" "$R"/src/config
+RUN echo "export A=$A" > "$R"/src/config
+RUN cat "$K"/config.stage1 >> "$R"/src/config
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" "$R"/src/config
 
 
 

@@ -15,7 +15,7 @@
 	url = https://github.com/jart/cosmopolitan.git
 [submodule "sabotage"]
 	path = test/sabotage
-	url = https://github.com/sabotage-linux/sabotage.git
+	url = https://github.com/davidar/sabotage.git
 [submodule "busybox"]
 	path = test/busybox
-	url = https://git.busybox.net/busybox
+	url = https://github.com/davidar/busybox.git

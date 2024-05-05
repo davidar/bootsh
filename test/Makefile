@@ -10,7 +10,10 @@ bootgcc:
 
 sabotage-stage0:
 	docker build .. -f Dockerfile -t sabotage-stage0 --progress=plain --build-arg ROOTFS=rootfs/seed --target sabotage-stage0
-	docker run --rm -it -v $(CURDIR)/sabotage:/src/sabotage sabotage-stage0 /bin/bash
+	# docker run --rm -it -v $(CURDIR)/sabotage:/src/sabotage sabotage-stage0 /bin/bash
+	rm -rf ../rootfs/sabotage-stage0
+	mkdir -p ../rootfs/sabotage-stage0
+	ID=$$(docker create sabotage-stage0) && docker export $$ID | tar -C ../rootfs/sabotage-stage0 --strip-components=2 -x tmp/sabotage && docker rm $$ID
 
 bootllvm:
 	docker build .. -f Dockerfile -t bootllvm --progress=plain --build-arg ROOTFS=rootfs/bootstrap-2 --target llvm
