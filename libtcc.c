@@ -1641,6 +1641,7 @@ static const TCCOption tcc_options[] = {
     { "E", TCC_OPTION_E, 0},
     { "M", TCC_OPTION_M, 0},
     { "MD", TCC_OPTION_MD, 0},
+    { "MD,", TCC_OPTION_MD, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "MF", TCC_OPTION_MF, TCC_OPTION_HAS_ARG },
     { "MM", TCC_OPTION_MM, 0},
     { "MMD", TCC_OPTION_MMD, 0},
@@ -2111,6 +2112,8 @@ dorun:
         case TCC_OPTION_MD:
             s->gen_deps = 1;
             s->include_sys_deps = 1;
+            if(*optarg != '\0')
+                s->deps_outfile = tcc_strdup(optarg);
             break;
         case TCC_OPTION_MF:
             s->deps_outfile = tcc_strdup(optarg);
