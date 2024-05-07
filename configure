@@ -1,0 +1,30 @@
+#!/bin/sh
+
+set -e
+
+HOSTCC="$PWD/sysroot/bin/musl-gcc"
+CFLAGS="-Os -g -nostdinc"
+LDFLAGS="-static -g"
+
+if [ ! -d sysroot ]; then
+    echo "Run 'make sysroot' first"
+    exit 1
+fi
+
+cd lib/tcc
+./configure --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no \
+    --ar=ar --cc="$HOSTCC" --extra-cflags="$CFLAGS -DCONFIG_TCC_STATIC" --extra-ldflags="$LDFLAGS"
+cd ../..
+
+cat > config.mak <<EOF
+CC = $HOSTCC
+CFLAGS = $CFLAGS
+LDFLAGS = $LDFLAGS
+EOF
+
+cat config.mak
+
+cd lib/toybox
+ln -sf ../../toybox.config .config
+ln -sf ../../config.mak .config.mak
+cd ../..

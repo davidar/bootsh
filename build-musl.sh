@@ -4,16 +4,18 @@ set -e
 
 CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -fno-strict-aliasing -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include  -O2 -fno-align-jumps -fno-align-functions -fno-align-loops -fno-align-labels -fira-region=one -fira-hoist-pressure -freorder-blocks-algorithm=simple -fno-prefetch-loop-arrays -fno-tree-ch -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wno-pointer-to-int-cast -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -Werror=int-conversion -Werror=incompatible-pointer-types -Werror=discarded-qualifiers -Werror=discarded-array-qualifiers -Waddress -Warray-bounds -Wchar-subscripts -Wduplicate-decl-specifier -Winit-self -Wreturn-type -Wsequence-point -Wstrict-aliasing -Wunused-function -Wunused-label -Wunused-variable"
 
-# sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
-# cp arch/x86_64/bits/syscall.h.in obj/include/bits/syscall.h
-# sed -n -e s/__NR_/SYS_/p < arch/x86_64/bits/syscall.h.in >> obj/include/bits/syscall.h
+mkdir -p obj/include/bits
+sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
+cp arch/x86_64/bits/syscall.h.in obj/include/bits/syscall.h
+sed -n -e s/__NR_/SYS_/p < arch/x86_64/bits/syscall.h.in >> obj/include/bits/syscall.h
 
 cp -r include $PREFIX/
 cp -r arch/generic/bits $PREFIX/include/
 cp -r arch/x86_64/bits $PREFIX/include/
 cp -r obj/include/bits $PREFIX/include/
 
-printf '#define VERSION "%s"\n' "$(cd .; sh tools/version.sh)" > obj/src/internal/version.h
+mkdir -p obj/src/internal
+printf '#define VERSION "%s"\n' "$(sh tools/version.sh)" > obj/src/internal/version.h
 
 mkdir -p $PREFIX/lib
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crt1.o crt/crt1.c
@@ -25,6 +27,15 @@ for src in `cat sources.txt`; do
     mkdir -p $(dirname $obj)
     cc $CFLAGS -c -o $obj $src
 done
+
+mkdir -p obj/src/env
+mkdir -p obj/src/fenv/x86_64
+mkdir -p obj/src/ldso/x86_64
+mkdir -p obj/src/process/x86_64
+mkdir -p obj/src/setjmp/x86_64
+mkdir -p obj/src/signal/x86_64
+mkdir -p obj/src/string/x86_64
+mkdir -p obj/src/thread/x86_64
 
 cc $CFLAGS -c -o obj/src/fenv/x86_64/fenv.o src/fenv/x86_64/fenv.s
 cc $CFLAGS -c -o obj/src/ldso/x86_64/dlsym.o src/ldso/x86_64/dlsym.s

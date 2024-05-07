@@ -36,7 +36,7 @@ COPY test/sbang.sh /bin/sbang
 COPY test/wak.c /bin/awk
 COPY test/muxzcat.c /bin/xzcat
 
-COPY test/sed.c /bin/sed
+# COPY test/sed.c /bin/sed
 COPY test/tar.c /bin/tar
 COPY test/*.flags.h /bin/
 COPY test/libtoys /lib/libtoys
@@ -78,7 +78,7 @@ RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
 
 FROM base AS sabotage-stage0
 
-RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+# RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
 
 ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
 WORKDIR /src
@@ -234,7 +234,7 @@ RUN /src/utils/rebuild-stage1.sh   # rebuild core packages with the stage1 gcc
 
 FROM base AS gcc
 
-RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+# RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
 
 ADD https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz /src/perl-5.38.2.tar.xz
 WORKDIR /src
