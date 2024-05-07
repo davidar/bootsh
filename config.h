@@ -248,7 +248,7 @@
 /* klibc has bsd_signal instead of signal */
 /* #undef signal */
 
-#ifdef __TINYC__
+// #ifdef __TINYC__
 /* 64-bit operations are the same as 32-bit */
 #define dirent64 dirent
 
@@ -275,4 +275,4 @@
 
 /* 64-bit operations are the same as 32-bit */
 #define stat64 stat
-#endif
+// #endif

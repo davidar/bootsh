@@ -1,4 +1,4 @@
-SEED0 = $(CURDIR)/rootfs/seed0
+SYSROOT = $(CURDIR)/rootfs/sysroot
 SEED = $(CURDIR)/rootfs/seed
 
 TCC_CONFIG = --ar=ar --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no
@@ -14,37 +14,30 @@ clean:
 	$(MAKE) -C src clean
 
 seed: clean
-	rm -rf $(SEED0)
-	cd lib/tcc && ./configure $(TCC_CONFIG) --extra-cflags="-Wall -O0" && \
-		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
-	cd lib/musl && ./configure --prefix=/ --target=x86_64 \
-			CC=$(SEED0)/bin/tcc AR=ar RANLIB=echo LIBCC=$(SEED0)/lib/tcc/libtcc1.a && \
-		$(MAKE) CFLAGS=-g && $(MAKE) DESTDIR=$(SEED0) install
-	echo "GROUP ( $(SEED0)/lib/libc.a $(SEED0)/lib/tcc/libtcc1.a )" > $(SEED0)/libc.ld
+	rm -rf $(SYSROOT)
+	cd lib/musl && ./configure --prefix=/ && \
+		$(MAKE) CFLAGS="-Os -g" && $(MAKE) DESTDIR=$(SYSROOT) install
 	cd lib/tcc && make clean && ./configure $(TCC_CONFIG) \
-			--extra-cflags="-Wall -O0 -nostdinc -nostdlib -I$(SEED0)/include -DCONFIG_TCC_STATIC" \
-			--extra-ldflags="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static" && \
-		$(MAKE) && $(MAKE) DESTDIR=$(SEED0) install
-	echo "#define LIBTCC1A_LEN $$(wc -c < $(SEED0)/lib/tcc/libtcc1.a)" > src/libtcc1a.h
-	gzip -9 < $(SEED0)/lib/tcc/libtcc1.a | od -Anone -vtx1 | \
+			--extra-cflags="-Wall -Os -nostdinc -nostdlib -I$(SYSROOT)/include -DCONFIG_TCC_STATIC" \
+			--extra-ldflags="-nostdlib $(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a -static" && \
+		$(MAKE)
+	echo "#define LIBTCC1A_LEN $$(wc -c < lib/tcc/libtcc1.a)" > src/libtcc1a.h
+	gzip -9 < lib/tcc/libtcc1.a | od -Anone -vtx1 | \
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
 		>> src/libtcc1a.h
 	cd lib/toybox && ln -sf ../../toybox.config .config && $(MAKE) \
 			NOSTRIP=1 \
-			CC=$(SEED0)/bin/tcc \
-			CFLAGS="-nostdinc -nostdlib -I$(SEED0)/include -I/usr/include -I/usr/include/x86_64-linux-gnu -g" \
-			LDFLAGS="-nostdlib $(SEED0)/lib/crt1.o $(SEED0)/libc.ld -static"
-	cd src && CC=$(SEED0)/bin/tcc \
-			CFLAGS="-nostdinc -I$(SEED0)/include" \
+			CFLAGS="-Os -nostdinc -nostdlib -I$(SYSROOT)/include -I/usr/include -I/usr/include/x86_64-linux-gnu -g" \
+			LDFLAGS="-nostdlib $(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a -static"
+	cd src && CFLAGS="-Os -nostdinc -I$(SYSROOT)/include" \
 			LDFLAGS="-nostdlib -static" \
-			LIBS="$(SEED0)/lib/crt1.o $(SEED0)/libc.ld" \
+			LIBS="$(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a" \
 			$(MAKE)
 
 	rm -rf $(SEED)
-	mkdir -p $(SEED)/bin # $(SEED)/lib
+	mkdir -p $(SEED)/bin
 	cp src/dash $(SEED)/bin/sh
-	# cp -r $(SEED0)/include $(SEED)/include
-	# cp $(SEED0)/lib/libc.a $(SEED0)/lib/crt?.o $(SEED)/lib/
+	strip $(SEED)/bin/sh
 
 test:
 	$(MAKE) -C test
