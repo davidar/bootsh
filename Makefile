@@ -3,6 +3,10 @@ SEED = $(CURDIR)/rootfs/seed
 
 TCC_CONFIG = --ar=ar --prefix=/ --config-ldl=no --config-debug=yes --config-bcheck=no --config-backtrace=no
 
+HOSTCC = $(SYSROOT)/bin/musl-gcc
+CFLAGS = -Os -g -nostdinc
+LDFLAGS = -static
+
 .PHONY: all seed test diff bootstrap
 
 all: clean seed test diff
@@ -15,24 +19,17 @@ clean:
 
 seed: clean
 	rm -rf $(SYSROOT)
-	cd lib/musl && ./configure --prefix=/ && \
-		$(MAKE) CFLAGS="-Os -g" && $(MAKE) DESTDIR=$(SYSROOT) install
-	cd lib/tcc && make clean && ./configure $(TCC_CONFIG) \
-			--extra-cflags="-Wall -Os -nostdinc -nostdlib -I$(SYSROOT)/include -DCONFIG_TCC_STATIC" \
-			--extra-ldflags="-nostdlib $(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a -static" && \
+	cd lib/musl && ./configure --prefix="$(SYSROOT)" && $(MAKE) CFLAGS="$(CFLAGS)" && $(MAKE) install
+	cd lib/tcc && ./configure $(TCC_CONFIG) \
+			--cc="$(HOSTCC)" --extra-cflags="$(CFLAGS) -DCONFIG_TCC_STATIC" --extra-ldflags="$(LDFLAGS)" && \
 		$(MAKE)
 	echo "#define LIBTCC1A_LEN $$(wc -c < lib/tcc/libtcc1.a)" > src/libtcc1a.h
 	gzip -9 < lib/tcc/libtcc1.a | od -Anone -vtx1 | \
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' \
 		>> src/libtcc1a.h
 	cd lib/toybox && ln -sf ../../toybox.config .config && $(MAKE) \
-			NOSTRIP=1 \
-			CFLAGS="-Os -nostdinc -nostdlib -I$(SYSROOT)/include -I/usr/include -I/usr/include/x86_64-linux-gnu -g" \
-			LDFLAGS="-nostdlib $(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a -static"
-	cd src && CFLAGS="-Os -nostdinc -I$(SYSROOT)/include" \
-			LDFLAGS="-nostdlib -static" \
-			LIBS="$(SYSROOT)/lib/crt1.o $(SYSROOT)/lib/libc.a" \
-			$(MAKE)
+			NOSTRIP=1 CC="$(HOSTCC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)"
+	cd src && CC="$(HOSTCC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" $(MAKE)
 
 	rm -rf $(SEED)
 	mkdir -p $(SEED)/bin
