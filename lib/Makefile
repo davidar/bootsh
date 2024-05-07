@@ -41,7 +41,7 @@ endif
 $(X)BT_O = bt-exe.o bt-log.o
 $(X)B_O = $(BCHECK_O) bt-exe.o bt-log.o bt-dll.o
 endif
-$(X)BT_O += runmain.o tcov.o
+# $(X)BT_O += runmain.o tcov.o
 
 DSO_O = dsohandle.o
 
