@@ -8,3 +8,4 @@ syntax: glob
 /kconfig/*.c
 /toybox
 /toybox_unstripped
+/libtoybox.a

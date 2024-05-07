@@ -23,6 +23,7 @@ toybox generated/unstripped/toybox: $(KCONFIG_CONFIG) *.[ch] lib/*.[ch] toys/*/*
 
 include kconfig/Makefile
 -include .singlemake
+-include .config.mak
 
 $(KCONFIG_CONFIG): $(KCONFIG_TOP)
 	@if [ -e "$(KCONFIG_CONFIG)" ]; then $(MAKE) silentoldconfig; \
@@ -82,6 +83,10 @@ root:
 
 run_root:
 	cd root/"$${CROSS:-host}" && ./run-qemu.sh
+
+libtoybox.a: toybox
+	rm -f generated/obj/main.o
+	ar rcs libtoybox.a generated/obj/*.o
 
 help::
 	@cat scripts/help.txt
