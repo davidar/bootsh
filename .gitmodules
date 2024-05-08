@@ -4,12 +4,6 @@
 [submodule "toybox"]
 	path = lib/toybox
 	url = https://github.com/davidar/toybox.git
-[submodule "musl-cross-make"]
-	path = test/musl-cross-make
-	url = https://github.com/richfelker/musl-cross-make.git
 [submodule "sabotage"]
 	path = test/sabotage
 	url = https://github.com/davidar/sabotage.git
-[submodule "busybox"]
-	path = test/busybox
-	url = https://github.com/davidar/busybox.git

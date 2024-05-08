@@ -112,11 +112,11 @@ RUN tar -xf kernel-headers-4.19.88-1.tar.gz
 WORKDIR /src/kernel-headers-4.19.88-1
 RUN make install ARCH=x86_64
 
-ADD test/busybox /src/busybox
-WORKDIR /src/busybox
-RUN make defconfig HOSTCC=cc && \
-    make -j$(nproc) HOSTCC=cc CC=cc && \
-    make install HOSTCC=cc CC=cc CONFIG_PREFIX=/opt/busybox
+# ADD test/busybox /src/busybox
+# WORKDIR /src/busybox
+# RUN make defconfig HOSTCC=cc && \
+#     make -j$(nproc) HOSTCC=cc CC=cc && \
+#     make install HOSTCC=cc CC=cc CONFIG_PREFIX=/opt/busybox
 
 
 ## set path to builddir (where you want your chroot).
@@ -364,19 +364,19 @@ COPY test/test.cc /src/test.cc
 WORKDIR /src
 RUN g++ -o test test.cc && ldd ./test && ./test && rm ./test
 
-COPY test/musl-cross-make /src/musl-cross-make
-COPY test/musl-cross-make-config.mak /src/musl-cross-make/config.mak
-WORKDIR /src/musl-cross-make
-ADD https://ftp.gnu.org/gnu/binutils/binutils-2.33.1.tar.gz sources/binutils-2.33.1.tar.gz
-ADD https://ftp.gnu.org/gnu/gcc/gcc-9.4.0/gcc-9.4.0.tar.gz sources/gcc-9.4.0.tar.gz
-ADD https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2 sources/gmp-6.1.2.tar.bz2
-ADD https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz sources/mpc-1.1.0.tar.gz
-ADD https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.2.tar.bz2 sources/mpfr-4.0.2.tar.bz2
-ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz sources/musl-1.2.5.tar.gz
-ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz sources/kernel-headers-4.19.88-1.tar.gz
-ADD https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=3d5db9ebe860 sources/config.sub
-RUN tar -xf sources/kernel-headers-4.19.88-1.tar.gz && mv -f kernel-headers-4.19.88-1 linux-headers-4.19.88-1.orig && \
-    sed -i s/xvf/xf/g Makefile && touch sources/* *.orig && make -j$(nproc) && make install
+# COPY test/musl-cross-make /src/musl-cross-make
+# COPY test/musl-cross-make-config.mak /src/musl-cross-make/config.mak
+# WORKDIR /src/musl-cross-make
+# ADD https://ftp.gnu.org/gnu/binutils/binutils-2.33.1.tar.gz sources/binutils-2.33.1.tar.gz
+# ADD https://ftp.gnu.org/gnu/gcc/gcc-9.4.0/gcc-9.4.0.tar.gz sources/gcc-9.4.0.tar.gz
+# ADD https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2 sources/gmp-6.1.2.tar.bz2
+# ADD https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz sources/mpc-1.1.0.tar.gz
+# ADD https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.2.tar.bz2 sources/mpfr-4.0.2.tar.bz2
+# ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz sources/musl-1.2.5.tar.gz
+# ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz sources/kernel-headers-4.19.88-1.tar.gz
+# ADD https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=3d5db9ebe860 sources/config.sub
+# RUN tar -xf sources/kernel-headers-4.19.88-1.tar.gz && mv -f kernel-headers-4.19.88-1 linux-headers-4.19.88-1.orig && \
+#     sed -i s/xvf/xf/g Makefile && touch sources/* *.orig && make -j$(nproc) && make install
 
 
 FROM scratch AS llvm
