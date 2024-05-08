@@ -19,8 +19,8 @@ musl-%: musl-%.tar.gz
 
 sysroot: $(MUSL)
 	cd $(MUSL) && ./configure --prefix="$(CURDIR)/sysroot"
-	$(MAKE) -C $(MUSL) CFLAGS="-Os -g"
-	$(MAKE) -C $(MUSL) install
+	$(MAKE) -C $(MUSL) CFLAGS="-Os"
+	$(MAKE) -j1 -C $(MUSL) install
 
 lib/tcc/libtcc.a: FORCE
 	$(MAKE) -C lib/tcc libtcc.a
