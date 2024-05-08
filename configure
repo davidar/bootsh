@@ -2,7 +2,7 @@
 
 set -e
 
-CFLAGS="-nostdinc"
+CFLAGS=""
 LDFLAGS="-static"
 
 if [ -z "$DEBUG" ]; then
@@ -14,6 +14,7 @@ else
 fi
 
 if [ -z "$HOSTCC" ]; then
+    CFLAGS="$CFLAGS -nostdinc"
     HOSTCC="$PWD/sysroot/bin/musl-gcc"
     if [ ! -x "$HOSTCC" ]; then
         echo "Run 'make sysroot' first, or set HOSTCC to the path of musl-gcc"

@@ -17,7 +17,6 @@
 
 *.o
 
-/rootfs/
 /scrap/
 
 /musl-*/
@@ -27,3 +26,4 @@
 /config.mak
 
 /bootsh
+/bootsh.*

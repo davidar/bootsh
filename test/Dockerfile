@@ -1,7 +1,7 @@
 FROM scratch AS base
 
-ARG ROOTFS
-COPY $ROOTFS/bin/sh /bin/sh
+ARG BOOTSH
+COPY $BOOTSH /bin/sh
 
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
@@ -54,18 +54,18 @@ RUN tar -xf bash-5.2.21.tar.gz
 WORKDIR /src/bash-5.2.21
 RUN ./configure --prefix=/ --without-bash-malloc LD=cc && make && make install
 
+
+FROM base AS bootstrap
+
 COPY test/cc-tests /src/cc-tests
 WORKDIR /src/cc-tests
 RUN make
 
-
-FROM base AS bootstrap
-
 COPY src /src/bootsh/src
 COPY lib /src/bootsh/lib
-COPY Makefile toybox.config config.h /src/bootsh/
+COPY configure Makefile toybox.config config.h /src/bootsh/
 WORKDIR /src/bootsh
-RUN make bootstrap
+RUN HOSTCC=cc ./configure && make clean all
 
 COPY test/passwd.txt /etc/passwd
 COPY test/group.txt /etc/group
