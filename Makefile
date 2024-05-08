@@ -1,5 +1,3 @@
-
-
 MUSL = musl-1.2.5
 
 .PHONY: all seed test diff bootstrap
@@ -24,8 +22,11 @@ sysroot: $(MUSL)
 	$(MAKE) -C $(MUSL) CFLAGS="-Os -g"
 	$(MAKE) -C $(MUSL) install
 
-lib/tcc/%: FORCE
-	$(MAKE) -C lib/tcc $*
+lib/tcc/libtcc.a: FORCE
+	$(MAKE) -C lib/tcc libtcc.a
+
+lib/tcc/libtcc1.a: FORCE lib/tcc/libtcc.a
+	$(MAKE) -C lib/tcc libtcc1.a
 
 src/libtcc1a.h: lib/tcc/libtcc1.a
 	echo "#define LIBTCC1A_LEN $$(wc -c < $<)" > $@
