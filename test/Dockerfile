@@ -221,8 +221,7 @@ RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" "$R"/src/config
 
 FROM scratch AS sabotage-stage1
 
-COPY rootfs/sabotage-stage0 /
-# COPY rootfs/seed/bin/sh /bin/bootsh
+COPY test/sabotage-stage0 /
 
 RUN strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so && \
     ranlib /opt/stage0-musl/lib/*.a

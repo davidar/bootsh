@@ -13,9 +13,9 @@ bootgcc:
 sabotage-stage0:
 	docker build .. -f Dockerfile -t sabotage-stage0 --progress=plain --build-arg BOOTSH=bootsh --target sabotage-stage0
 	# docker run --rm -it -v $(CURDIR)/sabotage:/src/sabotage sabotage-stage0 /bin/bash
-	rm -rf ../sabotage-stage0
-	mkdir -p ../sabotage-stage0
-	ID=$$(docker create sabotage-stage0) && docker export $$ID | tar -C ../sabotage-stage0 --strip-components=2 -x tmp/sabotage && docker rm $$ID
+	rm -rf sabotage-stage0
+	mkdir -p sabotage-stage0
+	ID=$$(docker create sabotage-stage0) && docker export $$ID | tar -C sabotage-stage0 --strip-components=2 -x tmp/sabotage && docker rm $$ID
 
 sabotage-stage1:
 	docker build .. -f Dockerfile -t sabotage-stage1 --progress=plain --target sabotage-stage1
