@@ -38,14 +38,17 @@ RUN for cmd in `sh -c toybox` cc ar; do \
         chmod +x /bin/$cmd; \
     done
 
-COPY test/sbang.sh /bin/sbang
-COPY test/wak.c /bin/awk
-COPY test/muxzcat.c /bin/xzcat
+# COPY test/sbang.sh /bin/sbang
+# COPY test/wak.c /bin/awk
+# COPY test/muxzcat.c /bin/xzcat
 
 # COPY test/sed.c /bin/sed
 # COPY test/tar.c /bin/tar
 # COPY test/*.flags.h /bin/
 # COPY test/libtoys /lib/libtoys
+
+ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c /src/wak.c
+RUN cc -o /bin/awk /src/wak.c
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
 WORKDIR /src
@@ -85,6 +88,9 @@ RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
 FROM base AS sabotage-stage0
 
 # RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+
+ADD https://raw.githubusercontent.com/pts/muxzcat/v2b/muxzcat.c /src/muxzcat.c
+RUN cc -o /bin/xzcat /src/muxzcat.c
 
 ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
 WORKDIR /src
