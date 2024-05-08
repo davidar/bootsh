@@ -58,4 +58,4 @@ cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/x86_64/memmov
 cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memcpy.o src/string/x86_64/memcpy.s
 cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memset.o src/string/x86_64/memset.s
 
-# ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
+ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`

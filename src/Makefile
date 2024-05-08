@@ -6,7 +6,7 @@ SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	input.c jobs.c mail.c main.c memalloc.c miscbltin.c \
 	mystring.c options.c output.c parser.c redir.c show.c \
 	signames.c trap.c var.c \
-	toybox.c tcc.c
+	toybox.c tcc.c ar.c
 GENSRCS= builtins.c nodes.c syntax.c init.c
 GENHDRS= builtins.h nodes.h syntax.h token.h token_vars.h
 SRCS= ${SHSRCS} ${GENSRCS} ${GENHDRS}

@@ -10,7 +10,7 @@ bootgcc:
 	docker build .. -f Dockerfile -t bootgcc --progress=plain --build-arg BOOTSH=bootsh.2 --target gcc
 	docker run --rm -it bootgcc /bin/bash
 
-sabotage-stage0:
+sabotage-stage0: FORCE
 	docker build .. -f Dockerfile -t sabotage-stage0 --progress=plain --build-arg BOOTSH=bootsh --target sabotage-stage0
 	# docker run --rm -it -v $(CURDIR)/sabotage:/src/sabotage sabotage-stage0 /bin/bash
 	rm -rf sabotage-stage0
@@ -39,3 +39,5 @@ debug:
 		--cap-add sys_ptrace \
 		invisiblethreat/docker-debug:latest
 	# strace -p1 2>&1 | less
+
+FORCE:
