@@ -6,10 +6,14 @@ COPY $BOOTSH /bin/sh
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-COPY lib/musl /src/musl
+COPY musl-1.2.5 /src/musl
 COPY build-musl.sh /src/musl/build.sh
+COPY musl-sources.txt /src/musl/sources.txt
+COPY syscall_arch_x86_64.h /src/musl/arch/x86_64/syscall_arch.h
 WORKDIR /src/musl
-RUN ./build.sh
+RUN rm -rf src/complex src/math/x86_64 crt/x86_64 && \
+    sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s && \
+    ./build.sh
 
 RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkdir /tmp
 

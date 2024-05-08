@@ -7,7 +7,6 @@ all: bootsh
 clean:
 	rm -f bootsh
 	$(MAKE) -C lib/tcc clean
-	$(MAKE) -C lib/musl clean
 	$(MAKE) -C lib/toybox clean
 	$(MAKE) -C src clean
 

@@ -1,9 +1,6 @@
 [submodule "tinycc"]
 	path = lib/tcc
 	url = https://github.com/davidar/tinycc.git
-[submodule "musl"]
-	path = lib/musl
-	url = https://github.com/davidar/musl.git
 [submodule "toybox"]
 	path = lib/toybox
 	url = https://github.com/davidar/toybox.git
