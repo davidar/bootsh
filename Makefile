@@ -35,10 +35,10 @@ src/libtcc1a.h: lib/tcc/libtcc1.a
 lib/toybox/libtoybox.a: FORCE
 	$(MAKE) -C lib/toybox libtoybox.a NOSTRIP=1
 
-src/dash: FORCE lib/tcc/libtcc.a src/libtcc1a.h lib/toybox/libtoybox.a
-	$(MAKE) -C src dash
+src/ash: FORCE lib/tcc/libtcc.a src/libtcc1a.h lib/toybox/libtoybox.a
+	$(MAKE) -C src ash
 
-bootsh: src/dash
+bootsh: src/ash
 	cp -f $< $@
 
 FORCE:

@@ -33,7 +33,9 @@ RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkd
 # WORKDIR /src
 # RUN cc -v && cc -run test.c foo bar baz
 
-RUN for cmd in `sh -c toybox` cc ar; do \
+RUN printf '#!/bin/sh\nexit 0' > /bin/true; chmod +x /bin/true; \
+    printf '#!/bin/sh\nexit 1' > /bin/false; chmod +x /bin/false; \
+    for cmd in `sh -c toybox` cc ar; do \
         printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
         chmod +x /bin/$cmd; \
     done

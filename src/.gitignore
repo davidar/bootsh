@@ -1,6 +1,6 @@
 *.o
 builtins.[ch]
-dash
+ash
 init.c
 mkinit
 mknodes
