@@ -87,50 +87,13 @@ WORKDIR /src/bootsh/lib/toybox
 RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
 
 
-FROM base AS sabotage-stage0
+FROM scratch AS sabotage-stage0
 
-# RUN mv /bin/sed /bin/sed.c && cc -I/lib -o /bin/sed /bin/sed.c
+ARG BOOTSH
+COPY $BOOTSH /bin/sh
 
-ADD https://raw.githubusercontent.com/pts/muxzcat/v2b/muxzcat.c /src/muxzcat.c
-RUN cc -o /bin/xzcat /src/muxzcat.c
-
-ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz /src/gawk-5.3.0.tar.xz
-WORKDIR /src
-RUN tar -xf gawk-5.3.0.tar.xz
-WORKDIR /src/gawk-5.3.0
-RUN ./configure --disable-shared LD=cc && \
-    make && \
-    make install
-
-ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz /src/binutils-2.39.tar.xz
-WORKDIR /src
-RUN tar -xf binutils-2.39.tar.xz
-WORKDIR /src/binutils-2.39
-RUN ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
-    make MAKEINFO=true && \
-    make MAKEINFO=true install
-
-ADD https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz /src/bzip2-1.0.8.tar.gz
-WORKDIR /src
-RUN tar -xf bzip2-1.0.8.tar.gz
-WORKDIR /src/bzip2-1.0.8
-RUN make -j$(nproc) CC=cc AR=/usr/local/bin/ar && make install
-
-ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz /src/kernel-headers-4.19.88-1.tar.gz
-WORKDIR /src
-RUN tar -xf kernel-headers-4.19.88-1.tar.gz
-WORKDIR /src/kernel-headers-4.19.88-1
-RUN make install ARCH=x86_64
-
-# ADD test/busybox /src/busybox
-# WORKDIR /src/busybox
-# RUN make defconfig HOSTCC=cc && \
-#     make -j$(nproc) HOSTCC=cc CC=cc && \
-#     make install HOSTCC=cc CC=cc CONFIG_PREFIX=/opt/busybox
-
-
-## set path to builddir (where you want your chroot).
-ENV SABOTAGE_BUILDDIR="/tmp/sabotage"
+SHELL ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
 
 ## set your arch, or try `uname -m`
 #ENV A=i486
@@ -174,30 +137,29 @@ ENV MAKE_THREADS=16
 # LOGPATH is the directory to place logfiles of builds
 
 # needed to inherit $PWD from toplevel buildscript
-ENV H=/src/sabotage
+# ENV H=/src/sabotage
 
-ENV K=$H/KEEP
-ENV C=$H/tarballs
-ENV R=$SABOTAGE_BUILDDIR
-ENV S=$R/src
+# ENV K=$H/KEEP
+# ENV C=$H/tarballs
+ENV R=/
+ENV S=/src
 ENV LOGPATH=$S/logs
 
-ENV BUTCH_BUILD_TEMPLATE=$K/butch_build_template.txt
-ENV BUTCH_DOWNLOAD_TEMPLATE=$K/butch_download_template.txt
+# ENV BUTCH_BUILD_TEMPLATE=$K/butch_build_template.txt
+# ENV BUTCH_DOWNLOAD_TEMPLATE=$K/butch_download_template.txt
 
 # this is needed so packages can detect from which stage they're called
 ENV STAGE=0
 
 
-ADD test/sabotage $H
+# ADD test/sabotage $H
 
 # use: setup-rootfs.sh [no args, uses $H/config]
 # used for cross-compilation
 # this prepares a chroot-like directory containing the root file system
 
-RUN mkdir -p "$K" "$C" "$S" "$R" "$LOGPATH"
+RUN mkdir -p $LOGPATH
 
-WORKDIR $R
 RUN mkdir -p \
         boot bin dev etc home lib mnt proc root share srv src sys tmp var \
         src/logs src/build src/tarballs src/pkg src/KEEP \
@@ -209,28 +171,78 @@ RUN ln -sfn . usr && ln -sfn bin sbin && ln -sfn ../tmp var/tmp
 
 RUN chmod 775 src/build && chmod 1777 tmp && chmod 700 root
 
-RUN cp -r "$K"/etc/* "$R"/etc/ && cp -r "$K"/boot/* "$R"/boot/ && chmod 0600 "$R"/etc/shadow
+
+RUN mkdir -p /usr/local/bin; \
+    printf '#!/bin/sh\nexit 0' > /usr/local/bin/true; chmod +x /usr/local/bin/true; \
+    printf '#!/bin/sh\nexit 1' > /usr/local/bin/false; chmod +x /usr/local/bin/false; \
+    for cmd in `sh -c toybox` cc ar; do \
+        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
+        chmod +x /usr/local/bin/$cmd; \
+    done
+
+WORKDIR /tmp
+
+ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz musl-1.2.5.tar.gz
+RUN tar -xf musl-1.2.5.tar.gz
+COPY build-musl.sh /tmp/musl-1.2.5/build.sh
+COPY musl-sources.txt /tmp/musl-1.2.5/sources.txt
+COPY syscall_arch_x86_64.h /tmp/musl-1.2.5/arch/x86_64/syscall_arch.h
+RUN cd musl-1.2.5 && \
+    rm -rf src/complex src/math/x86_64 crt/x86_64 && \
+    sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s && \
+    PREFIX=/usr/local ./build.sh
+
+RUN ls -lh / && ln -s /usr/local/lib/crt*.o /lib/
+
+ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c wak.c
+RUN cc -v && cc -o /usr/local/bin/awk wak.c
+
+ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz make-4.4.tar.gz
+RUN tar -xf make-4.4.tar.gz && cd make-4.4 && \
+    ./configure --disable-dependency-tracking LD=cc && ./build.sh && ./make && ./make install
+
+ADD https://raw.githubusercontent.com/pts/muxzcat/v2b/muxzcat.c muxzcat.c
+RUN cc -o /usr/local/bin/xzcat muxzcat.c
+
+ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz gawk-5.3.0.tar.xz
+RUN tar -xf gawk-5.3.0.tar.xz && cd gawk-5.3.0 && ./configure --disable-shared LD=cc && make && make install
+
+ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz binutils-2.39.tar.xz
+RUN tar -xf binutils-2.39.tar.xz && cd binutils-2.39 && \
+    ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
+    make MAKEINFO=true && make MAKEINFO=true install
+
+ADD https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz bzip2-1.0.8.tar.gz
+RUN tar -xf bzip2-1.0.8.tar.gz && cd bzip2-1.0.8 && make -j$(nproc) CC=cc AR=/usr/local/bin/ar && make install
+
+ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz kernel-headers-4.19.88-1.tar.gz
+RUN tar -xf kernel-headers-4.19.88-1.tar.gz && cd kernel-headers-4.19.88-1 && make install ARCH=x86_64
 
 
-RUN ln -s /proc/mounts "$R"/etc/mtab
+COPY test/sabotage/KEEP/etc/ /etc/
+COPY test/sabotage/KEEP/boot/ /boot/
+COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md test/sabotage/build-stage0 test/sabotage/enter-chroot /src/
+COPY test/sabotage/KEEP /src/KEEP
+COPY test/sabotage/pkg /src/pkg
+COPY test/sabotage/utils /src/utils
 
+RUN chmod 0600 /etc/shadow && ln -s /proc/mounts /etc/mtab
 
-# use: update-chroot.sh [no args, uses $H/config]
-# updates the chroot /src with the contents of the current sabotage checkout
+COPY test/config.sabotage /tmp/config
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config
 
-RUN cp "$H"/COOKBOOK.md "$H"/LICENSE "$H"/README.md "$R"/src/ && \
-    cp "$H"/build-stage0 "$H"/enter-chroot "$R"/src/ && \
-    cp -r "$H"/KEEP "$H"/pkg "$H"/utils "$R"/src/
+RUN rm /usr/local/bin/awk && ln -s /usr/local/bin/gawk /usr/local/bin/awk
 
+COPY test/sabotage/tarballs /src/tarballs
 
-ENV CONFIG=$H/config
-ENV BUTCHDB=$R/var/lib/butch.db
-ENV DEPS=build:stage0
-RUN "$K"/bin/butch install stage0
+WORKDIR /src
+RUN CONFIG=/tmp/config BUTCHDB=/var/lib/butch.db DEPS=build:stage0 /src/KEEP/bin/butch install busybox
+COPY $BOOTSH /bin/sh
+RUN CONFIG=/tmp/config BUTCHDB=/var/lib/butch.db DEPS=build:stage0 /src/KEEP/bin/butch install stage0
 
-RUN echo "export A=$A" > "$R"/src/config
-RUN cat "$K"/config.stage1 >> "$R"/src/config
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" "$R"/src/config
+RUN echo "export A=$A" > /src/config
+RUN cat /src/KEEP/config.stage1 >> /src/config
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /src/config
 
 
 FROM scratch AS sabotage-stage1

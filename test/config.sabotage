@@ -1,0 +1,58 @@
+## set path to builddir (where you want your chroot).
+export SABOTAGE_BUILDDIR=/
+
+## set your arch, or try `uname -m`
+#export A=i486
+export A=x86_64
+#export A=mips
+#export A=powerpc
+#export A=arm
+# arch specific flags to pass to the gcc build
+# your crosscompiler should be configured equivalently
+# if not provided, will be derived from the compiler config
+#export GCC_ARCH_CONFIG_FLAGS="--with-float=soft --with-fpu=vfp"
+
+export ARCH=$A
+
+## set the compiler environment
+export CC=cc
+export HOSTCC=cc
+
+## set your core count for faster builds, this is passed as -jXXX to make
+## stage0 builds in less than 2minutes using -j9 on an AMD 8core
+export MAKE_THREADS=1
+
+# SCP_MIRRORS is a newline-separated list where the default download template
+# tries to download source tarballs from if set (before doing regular download).
+# first %s passed is the tarball filename, second %s the local destination.
+# it's very flexible, you can even call a custom script that does the download
+# in a different way. if using scp, the used host key must allow login without
+# interactive password.
+# note that during stage1/2 no scp command will be available.
+#export SCP_MIRRORS='
+#scp -i ~/.ssh/host1_key user@host1:/src/tarballs/%s %s
+#scp -P 2222 -i ~/.ssh/host2_key user@host2:/src/tarballs/%s %s
+#'
+
+# internal paths
+# you should leave these all as-is, this is the intended way.
+# K is the directory where patches and configs are kept
+# C is the directory to place the downloaded tarballs
+# S is the directory to extract tarballs and place sources for building stage0
+# R is the directory underwhich the new filesystem will be created
+# LOGPATH is the directory to place logfiles of builds
+
+# needed to inherit $PWD from toplevel buildscript
+[ -z "$H" ] && H="$PWD"
+
+export K="$H"/KEEP
+export C="$H"/tarballs
+export R="$SABOTAGE_BUILDDIR"
+export S="$R"/src
+export LOGPATH="$S"/logs
+
+export BUTCH_BUILD_TEMPLATE="$K"/butch_build_template.txt
+export BUTCH_DOWNLOAD_TEMPLATE="$K"/butch_download_template.txt
+
+# this is needed so packages can detect from which stage they're called
+export STAGE=0
