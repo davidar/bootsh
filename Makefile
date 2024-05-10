@@ -1,6 +1,6 @@
 MUSL = musl-1.2.5
 
-.PHONY: all
+.PHONY: all clean test test-cc test-toybox
 
 all: bootsh
 
@@ -40,5 +40,13 @@ src/ash: FORCE lib/tcc/libtcc.a src/libtcc1a.h lib/toybox/libtoybox.a
 
 bootsh: src/ash
 	cp -f $< $@
+
+test: test-cc test-toybox
+
+test-cc:
+	$(MAKE) -C test/cc-tests
+
+test-toybox:
+	cd lib/toybox && TEST_HOST=1 VERBOSE=all scripts/test.sh
 
 FORCE:

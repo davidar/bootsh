@@ -4,6 +4,7 @@ set -e
 
 ln -s / /usr
 mkdir -p /local/bin /tmp
+chmod 1777 /tmp
 
 printf '#!/bin/sh\nexit 0' > /bin/true
 printf '#!/bin/sh\nexit 1' > /bin/false

@@ -15,23 +15,19 @@ RUN make -j$(nproc) bash
 
 FROM base AS bootstrap
 
-COPY test/cc-tests /src/cc-tests
-WORKDIR /src/cc-tests
-RUN make
-
-COPY src /src/bootsh/src
-COPY lib /src/bootsh/lib
-COPY configure Makefile toybox.config config.h /src/bootsh/
 WORKDIR /src/bootsh
+COPY src src
+COPY lib lib
+COPY configure Makefile toybox.config config.h ./
 RUN HOSTCC=cc ./configure && make clean all
 
 COPY test/passwd.txt /etc/passwd
 COPY test/group.txt /etc/group
-RUN chmod 777 /tmp && chown -R user:user /src/bootsh/lib/toybox
+RUN chown -R user:user lib/toybox
 USER user
 ENV USER=user
-WORKDIR /src/bootsh/lib/toybox
-RUN TEST_HOST=1 VERBOSE=all scripts/test.sh
+COPY --chown=user:user test/cc-tests test/cc-tests
+RUN make test
 
 
 FROM scratch AS sabotage-stage0
