@@ -8,8 +8,8 @@ binutils: binutils-2.39
 	cd $< && ./configure --disable-gprofng CFLAGS=-D__LITTLE_ENDIAN__=1 && \
 		$(MAKE) MAKEINFO=true && $(MAKE) MAKEINFO=true install
 
-bzip2: bzip2-1.0.8 binutils
-	cd $< && $(MAKE) CC=cc AR=/usr/local/bin/ar && $(MAKE) install
+bzip2: bzip2-1.0.8
+	cd $< && $(MAKE) CC=cc && $(MAKE) install
 
 linux-headers: linux-headers-4.19.88-2
 	cd $< && $(MAKE) install ARCH=$(shell uname -m)

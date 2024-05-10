@@ -605,7 +605,9 @@ int ar_main(int argc, char *argv[]) {
   SortChars(flags, strlen(flags));
   if (*flags == 'D')
     ++flags;
-  if (!IsEqual(flags, "cr") &&    //
+  if (IsEqual(flags, "cq")) {
+    fprintf(stderr, "ar: ignoring quick append, assuming rcsD\n");
+  } else if (!IsEqual(flags, "cr") &&    //
       !IsEqual(flags, "cru") &&   //
       !IsEqual(flags, "crsu") &&  //
       !IsEqual(flags, "crs")) {
