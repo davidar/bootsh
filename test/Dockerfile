@@ -11,11 +11,8 @@ WORKDIR /src
 RUN tar -xf musl-1.2.5.tar.gz
 WORKDIR /src/musl-1.2.5
 COPY build-musl.sh build.sh
-COPY musl-sources.txt sources.txt
 COPY syscall_arch_x86_64.h arch/x86_64/syscall_arch.h
-RUN rm -rf src/complex src/math/x86_64 crt/x86_64 && \
-    sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s && \
-    ./build.sh
+RUN ./build.sh
 
 RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkdir /tmp
 
@@ -108,12 +105,8 @@ WORKDIR /tmp
 ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz musl-1.2.5.tar.gz
 RUN tar -xf musl-1.2.5.tar.gz
 COPY build-musl.sh /tmp/musl-1.2.5/build.sh
-COPY musl-sources.txt /tmp/musl-1.2.5/sources.txt
 COPY syscall_arch_x86_64.h /tmp/musl-1.2.5/arch/x86_64/syscall_arch.h
-RUN cd musl-1.2.5 && \
-    rm -rf src/complex src/math/x86_64 crt/x86_64 && \
-    sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s && \
-    ./build.sh
+RUN cd musl-1.2.5 && ./build.sh
 
 ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c wak.c
 RUN cc -o /usr/local/bin/awk wak.c

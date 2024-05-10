@@ -4,6 +4,9 @@ set -e
 
 CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -fno-strict-aliasing -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include  -O2 -fno-align-jumps -fno-align-functions -fno-align-loops -fno-align-labels -fira-region=one -fira-hoist-pressure -freorder-blocks-algorithm=simple -fno-prefetch-loop-arrays -fno-tree-ch -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wno-pointer-to-int-cast -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -Werror=int-conversion -Werror=incompatible-pointer-types -Werror=discarded-qualifiers -Werror=discarded-array-qualifiers -Waddress -Warray-bounds -Wchar-subscripts -Wduplicate-decl-specifier -Winit-self -Wreturn-type -Wsequence-point -Wstrict-aliasing -Wunused-function -Wunused-label -Wunused-variable"
 
+rm -rf src/complex src/math/x86_64 crt/x86_64
+sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
+
 mkdir -p obj/include/bits
 sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
 cp arch/x86_64/bits/syscall.h.in obj/include/bits/syscall.h
@@ -22,7 +25,32 @@ cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crt1.o crt/crt1.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crti.o crt/crti.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crtn.o crt/crtn.c
 
-for src in `cat sources.txt`; do
+ls src/*/*.c src/malloc/mallocng/*.c | sort > sources.txt
+
+SOURCES=$(comm -23 sources.txt - <<EOF
+src/env/__init_tls.c
+src/env/__libc_start_main.c
+src/env/__stack_chk_fail.c
+src/fenv/fenv.c
+src/ldso/dlsym.c
+src/ldso/tlsdesc.c
+src/process/vfork.c
+src/setjmp/longjmp.c
+src/setjmp/setjmp.c
+src/signal/restore.c
+src/signal/sigsetjmp.c
+src/string/memcmp.c
+src/string/memcpy.c
+src/string/memmove.c
+src/string/memset.c
+src/thread/__set_thread_area.c
+src/thread/__unmapself.c
+src/thread/clone.c
+src/thread/syscall_cp.c
+EOF
+)
+
+for src in $SOURCES; do
     obj=obj/${src%.c}.o
     mkdir -p $(dirname $obj)
     cc $CFLAGS -c -o $obj $src
