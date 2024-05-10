@@ -1,0 +1,27 @@
+FROM scratch
+
+ARG BOOTSH
+COPY $BOOTSH /bin/sh
+
+SHELL ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
+
+COPY test/build /build
+COPY test/tarballs /build
+WORKDIR /build
+RUN ./bootstrap.sh
+RUN make -j$(nproc) bash
+
+WORKDIR /build/bootsh
+COPY src src
+COPY lib lib
+COPY configure Makefile toybox.config config.h ./
+RUN HOSTCC=cc ./configure && make clean all
+
+COPY test/passwd.txt /etc/passwd
+COPY test/group.txt /etc/group
+RUN chown -R user:user lib/toybox
+USER user
+ENV USER=user
+COPY --chown=user:user test/cc-tests test/cc-tests
+RUN make test
