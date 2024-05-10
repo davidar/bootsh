@@ -595,6 +595,7 @@ int ar_main(int argc, char *argv[]) {
     exit(1);
   }
   char *flags = argv[1];
+  if (*flags == '-') flags++;
   const char *outpath = argv[2];
 
   // we only support one mode of operation, which is creating a new

@@ -100,37 +100,25 @@ RUN ln -s / /usr && mkdir -p /local/bin /tmp && \
         chmod +x /bin/$cmd; \
     done
 
-WORKDIR /tmp
+COPY test/tarballs /build
+WORKDIR /build
 
-ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz musl-1.2.5.tar.gz
 RUN tar -xf musl-1.2.5.tar.gz
-COPY build-musl.sh /tmp/musl-1.2.5/build.sh
-COPY syscall_arch_x86_64.h /tmp/musl-1.2.5/arch/x86_64/syscall_arch.h
+COPY build-musl.sh /build/musl-1.2.5/build.sh
+COPY syscall_arch_x86_64.h /build/musl-1.2.5/arch/x86_64/syscall_arch.h
 RUN cd musl-1.2.5 && ./build.sh
 
 ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c wak.c
 RUN cc -o /usr/local/bin/awk wak.c
 
-ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz make-4.4.tar.gz
-RUN tar -xf make-4.4.tar.gz && cd make-4.4 && \
-    ./configure --disable-dependency-tracking LD=cc && ./build.sh && ./make && ./make install
-
 ADD https://raw.githubusercontent.com/pts/muxzcat/v2b/muxzcat.c muxzcat.c
 RUN cc -o /usr/local/bin/xzcat muxzcat.c
 
-ADD https://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz gawk-5.3.0.tar.xz
-RUN tar -xf gawk-5.3.0.tar.xz && cd gawk-5.3.0 && ./configure --disable-shared LD=cc && make && make install
+RUN tar -xf make-4.4.1.tar.gz && cd make-4.4.1 && \
+    ./configure --disable-dependency-tracking LD=cc && ./build.sh && ./make && ./make install
 
-ADD https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz binutils-2.39.tar.xz
-RUN tar -xf binutils-2.39.tar.xz && cd binutils-2.39 && \
-    ./configure --disable-gprofng CFLAGS='-O2 -D__LITTLE_ENDIAN__=1' && \
-    make MAKEINFO=true && make MAKEINFO=true install
-
-ADD https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz bzip2-1.0.8.tar.gz
-RUN tar -xf bzip2-1.0.8.tar.gz && cd bzip2-1.0.8 && make -j$(nproc) CC=cc AR=/usr/local/bin/ar && make install
-
-ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-1.tar.gz kernel-headers-4.19.88-1.tar.gz
-RUN tar -xf kernel-headers-4.19.88-1.tar.gz && cd kernel-headers-4.19.88-1 && make install ARCH=x86_64
+COPY test/Makefile.support /build/Makefile
+RUN make -j$(nproc) gawk binutils bzip2 linux-headers
 
 
 RUN mkdir /sabotage && cd /sabotage && mkdir -p \
