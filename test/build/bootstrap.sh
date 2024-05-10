@@ -2,10 +2,24 @@
 
 set -e
 
+ln -s / /usr
+mkdir -p /local/bin /tmp
+
+printf '#!/bin/sh\nexit 0' > /bin/true
+printf '#!/bin/sh\nexit 1' > /bin/false
+for cmd in `sh -c toybox` cc ar; do
+    printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd;
+done
+chmod +x /bin/*
+
+tar -xf musl-1.2.5.tar.gz
+cd musl-1.2.5
+
 CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -fno-strict-aliasing -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include  -O2 -fno-align-jumps -fno-align-functions -fno-align-loops -fno-align-labels -fira-region=one -fira-hoist-pressure -freorder-blocks-algorithm=simple -fno-prefetch-loop-arrays -fno-tree-ch -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wno-pointer-to-int-cast -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -Werror=int-conversion -Werror=incompatible-pointer-types -Werror=discarded-qualifiers -Werror=discarded-array-qualifiers -Waddress -Warray-bounds -Wchar-subscripts -Wduplicate-decl-specifier -Winit-self -Wreturn-type -Wsequence-point -Wstrict-aliasing -Wunused-function -Wunused-label -Wunused-variable"
 
 rm -rf src/complex src/math/x86_64 crt/x86_64
 sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
+cp -f ../syscall_arch_x86_64.h arch/x86_64/syscall_arch.h
 
 mkdir -p obj/include/bits
 sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
@@ -87,3 +101,14 @@ cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src
 cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memset.o src/string/x86_64/memset.s
 
 ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
+
+cd ..
+
+cc -o /usr/local/bin/awk wak.c
+cc -o /usr/local/bin/xzcat muxzcat.c
+
+tar -xf make-4.4.1.tar.gz
+cd make-4.4.1
+./configure --disable-dependency-tracking LD=cc
+./build.sh && ./make && ./make install
+cd ..

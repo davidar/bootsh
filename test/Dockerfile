@@ -6,61 +6,11 @@ COPY $BOOTSH /bin/sh
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-ADD https://musl.libc.org/releases/musl-1.2.5.tar.gz /src/musl-1.2.5.tar.gz
-WORKDIR /src
-RUN tar -xf musl-1.2.5.tar.gz
-WORKDIR /src/musl-1.2.5
-COPY build-musl.sh build.sh
-COPY syscall_arch_x86_64.h arch/x86_64/syscall_arch.h
-RUN ./build.sh
-
-RUN ln -s / /usr && ln -s /lib /lib/x86_64-linux-gnu && ln -s /lib /lib64 && mkdir /tmp
-
-# COPY test/ar.c /src/ar.c
-# COPY test/cosmopolitan /src/cosmopolitan
-
-# RUN LIBC=$(find /src/musl/obj/src -name \*.o) && \
-#     cc -I/src/cosmopolitan -c /src/ar.c -o /tmp/ar.o && \
-#     cc -o /tmp/ar -nostdinc -nostdlib /lib/crt1.o /lib/crti.o /tmp/ar.o $LIBC /lib/crtn.o && \
-#     /tmp/ar rcs /lib/libc.a $LIBC && \
-#     rm /tmp/ar /tmp/ar.o && \
-#     cp /src/ar.c /bin/ar
-
-# COPY test/test.c /src/test.c
-# WORKDIR /src
-# RUN cc -v && cc -run test.c foo bar baz
-
-RUN printf '#!/bin/sh\nexit 0' > /bin/true; chmod +x /bin/true; \
-    printf '#!/bin/sh\nexit 1' > /bin/false; chmod +x /bin/false; \
-    for cmd in `sh -c toybox` cc ar; do \
-        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
-        chmod +x /bin/$cmd; \
-    done
-
-# COPY test/sbang.sh /bin/sbang
-# COPY test/wak.c /bin/awk
-# COPY test/muxzcat.c /bin/xzcat
-
-# COPY test/sed.c /bin/sed
-# COPY test/tar.c /bin/tar
-# COPY test/*.flags.h /bin/
-# COPY test/libtoys /lib/libtoys
-
-ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c /src/wak.c
-RUN cc -o /bin/awk /src/wak.c
-
-ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz /src/make-4.4.tar.gz
-WORKDIR /src
-RUN tar -xf make-4.4.tar.gz
-WORKDIR /src/make-4.4
-RUN ./configure --disable-dependency-tracking LD=cc && \
-    ./build.sh && ./make && ./make install
-
-ADD https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz /src/bash-5.2.21.tar.gz
-WORKDIR /src
-RUN tar -xf bash-5.2.21.tar.gz
-WORKDIR /src/bash-5.2.21
-RUN ./configure --prefix=/ --without-bash-malloc LD=cc && make && make install
+COPY test/build /build
+COPY test/tarballs /build
+WORKDIR /build
+RUN ./bootstrap.sh
+RUN make -j$(nproc) bash
 
 
 FROM base AS bootstrap
@@ -92,32 +42,10 @@ COPY $BOOTSH /bin/sh
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-RUN ln -s / /usr && mkdir -p /local/bin /tmp && \
-    printf '#!/bin/sh\nexit 0' > /bin/true && chmod +x /bin/true && \
-    printf '#!/bin/sh\nexit 1' > /bin/false && chmod +x /bin/false && \
-    for cmd in `sh -c toybox` cc ar; do \
-        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
-        chmod +x /bin/$cmd; \
-    done
-
+COPY test/build /build
 COPY test/tarballs /build
 WORKDIR /build
-
-RUN tar -xf musl-1.2.5.tar.gz
-COPY build-musl.sh /build/musl-1.2.5/build.sh
-COPY syscall_arch_x86_64.h /build/musl-1.2.5/arch/x86_64/syscall_arch.h
-RUN cd musl-1.2.5 && ./build.sh
-
-ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c wak.c
-RUN cc -o /usr/local/bin/awk wak.c
-
-ADD https://raw.githubusercontent.com/pts/muxzcat/v2b/muxzcat.c muxzcat.c
-RUN cc -o /usr/local/bin/xzcat muxzcat.c
-
-RUN tar -xf make-4.4.1.tar.gz && cd make-4.4.1 && \
-    ./configure --disable-dependency-tracking LD=cc && ./build.sh && ./make && ./make install
-
-COPY test/Makefile.support /build/Makefile
+RUN ./bootstrap.sh
 RUN make -j$(nproc) gawk binutils bzip2 linux-headers
 
 
