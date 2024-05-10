@@ -95,89 +95,12 @@ COPY $BOOTSH /bin/sh
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
-## set your arch, or try `uname -m`
-#ENV A=i486
-ENV A=x86_64
-#ENV A=mips
-#ENV A=powerpc
-#ENV A=arm
-# arch specific flags to pass to the gcc build
-# your crosscompiler should be configured equivalently
-# if not provided, will be derived from the compiler config
-#ENV GCC_ARCH_CONFIG_FLAGS="--with-float=soft --with-fpu=vfp"
-
-ENV ARCH=$A
-
-## set the compiler environment
-ENV CC=cc
-ENV HOSTCC=cc
-
-## set your core count for faster builds, this is passed as -jXXX to make
-## stage0 builds in less than 2minutes using -j9 on an AMD 8core
-ENV MAKE_THREADS=16
-
-# SCP_MIRRORS is a newline-separated list where the default download template
-# tries to download source tarballs from if set (before doing regular download).
-# first %s passed is the tarball filename, second %s the local destination.
-# it's very flexible, you can even call a custom script that does the download
-# in a different way. if using scp, the used host key must allow login without
-# interactive password.
-# note that during stage1/2 no scp command will be available.
-#ENV SCP_MIRRORS='
-#scp -i ~/.ssh/host1_key user@host1:/src/tarballs/%s %s
-#scp -P 2222 -i ~/.ssh/host2_key user@host2:/src/tarballs/%s %s
-#'
-
-# internal paths
-# you should leave these all as-is, this is the intended way.
-# K is the directory where patches and configs are kept
-# C is the directory to place the downloaded tarballs
-# S is the directory to extract tarballs and place sources for building stage0
-# R is the directory underwhich the new filesystem will be created
-# LOGPATH is the directory to place logfiles of builds
-
-# needed to inherit $PWD from toplevel buildscript
-# ENV H=/src/sabotage
-
-# ENV K=$H/KEEP
-# ENV C=$H/tarballs
-ENV R=/
-ENV S=/src
-ENV LOGPATH=$S/logs
-
-# ENV BUTCH_BUILD_TEMPLATE=$K/butch_build_template.txt
-# ENV BUTCH_DOWNLOAD_TEMPLATE=$K/butch_download_template.txt
-
-# this is needed so packages can detect from which stage they're called
-ENV STAGE=0
-
-
-# ADD test/sabotage $H
-
-# use: setup-rootfs.sh [no args, uses $H/config]
-# used for cross-compilation
-# this prepares a chroot-like directory containing the root file system
-
-RUN mkdir -p $LOGPATH
-
-RUN mkdir -p \
-        boot bin dev etc home lib mnt proc root share srv src sys tmp var \
-        src/logs src/build src/tarballs src/pkg src/KEEP \
-        var/log/sshd var/log/crond var/log/dmesg \
-        var/empty var/service var/lib var/run var/spool/cron/crontabs
-
-# usr and sbin are a mistake
-RUN ln -sfn . usr && ln -sfn bin sbin && ln -sfn ../tmp var/tmp
-
-RUN chmod 775 src/build && chmod 1777 tmp && chmod 700 root
-
-
-RUN mkdir -p /usr/local/bin; \
-    printf '#!/bin/sh\nexit 0' > /usr/local/bin/true; chmod +x /usr/local/bin/true; \
-    printf '#!/bin/sh\nexit 1' > /usr/local/bin/false; chmod +x /usr/local/bin/false; \
+RUN ln -s / /usr && mkdir -p /local/bin /tmp && \
+    printf '#!/bin/sh\nexit 0' > /bin/true && chmod +x /bin/true && \
+    printf '#!/bin/sh\nexit 1' > /bin/false && chmod +x /bin/false && \
     for cmd in `sh -c toybox` cc ar; do \
-        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /usr/local/bin/$cmd; \
-        chmod +x /usr/local/bin/$cmd; \
+        printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd; \
+        chmod +x /bin/$cmd; \
     done
 
 WORKDIR /tmp
@@ -190,12 +113,10 @@ COPY syscall_arch_x86_64.h /tmp/musl-1.2.5/arch/x86_64/syscall_arch.h
 RUN cd musl-1.2.5 && \
     rm -rf src/complex src/math/x86_64 crt/x86_64 && \
     sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s && \
-    PREFIX=/usr/local ./build.sh
-
-RUN ls -lh / && ln -s /usr/local/lib/crt*.o /lib/
+    ./build.sh
 
 ADD https://raw.githubusercontent.com/raygard/wak/4e0c0a03c11070b60bf943d184ad6b496b91e277/monosrc/mono.c wak.c
-RUN cc -v && cc -o /usr/local/bin/awk wak.c
+RUN cc -o /usr/local/bin/awk wak.c
 
 ADD https://ftp.gnu.org/gnu/make/make-4.4.tar.gz make-4.4.tar.gz
 RUN tar -xf make-4.4.tar.gz && cd make-4.4 && \
@@ -219,30 +140,36 @@ ADD https://github.com/sabotage-linux/kernel-headers/archive/refs/tags/v4.19.88-
 RUN tar -xf kernel-headers-4.19.88-1.tar.gz && cd kernel-headers-4.19.88-1 && make install ARCH=x86_64
 
 
-COPY test/sabotage/KEEP/etc/ /etc/
-COPY test/sabotage/KEEP/boot/ /boot/
-COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md test/sabotage/build-stage0 test/sabotage/enter-chroot /src/
-COPY test/sabotage/KEEP /src/KEEP
-COPY test/sabotage/pkg /src/pkg
-COPY test/sabotage/utils /src/utils
+RUN mkdir /sabotage && cd /sabotage && mkdir -p \
+        boot bin dev etc home lib mnt proc root share srv src sys tmp var \
+        src/logs src/build src/tarballs src/pkg src/KEEP \
+        var/log/sshd var/log/crond var/log/dmesg \
+        var/empty var/service var/lib var/run var/spool/cron/crontabs && \
+    ln -sfn . usr && ln -sfn bin sbin && ln -sfn ../tmp var/tmp && \
+    chmod 775 src/build && chmod 1777 tmp && chmod 700 root
 
-RUN chmod 0600 /etc/shadow && ln -s /proc/mounts /etc/mtab
+COPY test/sabotage/KEEP/etc/ /sabotage/etc/
+COPY test/sabotage/KEEP/boot/ /sabotage/boot/
+COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md test/sabotage/build-stage0 test/sabotage/enter-chroot /sabotage/src/
+COPY test/sabotage/KEEP /sabotage/src/KEEP
+COPY test/sabotage/pkg /sabotage/src/pkg
+COPY test/sabotage/utils /sabotage/src/utils
+
+RUN chmod 0600 /sabotage/etc/shadow && ln -s /proc/mounts /sabotage/etc/mtab
 
 COPY test/config.sabotage /tmp/config
 RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config
 
 RUN rm /usr/local/bin/awk && ln -s /usr/local/bin/gawk /usr/local/bin/awk
 
-COPY test/sabotage/tarballs /src/tarballs
+COPY test/sabotage/tarballs /sabotage/src/tarballs
 
-WORKDIR /src
-RUN CONFIG=/tmp/config BUTCHDB=/var/lib/butch.db DEPS=build:stage0 /src/KEEP/bin/butch install busybox
-COPY $BOOTSH /bin/sh
-RUN CONFIG=/tmp/config BUTCHDB=/var/lib/butch.db DEPS=build:stage0 /src/KEEP/bin/butch install stage0
+WORKDIR /sabotage/src
+RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 /sabotage/src/KEEP/bin/butch install stage0
 
-RUN echo "export A=$A" > /src/config
-RUN cat /src/KEEP/config.stage1 >> /src/config
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /src/config
+RUN echo "export A=$(uname -m)" > /sabotage/src/config
+RUN cat /sabotage/src/KEEP/config.stage1 >> /sabotage/src/config
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /sabotage/src/config
 
 
 FROM scratch AS sabotage-stage1

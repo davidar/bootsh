@@ -1,5 +1,5 @@
 ## set path to builddir (where you want your chroot).
-export SABOTAGE_BUILDDIR=/
+export SABOTAGE_BUILDDIR=/sabotage
 
 ## set your arch, or try `uname -m`
 #export A=i486
