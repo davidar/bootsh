@@ -10,7 +10,7 @@ COPY test/build /build
 COPY test/tarballs /build
 WORKDIR /build
 RUN ./bootstrap.sh
-RUN make -j$(nproc) bash
+RUN make -s -j$(nproc) bash bzip2
 
 WORKDIR /build/bootsh
 COPY src src

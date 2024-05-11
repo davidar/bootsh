@@ -47,6 +47,6 @@ test-cc:
 	$(MAKE) -C test/cc-tests
 
 test-toybox:
-	cd lib/toybox && TEST_HOST=1 VERBOSE=all scripts/test.sh
+	cd lib/toybox && TEST_HOST=1 scripts/test.sh
 
 FORCE:
