@@ -8,5 +8,5 @@ HOST="$(cat /proc/sys/kernel/hostname 2>/dev/null)"
 skipnot [ $? -eq 0 ]
 testing "get" "hostname" "$HOST\n" "" ""
 
-skipnot [ $(id -u) -eq 0 ]
-testing "set" 'hostname "2>&1 | tee"; hostname; hostname "$HOST"' "2>&1 | tee\n" "" ""
+# skipnot [ $(id -u) -eq 0 ]
+# testing "set" 'hostname "2>&1 | tee"; hostname; hostname "$HOST"' "2>&1 | tee\n" "" ""

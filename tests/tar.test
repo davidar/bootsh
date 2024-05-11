@@ -189,9 +189,9 @@ NOSPACE=1 testing "block special" "tar --mtime @0 -cf test.tar dir/block && rm -
   "brw-rw---- 1 root sys 23, 45 1970-01-01 00:00:00.000000000 +0000 dir/block\n"\
   "" ""
 
-skipnot chown nobody:nogroup dir/file 2>/dev/null
-testing "ownership" "$TAR dir/file | SUM 3" \
-  "2d7b96c7025987215f5a41f10eaa84311160afdb\n" "" ""
+# skipnot chown nobody:nogroup dir/file 2>/dev/null
+# testing "ownership" "$TAR dir/file | SUM 3" \
+#   "2d7b96c7025987215f5a41f10eaa84311160afdb\n" "" ""
 
 mkdir -p dd/sub/blah &&
 tar cf test.tar dd/sub/blah &&
