@@ -1,7 +1,6 @@
-FROM scratch AS stage0
+FROM scratch
 
-ARG BOOTSH
-COPY $BOOTSH /bin/sh
+COPY bootsh /bin/sh
 
 SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
@@ -38,14 +37,19 @@ RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP
 RUN echo "export A=$(uname -m)" > config && cat KEEP/config.stage1 >> config
 RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
 
-
-FROM scratch AS stage1
-
-COPY test/sabotage-stage0 /
+WORKDIR /
+RUN rm -rf build include lib local tmp usr
+RUN cd bin && rm `ls | grep -xv sh`
+RUN mv /sabotage/etc/hosts /etc/hosts.bak
+RUN mv /sabotage/etc/resolv.conf /etc/resolv.conf.bak
+RUN mv /sabotage/etc/* /etc
+RUN rmdir /sabotage/etc /sabotage/dev /sabotage/proc /sabotage/sys
+RUN mv -f /sabotage/* .
+RUN rmdir /sabotage
 
 RUN strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so && \
     ranlib /opt/stage0-musl/lib/*.a
 
-RUN butch install stage1           # Installs core system + build chain
-RUN /src/utils/clean-stage1.sh     # remove unneeded bootstrap packages
-RUN /src/utils/rebuild-stage1.sh   # rebuild core packages with the stage1 gcc
+RUN butch install stage1
+RUN /src/utils/clean-stage1.sh
+RUN /src/utils/rebuild-stage1.sh
