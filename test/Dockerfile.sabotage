@@ -30,14 +30,13 @@ COPY test/config.sabotage /tmp/config
 COPY test/tarballs /sabotage/src/tarballs
 
 RUN chmod 0600 /sabotage/etc/shadow && ln -s /proc/mounts /sabotage/etc/mtab && \
-    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config && \
+    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config && cat /tmp/config && \
     ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 WORKDIR /sabotage/src
-RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0 && \
-    echo "export A=$(uname -m)" > config && \
-    cat /sabotage/src/KEEP/config.stage1 >> config && \
-    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config
+RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0
+RUN echo "export A=$(uname -m)" > config && cat KEEP/config.stage1 >> config
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
 
 
 FROM scratch AS stage1
