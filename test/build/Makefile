@@ -11,7 +11,7 @@ binutils: binutils-2.39
 bzip2: bzip2-1.0.8
 	cd $< && $(MAKE) CC=cc && $(MAKE) install
 
-linux-headers: linux-headers-4.19.88-2
+linux-headers: linux-headers-4.19.88
 	cd $< && $(MAKE) install ARCH=$(shell uname -m)
 
 bash: bash-5.2.21

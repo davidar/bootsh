@@ -12,7 +12,6 @@ WORKDIR /build
 RUN ./bootstrap.sh
 RUN make -j$(nproc) gawk binutils bzip2 linux-headers
 
-
 RUN mkdir /sabotage && cd /sabotage && mkdir -p \
         boot bin dev etc home lib mnt proc root share srv src sys tmp var \
         src/logs src/build src/tarballs src/pkg src/KEEP \
@@ -27,22 +26,18 @@ COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md tes
 COPY test/sabotage/KEEP /sabotage/src/KEEP
 COPY test/sabotage/pkg /sabotage/src/pkg
 COPY test/sabotage/utils /sabotage/src/utils
-
-RUN chmod 0600 /sabotage/etc/shadow && ln -s /proc/mounts /sabotage/etc/mtab
-
 COPY test/config.sabotage /tmp/config
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config
+COPY test/tarballs /sabotage/src/tarballs
 
-RUN rm /usr/local/bin/awk && ln -s /usr/local/bin/gawk /usr/local/bin/awk
-
-COPY test/sabotage/tarballs /sabotage/src/tarballs
+RUN chmod 0600 /sabotage/etc/shadow && ln -s /proc/mounts /sabotage/etc/mtab && \
+    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config && \
+    ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 WORKDIR /sabotage/src
-RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 /sabotage/src/KEEP/bin/butch install stage0
-
-RUN echo "export A=$(uname -m)" > /sabotage/src/config
-RUN cat /sabotage/src/KEEP/config.stage1 >> /sabotage/src/config
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /sabotage/src/config
+RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0 && \
+    echo "export A=$(uname -m)" > config && \
+    cat /sabotage/src/KEEP/config.stage1 >> config && \
+    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config
 
 
 FROM scratch AS stage1
