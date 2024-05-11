@@ -1,15 +1,9 @@
-FROM scratch
+FROM bootsh
 
-COPY bootsh /bin/sh
+COPY test/tarballs ./
 
-SHELL ["/bin/sh", "-c"]
-CMD ["/bin/sh"]
-
-COPY test/build /build
-COPY test/tarballs /build
-WORKDIR /build
 RUN ./bootstrap.sh
-RUN make -j$(nproc) gawk binutils bzip2 linux-headers
+RUN make gawk binutils bzip2 linux-headers
 
 RUN mkdir /sabotage && cd /sabotage && mkdir -p \
         boot bin dev etc home lib mnt proc root share srv src sys tmp var \
@@ -38,7 +32,7 @@ RUN echo "export A=$(uname -m)" > config && cat KEEP/config.stage1 >> config
 RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
 
 WORKDIR /
-RUN rm -rf build include lib local tmp usr
+RUN rm -rf root include lib local tmp usr
 RUN cd bin && rm `ls | grep -xv sh`
 RUN mv /sabotage/etc/hosts /etc/hosts.bak
 RUN mv /sabotage/etc/resolv.conf /etc/resolv.conf.bak

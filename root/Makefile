@@ -1,3 +1,5 @@
+MAKEFLAGS += -j$(shell nproc)
+
 gawk-5.3.0: gawk-5.3.0.tar.xz muxzcat
 	tar -xf $<
 
@@ -12,7 +14,7 @@ binutils: binutils-2.27
 		$(MAKE) MAKEINFO=true && $(MAKE) MAKEINFO=true install
 
 bzip2-1.0.8.tar.gz:
-	echo "Downloading bzip2-1.0.8 source code..."
+	@echo "Downloading bzip2 source code..."
 	wget http://mirrors.kernel.org/sourceware/bzip2/bzip2-1.0.8.tar.gz
 
 bzip2-1.0.8: bzip2-1.0.8.tar.gz
@@ -28,7 +30,7 @@ linux-headers: linux-headers-4.19.88
 	cd $< && $(MAKE) install ARCH=$(shell uname -m)
 
 bash-5.2.21.tar.gz:
-	echo "Downloading bash-5.2.21 source code..."
+	@echo "Downloading bash source code..."
 	wget http://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz
 
 bash-5.2.21: bash-5.2.21.tar.gz
@@ -39,3 +41,6 @@ bash: bash-5.2.21
 
 muxzcat: muxzcat.c
 	cc -o /usr/local/bin/xzcat $<
+
+sh: bootsh bash bzip2
+	cd $< && HOSTCC=cc ./configure && $(MAKE) clean && $(MAKE) && mv -f bootsh /bin/sh

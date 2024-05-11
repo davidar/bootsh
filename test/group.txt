@@ -1,6 +1,0 @@
-root:x:0:
-bin:x:1:daemon
-sys:x:2:
-users:x:100:
-user:x:1000:
-nogroup:x:65534:

@@ -4,8 +4,26 @@ set -e
 
 echo "Setting up root filesystem..."
 ln -s / /usr
-mkdir -p /local/bin /tmp
+mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
+
+cat > /etc/passwd <<EOF
+root:x:0:0:root:/root:/bin/sh
+daemon:x:1:1:daemon:/dev/null:/bin/false
+bin:x:2:2:bin:/bin:/dev/null:/bin/false
+sys:x:3:3:sys:/dev:/dev/null:/bin/false
+user:x:1000:1000:user:/home/user:/bin/sh
+nobody:x:65534:65534:nobody:/nonexistent:/bin/false
+EOF
+
+cat > /etc/group <<EOF
+root:x:0:
+bin:x:1:daemon
+sys:x:2:
+users:x:100:
+user:x:1000:
+nogroup:x:65534:
+EOF
 
 printf '#!/bin/sh\nexit 0' > /bin/true
 printf '#!/bin/sh\nexit 1' > /bin/false

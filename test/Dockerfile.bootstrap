@@ -1,27 +1,19 @@
-FROM scratch
+FROM bootsh
 
-ARG BOOTSH
-COPY $BOOTSH /bin/sh
-
-SHELL ["/bin/sh", "-c"]
-CMD ["/bin/sh"]
-
-COPY test/build /build
-# COPY test/tarballs /build
-WORKDIR /build
 RUN ./bootstrap.sh
-RUN make -s -j$(nproc) bash bzip2
 
-WORKDIR /build/bootsh
-COPY src src
-COPY lib lib
-COPY configure Makefile toybox.config config.h ./
-RUN HOSTCC=cc ./configure && make clean all
+COPY configure Makefile toybox.config config.h bootsh/
+COPY src bootsh/src
+COPY lib bootsh/lib
+COPY test/cc-tests bootsh/test/cc-tests
 
-COPY test/passwd.txt /etc/passwd
-COPY test/group.txt /etc/group
-RUN chown -R user:user lib/toybox
-USER user
-ENV USER=user
-COPY --chown=user:user test/cc-tests test/cc-tests
-RUN make test
+RUN make sh && cp /bin/sh /bin/sh0
+RUN make -C bootsh test-host
+
+RUN make sh && cp /bin/sh /bin/sh1
+RUN make -C bootsh test-host
+
+RUN make sh && cp /bin/sh /bin/sh2
+RUN make -C bootsh test-host
+
+RUN diff -q /bin/sh1 /bin/sh2
