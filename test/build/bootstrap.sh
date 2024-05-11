@@ -2,6 +2,7 @@
 
 set -e
 
+echo "Setting up root filesystem..."
 ln -s / /usr
 mkdir -p /local/bin /tmp
 chmod 1777 /tmp
@@ -13,8 +14,14 @@ for cmd in `sh -c toybox` cc ar; do
 done
 chmod +x /bin/*
 
+if [ ! -f musl-1.2.5.tar.gz ]; then
+    echo "Downloading musl-1.2.5 source code..."
+    wget http://www.musl-libc.org/releases/musl-1.2.5.tar.gz
+fi
 tar -xf musl-1.2.5.tar.gz
 cd musl-1.2.5
+
+echo "Building musl..."
 
 CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -fno-strict-aliasing -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include  -O2 -fno-align-jumps -fno-align-functions -fno-align-loops -fno-align-labels -fira-region=one -fira-hoist-pressure -freorder-blocks-algorithm=simple -fno-prefetch-loop-arrays -fno-tree-ch -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wno-pointer-to-int-cast -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -Werror=int-conversion -Werror=incompatible-pointer-types -Werror=discarded-qualifiers -Werror=discarded-array-qualifiers -Waddress -Warray-bounds -Wchar-subscripts -Wduplicate-decl-specifier -Winit-self -Wreturn-type -Wsequence-point -Wstrict-aliasing -Wunused-function -Wunused-label -Wunused-variable"
 
@@ -106,10 +113,14 @@ ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
 cd ..
 
 cc -o /usr/local/bin/awk wak.c
-cc -o /usr/local/bin/xzcat muxzcat.c
 
+if [ ! -f make-4.4.1.tar.gz ]; then
+    echo "Downloading make-4.4.1 source code..."
+    wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+fi
 tar -xf make-4.4.1.tar.gz
 cd make-4.4.1
-./configure --disable-dependency-tracking LD=cc
-./build.sh && ./make && ./make install
+echo "Building make..."
+./configure --disable-dependency-tracking LD=cc >/dev/null
+./build.sh && ./make -s && ./make -s install
 cd ..

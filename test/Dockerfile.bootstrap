@@ -7,7 +7,7 @@ SHELL ["/bin/sh", "-c"]
 CMD ["/bin/sh"]
 
 COPY test/build /build
-COPY test/tarballs /build
+# COPY test/tarballs /build
 WORKDIR /build
 RUN ./bootstrap.sh
 RUN make -s -j$(nproc) bash bzip2
