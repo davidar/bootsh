@@ -1503,6 +1503,10 @@ static int tcc_set_linker(TCCState *s, const char *option)
             ignoring = 1;
         } else if (link_option(option, "verbose", &p)) {
             ++s->verbose;
+        } else if (link_option(option, "gc-sections", &p)) {
+            ignoring = 1;
+        } else if (link_option(option, "compress-debug-sections=", &p)) {
+            ignoring = 1;
         } else if (p) {
             return 0;
         } else {
