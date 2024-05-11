@@ -7778,6 +7778,17 @@ static void decl_initializer(init_params *p, CType *type, unsigned long c, int f
     Sym indexsym;
     CType *t1;
 
+    /* char var[] = ("string"); */
+    if (tok == '(') {
+        skip('(');
+        if (tok == TOK_STR) {
+            decl_initializer(p, type, c, flags);
+            skip(')');
+            return;
+        }
+        unget_tok('(');
+    }
+
     /* generate line number info */
     if (debug_modes && !(flags & DIF_SIZE_ONLY) && !p->sec)
         tcc_debug_line(tcc_state), tcc_tcov_check_line (tcc_state, 1);
