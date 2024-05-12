@@ -2,7 +2,7 @@ FROM bootsh
 
 COPY test/tarballs ./
 
-RUN ./bootstrap.sh
+RUN ./boot.sh
 RUN make gawk binutils bzip2 linux-headers
 
 RUN mkdir /sabotage && cd /sabotage && mkdir -p \

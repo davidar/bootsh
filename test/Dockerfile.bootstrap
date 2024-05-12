@@ -1,6 +1,6 @@
 FROM bootsh
 
-RUN ./bootstrap.sh
+RUN ./boot.sh
 
 COPY configure Makefile toybox.config config.h bootsh/
 COPY src bootsh/src

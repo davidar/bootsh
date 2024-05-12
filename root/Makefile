@@ -55,3 +55,24 @@ perl-5.38.2: perl-5.38.2.tar.xz
 perl: perl-5.38.2
 	cd $< && ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
 		$(MAKE) && $(MAKE) install
+
+bearssl-0.6.tar.gz:
+	@echo "Downloading bearssl source code..."
+	wget http://tar.sabo.xyz/bearssl/bearssl-0.6.tar.gz
+
+bearssl-0.6: bearssl-0.6.tar.gz
+	tar -xf $<
+
+bearssl: bearssl-0.6
+	cd $< && $(MAKE) && mkdir -p /usr/local/lib /usr/local/include && \
+		cp -f build/libbearssl.a /usr/local/lib/ && cp -f inc/*.h /usr/local/include/
+
+curl-8.0.1.tar.xz:
+	@echo "Downloading curl source code..."
+	wget http://tar.sabo.xyz/curl/curl-8.0.1.tar.xz
+
+curl-8.0.1: curl-8.0.1.tar.xz
+	tar -xf $<
+
+curl: curl-8.0.1 bearssl perl
+	cd $< && ./configure --disable-shared --with-bearssl LD=cc && $(MAKE) && $(MAKE) install
