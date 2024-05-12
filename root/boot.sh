@@ -2,6 +2,14 @@
 
 set -e
 
+echo
+echo "-----------------"
+echo "Executing boot.sh"
+echo "-----------------"
+echo
+
+cd $(dirname $0)
+
 echo "Setting up root filesystem..."
 ln -s / /usr
 mkdir -p /etc /local/bin /tmp
@@ -45,7 +53,102 @@ CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding
 
 rm -rf src/complex src/math/x86_64 crt/x86_64
 sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
-cp -f ../syscall_arch_x86_64.h arch/x86_64/syscall_arch.h
+cat > arch/x86_64/syscall_arch.h <<EOF
+#define __SYSCALL_LL_E(x) (x)
+#define __SYSCALL_LL_O(x) (x)
+
+static __inline long __syscall0(long n);
+asm (
+	".type __syscall0, @function;"
+	"__syscall0:;"
+	"movq %rdi, %rax;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall1(long n, long a1);
+asm (
+	".type __syscall1, @function;"
+	"__syscall1:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall2(long n, long a1, long a2);
+asm (
+	".type __syscall2, @function;"
+	"__syscall2:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"movq %rdx, %rsi;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall3(long n, long a1, long a2, long a3);
+asm (
+	".type __syscall3, @function;"
+	"__syscall3:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"movq %rdx, %rsi;"
+	"movq %rcx, %rdx;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall4(long n, long a1, long a2, long a3, long a4);
+asm (
+	".type __syscall4, @function;"
+	"__syscall4:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"movq %rdx, %rsi;"
+	"movq %rcx, %rdx;"
+	"movq %r8, %r10;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5);
+asm (
+	".type __syscall5, @function;"
+	"__syscall5:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"movq %rdx, %rsi;"
+	"movq %rcx, %rdx;"
+	"movq %r8, %r10;"
+	"movq %r9, %r8;"
+	"syscall;"
+	"ret"
+);
+
+static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+asm (
+	".type __syscall6, @function;"
+	"__syscall6:;"
+	"movq %rdi, %rax;"
+	"movq %rsi, %rdi;"
+	"movq %rdx, %rsi;"
+	"movq %rcx, %rdx;"
+	"movq %r8, %r10;"
+	"movq %r9, %r8;"
+	"movq 8(%rsp), %r9;"
+	"syscall;"
+	"ret"
+);
+
+#define VDSO_USEFUL
+#define VDSO_CGT_SYM "__vdso_clock_gettime"
+#define VDSO_CGT_VER "LINUX_2.6"
+#define VDSO_GETCPU_SYM "__vdso_getcpu"
+#define VDSO_GETCPU_VER "LINUX_2.6"
+
+#define IPC_64 0
+EOF
 
 mkdir -p obj/include/bits
 sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
@@ -139,6 +242,13 @@ fi
 tar -xf make-4.4.1.tar.gz
 cd make-4.4.1
 echo "Building make..."
+(
 ./configure --disable-dependency-tracking LD=cc
 ./build.sh && ./make -s && ./make -s install
+) > make.log 2>&1
 cd ..
+
+if tty -s; then
+    echo "Booting into an interactive shell..."
+    exec /bin/sh
+fi

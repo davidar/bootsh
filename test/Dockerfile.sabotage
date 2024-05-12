@@ -1,7 +1,8 @@
 FROM bootsh
 
-COPY test/tarballs ./
+COPY test/tarballs /root
 
+WORKDIR /root
 RUN ./boot.sh
 RUN make gawk binutils bzip2 linux-headers
 

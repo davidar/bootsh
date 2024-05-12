@@ -36,8 +36,10 @@ bash-5.2.21.tar.gz:
 bash-5.2.21: bash-5.2.21.tar.gz
 	tar -xf $<
 
-bash: bash-5.2.21
+/bin/bash: bash-5.2.21
 	cd $< && ./configure --prefix=/ --without-bash-malloc LD=cc && $(MAKE) && $(MAKE) install
+
+bash: /bin/bash
 
 muxzcat: muxzcat.c
 	cc -o /usr/local/bin/xzcat $<

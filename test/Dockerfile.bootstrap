@@ -1,5 +1,6 @@
 FROM bootsh
 
+WORKDIR /root
 RUN ./boot.sh
 
 COPY configure Makefile toybox.config config.h bootsh/

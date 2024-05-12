@@ -9,6 +9,6 @@ sabotage: FORCE
 
 run:
 	docker build .. -t bootsh
-	docker run --rm -it bootsh /bin/sh
+	docker run --rm -it bootsh
 
 FORCE:
