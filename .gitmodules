@@ -4,6 +4,3 @@
 [submodule "toybox"]
 	path = lib/toybox
 	url = https://github.com/davidar/toybox.git
-[submodule "sabotage"]
-	path = test/sabotage
-	url = https://github.com/davidar/sabotage.git

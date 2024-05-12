@@ -3,12 +3,8 @@ FROM bootsh
 WORKDIR /root
 RUN ./boot.sh
 
-COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md test/sabotage/build-stage0 test/sabotage/enter-chroot /sabotage/src/
-COPY test/sabotage/KEEP /sabotage/src/KEEP
-COPY test/sabotage/pkg /sabotage/src/pkg
-COPY test/sabotage/utils /sabotage/src/utils
+ADD https://github.com/sabotage-linux/sabotage.git /sabotage/src
 
 COPY test/tarballs /sabotage/src/tarballs
-COPY test/tarballs /root
 
 RUN make sabotage

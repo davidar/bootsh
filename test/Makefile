@@ -4,7 +4,7 @@ bootstrap:
 
 sabotage: FORCE
 	docker build .. -t bootsh
-	docker build .. -f Dockerfile.sabotage -t sabotage
+	docker build .. -f Dockerfile.sabotage -t sabotage --progress=plain
 	docker run --rm -it sabotage /bin/sh
 
 run:

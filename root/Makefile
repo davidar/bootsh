@@ -2,12 +2,20 @@ ARCH = $(shell uname -m)
 NPROC = $(shell nproc)
 MAKEFLAGS += -j$(NPROC)
 
+gawk-5.3.0.tar.xz:
+	@echo "Downloading gawk source code..."
+	wget http://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz
+
 gawk-5.3.0: gawk-5.3.0.tar.xz
 	tar -xf $<
 
 gawk: gawk-5.3.0
 	cd $< && ./configure --disable-shared LD=cc && $(MAKE) && $(MAKE) install
 	ln -sf /usr/local/bin/gawk /usr/local/bin/awk
+
+binutils-2.27.tar.bz2:
+	@echo "Downloading binutils source code..."
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
 
 binutils-2.27: binutils-2.27.tar.bz2
 	tar -xf $<
@@ -25,6 +33,10 @@ bzip2-1.0.8: bzip2-1.0.8.tar.gz
 
 bzip2: bzip2-1.0.8
 	cd $< && $(MAKE) CC=cc && $(MAKE) install
+
+linux-headers-4.19.88.tar.xz:
+	@echo "Downloading linux-headers source code..."
+	wget http://ftp.barfooze.de/pub/sabotage/tarballs/linux-headers-4.19.88.tar.xz
 
 linux-headers-4.19.88: linux-headers-4.19.88.tar.xz
 	tar -xf $<
