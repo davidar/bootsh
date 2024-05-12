@@ -1,41 +1,14 @@
 FROM bootsh
 
-COPY test/tarballs /root
-
 WORKDIR /root
 RUN ./boot.sh
-RUN make gawk binutils bzip2 linux-headers
-RUN ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
-COPY test/sabotage/KEEP/etc/ /sabotage/etc/
-COPY test/sabotage/KEEP/boot/ /sabotage/boot/
 COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md test/sabotage/build-stage0 test/sabotage/enter-chroot /sabotage/src/
 COPY test/sabotage/KEEP /sabotage/src/KEEP
 COPY test/sabotage/pkg /sabotage/src/pkg
 COPY test/sabotage/utils /sabotage/src/utils
-COPY test/config.sabotage /sabotage/src/config
+
 COPY test/tarballs /sabotage/src/tarballs
+COPY test/tarballs /root
 
-WORKDIR /sabotage/src
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
-RUN utils/setup-rootfs.sh && ln -s /proc/mounts /sabotage/etc/mtab
-RUN CONFIG=$PWD/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0
-RUN echo "export A=$(uname -m)" > config && cat KEEP/config.stage1 >> config
-RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
-
-WORKDIR /
-RUN rm -rf root include lib local tmp usr
-RUN cd bin && rm `ls | grep -xv sh`
-RUN mv /sabotage/etc/hosts /etc/hosts.bak
-RUN mv /sabotage/etc/resolv.conf /etc/resolv.conf.bak
-RUN mv /sabotage/etc/* /etc
-RUN rmdir /sabotage/etc /sabotage/dev /sabotage/proc /sabotage/sys
-RUN mv -f /sabotage/* .
-RUN rmdir /sabotage
-
-RUN strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so && \
-    ranlib /opt/stage0-musl/lib/*.a
-
-RUN butch install stage1
-RUN /src/utils/clean-stage1.sh
-RUN /src/utils/rebuild-stage1.sh
+RUN make sabotage

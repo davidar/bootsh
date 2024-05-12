@@ -1,10 +1,13 @@
-MAKEFLAGS += -j$(shell nproc)
+ARCH = $(shell uname -m)
+NPROC = $(shell nproc)
+MAKEFLAGS += -j$(NPROC)
 
 gawk-5.3.0: gawk-5.3.0.tar.xz
 	tar -xf $<
 
 gawk: gawk-5.3.0
 	cd $< && ./configure --disable-shared LD=cc && $(MAKE) && $(MAKE) install
+	ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 binutils-2.27: binutils-2.27.tar.bz2
 	tar -xf $<
@@ -78,3 +81,33 @@ curl-8.0.1: curl-8.0.1.tar.xz
 
 curl: curl-8.0.1 bearssl perl
 	cd $< && ./configure --disable-shared --with-bearssl LD=cc && $(MAKE) && $(MAKE) install
+
+sabotage-stage0: gawk binutils bzip2 linux-headers
+	cd /sabotage/src && \
+		cp KEEP/config.stage0 config && \
+		sed -e "s@SABOTAGE_BUILDDIR=.*@SABOTAGE_BUILDDIR=/sabotage@" \
+			-e "s@CC=.*@CC=cc@" -e "s@HOSTCC=.*@HOSTCC=cc@" \
+			-e "s@MAKE_THREADS=1@MAKE_THREADS=$(NPROC)@" \
+			-i config && cat config && \
+		utils/setup-rootfs.sh && \
+		CONFIG=/sabotage/src/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0 && \
+		echo "export A=$(ARCH)" > config && cat KEEP/config.stage1 >> config && \
+		sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(NPROC)@" config && cat config
+
+sabotage-stage1: sabotage-stage0
+	cd / && rm -rf root include lib local tmp usr && \
+		rm $(shell find /bin -type f -not -name sh) && \
+		mv /sabotage/etc/hostname /etc/hostname.bak && \
+		mv /sabotage/etc/hosts /etc/hosts.bak && \
+		mv /sabotage/etc/resolv.conf /etc/resolv.conf.bak && \
+		mv /sabotage/bin/* /bin && mv /sabotage/etc/* /etc && \
+		rmdir /sabotage/bin /sabotage/etc /sabotage/dev /sabotage/proc /sabotage/sys && \
+		mv -f /sabotage/* / && \
+		rmdir /sabotage
+	# strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so
+	# ranlib /opt/stage0-musl/lib/*.a
+	butch install stage1
+
+sabotage: sabotage-stage1
+	/src/utils/clean-stage1.sh
+	/src/utils/rebuild-stage1.sh
