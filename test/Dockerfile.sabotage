@@ -5,14 +5,7 @@ COPY test/tarballs /root
 WORKDIR /root
 RUN ./boot.sh
 RUN make gawk binutils bzip2 linux-headers
-
-RUN mkdir /sabotage && cd /sabotage && mkdir -p \
-        boot bin dev etc home lib mnt proc root share srv src sys tmp var \
-        src/logs src/build src/tarballs src/pkg src/KEEP \
-        var/log/sshd var/log/crond var/log/dmesg \
-        var/empty var/service var/lib var/run var/spool/cron/crontabs && \
-    ln -sfn . usr && ln -sfn bin sbin && ln -sfn ../tmp var/tmp && \
-    chmod 775 src/build && chmod 1777 tmp && chmod 700 root
+RUN ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 COPY test/sabotage/KEEP/etc/ /sabotage/etc/
 COPY test/sabotage/KEEP/boot/ /sabotage/boot/
@@ -20,15 +13,13 @@ COPY test/sabotage/COOKBOOK.md test/sabotage/LICENSE test/sabotage/README.md tes
 COPY test/sabotage/KEEP /sabotage/src/KEEP
 COPY test/sabotage/pkg /sabotage/src/pkg
 COPY test/sabotage/utils /sabotage/src/utils
-COPY test/config.sabotage /tmp/config
+COPY test/config.sabotage /sabotage/src/config
 COPY test/tarballs /sabotage/src/tarballs
 
-RUN chmod 0600 /sabotage/etc/shadow && ln -s /proc/mounts /sabotage/etc/mtab && \
-    sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" /tmp/config && cat /tmp/config && \
-    ln -sf /usr/local/bin/gawk /usr/local/bin/awk
-
 WORKDIR /sabotage/src
-RUN CONFIG=/tmp/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0
+RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
+RUN utils/setup-rootfs.sh && ln -s /proc/mounts /sabotage/etc/mtab
+RUN CONFIG=$PWD/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0
 RUN echo "export A=$(uname -m)" > config && cat KEEP/config.stage1 >> config
 RUN sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(nproc)@" config && cat config
 
