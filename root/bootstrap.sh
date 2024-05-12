@@ -139,6 +139,6 @@ fi
 tar -xf make-4.4.1.tar.gz
 cd make-4.4.1
 echo "Building make..."
-./configure --disable-dependency-tracking LD=cc >/dev/null
+./configure --disable-dependency-tracking LD=cc
 ./build.sh && ./make -s && ./make -s install
 cd ..
