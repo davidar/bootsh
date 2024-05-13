@@ -94,6 +94,10 @@ curl-8.0.1: curl-8.0.1.tar.xz
 curl: curl-8.0.1 bearssl perl
 	cd $< && ./configure --disable-shared --with-bearssl LD=cc && $(MAKE) && $(MAKE) install
 
+test-host: bash
+	cd test/cc && $(MAKE) && $(MAKE) clean
+	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh
+
 sabotage-%.tar.gz: curl
 	@echo "Downloading sabotage source code..."
 	curl -Lk https://github.com/sabotage-linux/sabotage/archive/$*.tar.gz > $@
