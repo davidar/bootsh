@@ -5,7 +5,7 @@ set -e
 LDFLAGS="$LDFLAGS -static"
 
 if [ -z "$DEBUG" ]; then
-    CFLAGS="$CFLAGS -Os -DNDEBUG"
+    CFLAGS="$CFLAGS -Os -s -DNDEBUG"
     LDFLAGS="$LDFLAGS -s"
 else
     CFLAGS="$CFLAGS -O0 -g"

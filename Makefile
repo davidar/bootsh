@@ -42,7 +42,7 @@ bootsh: src/ash
 	cp -f $< $@
 
 test-host:
-	$(MAKE) -C test/cc
+	$(MAKE) -C test/cc test clean
 	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh
 
 FORCE:
