@@ -29,7 +29,7 @@ i386-libtcc1-usegcc=yes
 ifeq "$($(T)-libtcc1-usegcc)" "yes"
  XCC = $(CC)
  XAR = $(AR)
- XFLAGS = $(CFLAGS) -fPIC -gdwarf -fno-omit-frame-pointer -Wno-unused-function -Wno-unused-variable
+ XFLAGS = $(CFLAGS) -fPIC -fno-omit-frame-pointer -Wno-unused-function -Wno-unused-variable
  BFLAGS = -g
 endif
 
