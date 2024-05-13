@@ -2,6 +2,8 @@
 
 set -e
 
+# trap '[ $? -eq 0 ] && exit 0 || cat make.log' EXIT
+
 echo
 echo "-----------------"
 echo "Executing boot.sh"
@@ -247,6 +249,10 @@ echo "Building make..."
 ./build.sh && ./make -s && ./make -s install
 ) > make.log 2>&1
 cd ..
+
+if [ $# -gt 0 ]; then
+    make $@ # >> make.log 2>&1
+fi
 
 if tty -s; then
     echo "Booting into an interactive shell..."

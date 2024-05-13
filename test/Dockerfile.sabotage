@@ -1,8 +1,0 @@
-FROM bootsh
-
-WORKDIR /root
-RUN ./boot.sh
-
-ADD https://github.com/sabotage-linux/sabotage.git /sabotage/src
-
-RUN make sabotage
