@@ -45,25 +45,8 @@ $(X)BT_O += runmain.o tcov.o
 
 DSO_O = dsohandle.o
 
-RT_BUILTINS = \
-	divdi3 \
-	moddi3 \
-	udivdi3 \
-	umoddi3 \
-	ashrdi3 \
-	lshrdi3 \
-	ashldi3 \
-	floatundisf \
-	floatundidf \
-	floatundixf \
-	fixunssfdi \
-	fixsfdi \
-	fixunsdfdi \
-	fixdfdi \
-	fixunsxfdi \
-	fixxfdi \
-
-RT_O = $(addprefix compiler-rt/lib/builtins/,$(RT_BUILTINS:=.o))
+RT_C := $(wildcard rt/*.c)
+RT_O := $(patsubst rt/%.c,rt/%.o,$(RT_C))
 
 I386_O = $(RT_O) alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
 X86_64_O = $(RT_O) lib-x86_64.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
@@ -114,4 +97,4 @@ $(X)crt1w.o : crt1.c
 $(X)wincrt1w.o : wincrt1.c
 
 clean :
-	rm -f *.a *.o $(ALL)
+	rm -f *.a *.o rt/*.o $(ALL)
