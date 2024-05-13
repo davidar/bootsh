@@ -94,7 +94,7 @@ curl-8.0.1: curl-8.0.1.tar.xz
 curl: curl-8.0.1 bearssl perl
 	cd $< && ./configure --disable-shared --with-bearssl LD=cc && $(MAKE) && $(MAKE) install
 
-sabotage-stage0: gawk binutils bzip2 linux-headers
+sabotage-stage0: gawk binutils bzip2 linux-headers curl
 	cd /sabotage/src && \
 		cp KEEP/config.stage0 config && \
 		sed -e "s@SABOTAGE_BUILDDIR=.*@SABOTAGE_BUILDDIR=/sabotage@" \

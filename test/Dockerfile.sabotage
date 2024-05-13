@@ -5,6 +5,4 @@ RUN ./boot.sh
 
 ADD https://github.com/sabotage-linux/sabotage.git /sabotage/src
 
-COPY test/tarballs /sabotage/src/tarballs
-
 RUN make sabotage
