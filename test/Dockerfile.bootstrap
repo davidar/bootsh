@@ -6,7 +6,7 @@ RUN ./boot.sh
 COPY configure Makefile toybox.config config.h bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
-COPY test/cc-tests bootsh/test/cc-tests
+COPY test/cc bootsh/test/cc
 
 RUN make sh && cp /bin/sh /bin/sh0
 RUN make -C bootsh test-host
