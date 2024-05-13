@@ -1,3 +1,0 @@
-[submodule "compiler-rt"]
-	path = lib/compiler-rt
-	url = https://github.com/davidar/compiler-rt.git
