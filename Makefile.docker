@@ -6,9 +6,9 @@ docker-latest: bootsh
 	docker build . -t bootsh:latest
 
 docker-bootstrap: docker-latest
-	docker build . -f Dockerfile.bootstrap --build-arg TAG=latest -t bootsh:stage0
-	docker build . -f Dockerfile.bootstrap --build-arg TAG=stage0 -t bootsh:stage1
-	docker build . -f Dockerfile.bootstrap --build-arg TAG=stage1 -t bootsh:stage2
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:latest -t bootsh:stage0
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:stage0 -t bootsh:stage1
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:stage1 -t bootsh:stage2
 	[ `$(GET_DOCKER_IMAGE_ID)bootsh:stage1` = `$(GET_DOCKER_IMAGE_ID)bootsh:stage2` ]
 	docker tag bootsh:stage2 bootsh:bootstrap
 

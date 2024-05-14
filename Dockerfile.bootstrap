@@ -1,5 +1,5 @@
-ARG TAG
-FROM bootsh:$TAG AS build
+ARG BASE
+FROM $BASE AS build
 
 WORKDIR /root
 RUN ./boot.sh
