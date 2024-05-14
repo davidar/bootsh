@@ -1,30 +1,28 @@
-GET_DOCKER_IMAGE_ID = docker images --format "{{.ID}}" --no-trunc --filter=reference=
+IMAGE_NAME = davidar/bootsh
+GET_DOCKER_IMAGE_ID = docker images --format "{{.ID}}" --no-trunc --filter=reference=$(IMAGE_NAME)
 
 test: test-latest test-bootstrap
 
 docker-latest: bootsh
-	docker build . -t bootsh:latest
+	docker build . -t $(IMAGE_NAME):latest
 
 docker-bootstrap: docker-latest
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:latest -t bootsh:stage0
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:stage0 -t bootsh:stage1
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=bootsh:stage1 -t bootsh:stage2
-	[ `$(GET_DOCKER_IMAGE_ID)bootsh:stage1` = `$(GET_DOCKER_IMAGE_ID)bootsh:stage2` ]
-	docker tag bootsh:stage2 bootsh:bootstrap
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):latest -t $(IMAGE_NAME):stage0
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):stage0 -t $(IMAGE_NAME):stage1
+	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):stage1 -t $(IMAGE_NAME):stage2
+	[ `$(GET_DOCKER_IMAGE_ID):stage1` = `$(GET_DOCKER_IMAGE_ID):stage2` ]
+	docker tag $(IMAGE_NAME):stage2 $(IMAGE_NAME):bootstrap
 
 test-%: docker-%
 	docker run --rm \
 		-v $(CURDIR)/test/cc:/root/test/cc \
 		-v $(CURDIR)/lib/toybox:/root/lib/toybox \
-		bootsh:$* test-host
-
-bootstrap:
-	docker build .. -f Dockerfile.bootstrap
+		$(IMAGE_NAME):$* test-host
 
 sabotage: FORCE
-	docker run --rm -it bootsh sabotage
+	docker run --rm -it $(IMAGE_NAME) sabotage
 
 run:
-	docker run --rm -it bootsh
+	docker run --rm -it $(IMAGE_NAME)
 
 FORCE:
