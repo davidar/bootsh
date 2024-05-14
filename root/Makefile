@@ -59,9 +59,6 @@ bash: /bin/bash
 muxzcat: muxzcat.c
 	cc -o /usr/local/bin/xzcat $<
 
-sh: bootsh bash
-	cd $< && HOSTCC=cc ./configure && $(MAKE) clean && $(MAKE) && mv -f bootsh /bin/sh
-
 perl-5.38.2.tar.xz:
 	@echo "Downloading perl source code..."
 	wget http://mirrors.kernel.org/CPAN/src/5.0/perl-5.38.2.tar.xz
@@ -97,6 +94,7 @@ curl: curl-8.0.1 bearssl perl
 test-host: bash
 	cd test/cc && $(MAKE) && $(MAKE) clean
 	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh
+	@echo "All tests passed!"
 
 sabotage-%.tar.gz: curl
 	@echo "Downloading sabotage source code..."

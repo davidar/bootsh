@@ -13,7 +13,7 @@ SRCS= ${SHSRCS} ${GENSRCS} ${GENHDRS}
 OBJS= ${SRCS:.c=.o}
 STATIC_LIBS= ../lib/toybox/libtoybox.a ../lib/tcc/libtcc.a
 
-CFLAGS+= -DHAVE_CONFIG_H -I. -I.. -include ../config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall
+CFLAGS+= -DHAVE_CONFIG_H -I. -I.. -include config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall
 CFLAGS+= '-DCONFIG_TRIPLET="x86_64-linux-gnu"' -DTCC_TARGET_X86_64 -DONE_SOURCE=0
 CFLAGS+= -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0
 

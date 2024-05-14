@@ -1,6 +1,6 @@
 MUSL = musl-1.2.5
 
-.PHONY: all clean test-host
+.PHONY: all clean test
 
 all: bootsh
 
@@ -41,8 +41,6 @@ src/ash: FORCE lib/tcc/libtcc.a src/libtcc1a.h lib/toybox/libtoybox.a
 bootsh: src/ash
 	cp -f $< $@
 
-test-host:
-	$(MAKE) -C test/cc test clean
-	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh
-
 FORCE:
+
+-include Makefile.docker

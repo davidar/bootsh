@@ -1,0 +1,18 @@
+ARG TAG
+FROM bootsh:$TAG AS build
+
+WORKDIR /root
+RUN ./boot.sh
+RUN make bash
+
+COPY configure Makefile bootsh/
+COPY src bootsh/src
+COPY lib bootsh/lib
+
+RUN cd bootsh && HOSTCC=cc ./configure && make clean && make
+
+
+FROM scratch
+COPY --from=build /root/bootsh/bootsh /bin/sh
+COPY root/ /root/
+ENTRYPOINT ["/root/boot.sh"]
