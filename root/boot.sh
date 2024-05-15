@@ -44,11 +44,13 @@ for cmd in `sh -c toybox` cc ar; do
 done
 chmod +x /bin/*
 
-if [ ! -f musl-1.2.5.tar.gz ]; then
+mkdir -p /src/tarballs
+
+if [ ! -f /src/tarballs/musl-1.2.5.tar.gz ]; then
     echo "Downloading musl-1.2.5 source code..."
-    wget http://www.musl-libc.org/releases/musl-1.2.5.tar.gz
+    wget http://www.musl-libc.org/releases/musl-1.2.5.tar.gz -O /src/tarballs/musl-1.2.5.tar.gz
 fi
-tar -xf musl-1.2.5.tar.gz
+tar -xf /src/tarballs/musl-1.2.5.tar.gz
 cd musl-1.2.5
 
 echo "Building musl..."
@@ -239,11 +241,11 @@ cd ..
 
 cc -o /usr/local/bin/awk wak.c
 
-if [ ! -f make-4.4.1.tar.gz ]; then
+if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
     echo "Downloading make-4.4.1 source code..."
-    wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+    wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
 fi
-tar -xf make-4.4.1.tar.gz
+tar -xf /src/tarballs/make-4.4.1.tar.gz
 cd make-4.4.1
 echo "Building make..."
 (

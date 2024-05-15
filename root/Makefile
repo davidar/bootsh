@@ -4,11 +4,11 @@ MAKEFLAGS += -j$(NPROC)
 
 .PHONY: gawk binutils bzip2 linux-headers bash muxzcat perl bearssl curl test-host sabotage-stage0 sabotage-stage1 sabotage
 
-gawk-5.3.0.tar.xz:
+/src/tarballs/gawk-5.3.0.tar.xz:
 	@echo "Downloading gawk source code..."
-	wget http://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz
+	wget http://ftp.gnu.org/gnu/gawk/gawk-5.3.0.tar.xz -O $@
 
-gawk-5.3.0: gawk-5.3.0.tar.xz
+gawk-5.3.0: /src/tarballs/gawk-5.3.0.tar.xz
 	tar -xf $<
 
 /usr/local/bin/gawk: gawk-5.3.0
@@ -17,11 +17,11 @@ gawk-5.3.0: gawk-5.3.0.tar.xz
 
 gawk: /usr/local/bin/gawk
 
-binutils-2.27.tar.bz2:
+/src/tarballs/binutils-2.27.tar.bz2:
 	@echo "Downloading binutils source code..."
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2 -O $@
 
-binutils-2.27: binutils-2.27.tar.bz2
+binutils-2.27: /src/tarballs/binutils-2.27.tar.bz2
 	tar -xf $<
 
 /usr/local/bin/ar: binutils-2.27
@@ -30,11 +30,11 @@ binutils-2.27: binutils-2.27.tar.bz2
 
 binutils: /usr/local/bin/ar
 
-bzip2-1.0.8.tar.gz:
+/src/tarballs/bzip2-1.0.8.tar.gz:
 	@echo "Downloading bzip2 source code..."
-	wget http://mirrors.kernel.org/sourceware/bzip2/bzip2-1.0.8.tar.gz
+	wget http://mirrors.kernel.org/sourceware/bzip2/bzip2-1.0.8.tar.gz -O $@
 
-bzip2-1.0.8: bzip2-1.0.8.tar.gz
+bzip2-1.0.8: /src/tarballs/bzip2-1.0.8.tar.gz
 	tar -xf $<
 
 /usr/local/bin/bzip2: bzip2-1.0.8
@@ -42,11 +42,11 @@ bzip2-1.0.8: bzip2-1.0.8.tar.gz
 
 bzip2: /usr/local/bin/bzip2
 
-linux-headers-4.19.88.tar.xz:
+/src/tarballs/linux-headers-4.19.88.tar.xz:
 	@echo "Downloading linux-headers source code..."
-	wget http://ftp.barfooze.de/pub/sabotage/tarballs/linux-headers-4.19.88.tar.xz
+	wget http://ftp.barfooze.de/pub/sabotage/tarballs/linux-headers-4.19.88.tar.xz -O $@
 
-linux-headers-4.19.88: linux-headers-4.19.88.tar.xz
+linux-headers-4.19.88: /src/tarballs/linux-headers-4.19.88.tar.xz
 	tar -xf $<
 
 /usr/local/include/linux: linux-headers-4.19.88
@@ -54,11 +54,11 @@ linux-headers-4.19.88: linux-headers-4.19.88.tar.xz
 
 linux-headers: /usr/local/include/linux
 
-bash-5.2.21.tar.gz:
+/src/tarballs/bash-5.2.21.tar.gz:
 	@echo "Downloading bash source code..."
-	wget http://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz
+	wget http://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz -O $@
 
-bash-5.2.21: bash-5.2.21.tar.gz
+bash-5.2.21: /src/tarballs/bash-5.2.21.tar.gz
 	tar -xf $<
 
 /bin/bash: bash-5.2.21
@@ -69,11 +69,11 @@ bash: /bin/bash
 muxzcat: muxzcat.c
 	cc -o /usr/local/bin/xzcat $<
 
-perl-5.38.2.tar.xz:
+/src/tarballs/perl-5.38.2.tar.xz:
 	@echo "Downloading perl source code..."
-	wget http://mirrors.kernel.org/CPAN/src/5.0/perl-5.38.2.tar.xz
+	wget http://mirrors.kernel.org/CPAN/src/5.0/perl-5.38.2.tar.xz -O $@
 
-perl-5.38.2: perl-5.38.2.tar.xz
+perl-5.38.2: /src/tarballs/perl-5.38.2.tar.xz
 	tar -xf $<
 
 /usr/local/bin/perl: perl-5.38.2
@@ -82,11 +82,11 @@ perl-5.38.2: perl-5.38.2.tar.xz
 
 perl: /usr/local/bin/perl
 
-bearssl-0.6.tar.gz:
+/src/tarballs/bearssl-0.6.tar.gz:
 	@echo "Downloading bearssl source code..."
-	wget http://tar.sabo.xyz/bearssl/bearssl-0.6.tar.gz
+	wget http://tar.sabo.xyz/bearssl/bearssl-0.6.tar.gz -O $@
 
-bearssl-0.6: bearssl-0.6.tar.gz
+bearssl-0.6: /src/tarballs/bearssl-0.6.tar.gz
 	tar -xf $<
 
 /usr/local/lib/libbearssl.a: bearssl-0.6
@@ -95,11 +95,11 @@ bearssl-0.6: bearssl-0.6.tar.gz
 
 bearssl: /usr/local/lib/libbearssl.a
 
-curl-8.0.1.tar.xz:
+/src/tarballs/curl-8.0.1.tar.xz:
 	@echo "Downloading curl source code..."
-	wget http://tar.sabo.xyz/curl/curl-8.0.1.tar.xz
+	wget http://tar.sabo.xyz/curl/curl-8.0.1.tar.xz -O $@
 
-curl-8.0.1: curl-8.0.1.tar.xz
+curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 	tar -xf $<
 
 /usr/local/bin/curl: curl-8.0.1 /usr/local/lib/libbearssl.a
