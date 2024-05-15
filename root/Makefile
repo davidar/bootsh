@@ -37,8 +37,10 @@ bzip2-1.0.8.tar.gz:
 bzip2-1.0.8: bzip2-1.0.8.tar.gz
 	tar -xf $<
 
-bzip2: bzip2-1.0.8
+/usr/local/bin/bzip2: bzip2-1.0.8
 	cd $< && $(MAKE) CC=cc && $(MAKE) install
+
+bzip2: /usr/local/bin/bzip2
 
 linux-headers-4.19.88.tar.xz:
 	@echo "Downloading linux-headers source code..."
@@ -100,8 +102,9 @@ curl-8.0.1.tar.xz:
 curl-8.0.1: curl-8.0.1.tar.xz
 	tar -xf $<
 
-/usr/local/bin/curl: curl-8.0.1 /usr/local/lib/libbearssl.a /usr/local/bin/perl
-	cd $< && ./configure --disable-shared --with-bearssl LD=cc && $(MAKE) && $(MAKE) install
+/usr/local/bin/curl: curl-8.0.1 /usr/local/lib/libbearssl.a
+	cd $< && ./configure --disable-docs --disable-manual --disable-shared --with-bearssl LD=cc && \
+		$(MAKE) && $(MAKE) install
 
 curl: /usr/local/bin/curl
 
