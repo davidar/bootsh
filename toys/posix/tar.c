@@ -649,6 +649,7 @@ static void extract_to_disk(char *name)
   } else if (mknod(name, ala, TT.hdr.device))
     return perror_msg("can't create '%s'", name);
 
+#if 0
   // Set ownership
   if (!FLAG(o) && !geteuid()) {
     int u = TT.hdr.uid, g = TT.hdr.gid;
@@ -667,6 +668,7 @@ static void extract_to_disk(char *name)
 
     if (lchown(name, u, g)) perror_msg("chown %d:%d '%s'", u, g, name);;
   }
+#endif
 
   if (!S_ISLNK(ala)) chmod(name, FLAG(p) ? ala : ala&0777);
 
