@@ -13,7 +13,7 @@ echo
 cd $(dirname $0)
 
 echo "Setting up root filesystem..."
-ln -s / /usr
+[ ! -L /usr ] && ln -s / /usr
 mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
 
@@ -34,6 +34,8 @@ users:x:100:
 user:x:1000:
 nogroup:x:65534:
 EOF
+
+[ ! -f /etc/resolv.conf ] && echo "nameserver 1.1.1.1" > /etc/resolv.conf
 
 printf '#!/bin/sh\nexit 0' > /bin/true
 printf '#!/bin/sh\nexit 1' > /bin/false

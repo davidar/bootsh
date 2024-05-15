@@ -19,10 +19,8 @@ test-%: docker-%
 		-v $(CURDIR)/lib/toybox:/root/lib/toybox \
 		$(IMAGE_NAME):$* test-host
 
-sabotage: FORCE
+sabotage: docker-latest
 	docker run --rm -it $(IMAGE_NAME) sabotage
 
-run:
+run: docker-latest
 	docker run --rm -it $(IMAGE_NAME)
-
-FORCE:
