@@ -12,6 +12,10 @@ echo
 
 cd $(dirname $0)
 
+if which make >/dev/null && tty -s; then
+    exec /bin/sh
+fi
+
 echo "Setting up root filesystem..."
 [ ! -L /usr ] && ln -s / /usr
 mkdir -p /etc /local/bin /tmp

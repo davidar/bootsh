@@ -119,7 +119,7 @@ CONFIG_TAR=y
 CONFIG_TEE=y
 # CONFIG_TEST is not set
 # CONFIG_TEST_GLUE is not set
-# CONFIG_TIME is not set
+CONFIG_TIME=y
 CONFIG_TOUCH=y
 # CONFIG_TRUE is not set
 # CONFIG_TSORT is not set
