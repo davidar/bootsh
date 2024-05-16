@@ -12,7 +12,8 @@ gawk-5.3.0: /src/tarballs/gawk-5.3.0.tar.xz
 	tar -xf $<
 
 /usr/local/bin/gawk: gawk-5.3.0
-	cd $< && ./configure --disable-shared LD=cc && $(MAKE) && $(MAKE) install
+	@echo "Bootstrapping gawk -> /src/logs/boot_gawk.log"
+	(cd $< && ./configure --disable-shared LD=cc && $(MAKE) && $(MAKE) install) > /src/logs/boot_gawk.log 2>&1
 	ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 gawk: /usr/local/bin/gawk
@@ -25,8 +26,9 @@ binutils-2.27: /src/tarballs/binutils-2.27.tar.bz2
 	tar -xf $<
 
 /usr/local/bin/ar: binutils-2.27
-	cd $< && ./configure --disable-gprofng CFLAGS=-D__LITTLE_ENDIAN__=1 && \
-		$(MAKE) MAKEINFO=true && $(MAKE) MAKEINFO=true install
+	@echo "Bootstrapping binutils -> /src/logs/boot_binutils.log"
+	(cd $< && ./configure --disable-gprofng CFLAGS=-D__LITTLE_ENDIAN__=1 && \
+		$(MAKE) MAKEINFO=true && $(MAKE) MAKEINFO=true install) > /src/logs/boot_binutils.log 2>&1
 
 binutils: /usr/local/bin/ar
 
@@ -38,7 +40,8 @@ bzip2-1.0.8: /src/tarballs/bzip2-1.0.8.tar.gz
 	tar -xf $<
 
 /usr/local/bin/bzip2: bzip2-1.0.8
-	cd $< && $(MAKE) CC=cc && $(MAKE) install
+	@echo "Bootstrapping bzip2 -> /src/logs/boot_bzip2.log"
+	(cd $< && $(MAKE) CC=cc && $(MAKE) install) > /src/logs/boot_bzip2.log 2>&1
 
 bzip2: /usr/local/bin/bzip2
 
@@ -50,7 +53,8 @@ linux-headers-4.19.88: /src/tarballs/linux-headers-4.19.88.tar.xz
 	tar -xf $<
 
 /usr/local/include/linux: linux-headers-4.19.88
-	cd $< && $(MAKE) install ARCH=$(shell uname -m)
+	@echo "Bootstrapping linux-headers -> /src/logs/boot_linux-headers.log"
+	(cd $< && $(MAKE) install ARCH=$(shell uname -m)) > /src/logs/boot_linux-headers.log 2>&1
 
 linux-headers: /usr/local/include/linux
 
@@ -62,7 +66,8 @@ bash-5.2.21: /src/tarballs/bash-5.2.21.tar.gz
 	tar -xf $<
 
 /bin/bash: bash-5.2.21
-	cd $< && ./configure --prefix=/ --without-bash-malloc LD=cc && $(MAKE) && $(MAKE) install
+	@echo "Bootstrapping bash -> /src/logs/boot_bash.log"
+	(cd $< && ./configure --prefix=/ --without-bash-malloc LD=cc && $(MAKE) && $(MAKE) install) > /src/logs/boot_bash.log 2>&1
 
 bash: /bin/bash
 
@@ -77,8 +82,9 @@ perl-5.38.2: /src/tarballs/perl-5.38.2.tar.xz
 	tar -xf $<
 
 /usr/local/bin/perl: perl-5.38.2
-	cd $< && ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
-		$(MAKE) && $(MAKE) install
+	@echo "Bootstrapping perl -> /src/logs/boot_perl.log"
+	(cd $< && ./Configure -des -Uusenm -Uusedl -DEBUGGING=both && \
+		$(MAKE) && $(MAKE) install) > /src/logs/boot_perl.log 2>&1
 
 perl: /usr/local/bin/perl
 
@@ -90,8 +96,9 @@ bearssl-0.6: /src/tarballs/bearssl-0.6.tar.gz
 	tar -xf $<
 
 /usr/local/lib/libbearssl.a: bearssl-0.6
-	cd $< && $(MAKE) && mkdir -p /usr/local/lib /usr/local/include && \
-		cp -f build/libbearssl.a /usr/local/lib/ && cp -f inc/*.h /usr/local/include/
+	@echo "Bootstrapping bearssl -> /src/logs/boot_bearssl.log"
+	(cd $< && $(MAKE) && mkdir -p /usr/local/lib /usr/local/include && \
+		cp -f build/libbearssl.a /usr/local/lib/ && cp -f inc/*.h /usr/local/include/) > /src/logs/boot_bearssl.log 2>&1
 
 bearssl: /usr/local/lib/libbearssl.a
 
@@ -103,8 +110,9 @@ curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 	tar -xf $<
 
 /usr/local/bin/curl: curl-8.0.1 /usr/local/lib/libbearssl.a
-	cd $< && ./configure --disable-docs --disable-manual --disable-shared --with-bearssl LD=cc && \
-		$(MAKE) && $(MAKE) install
+	@echo "Bootstrapping curl -> /src/logs/boot_curl.log"
+	(cd $< && ./configure --disable-docs --disable-manual --disable-shared --with-bearssl LD=cc && \
+		$(MAKE) && $(MAKE) install) > /src/logs/boot_curl.log 2>&1
 
 curl: /usr/local/bin/curl
 

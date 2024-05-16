@@ -48,7 +48,7 @@ for cmd in `sh -c toybox` cc ar; do
 done
 chmod +x /bin/*
 
-mkdir -p /src/tarballs
+mkdir -p /src/tarballs /src/logs
 
 if [ ! -f /src/tarballs/musl-1.2.5.tar.gz ]; then
     echo "Downloading musl-1.2.5 source code..."
@@ -59,7 +59,8 @@ cd musl-1.2.5
 
 echo "Building musl..."
 
-CFLAGS="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -fno-strict-aliasing -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include  -O2 -fno-align-jumps -fno-align-functions -fno-align-loops -fno-align-labels -fira-region=one -fira-hoist-pressure -freorder-blocks-algorithm=simple -fno-prefetch-loop-arrays -fno-tree-ch -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wno-pointer-to-int-cast -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -Werror=int-conversion -Werror=incompatible-pointer-types -Werror=discarded-qualifiers -Werror=discarded-array-qualifiers -Waddress -Warray-bounds -Wchar-subscripts -Wduplicate-decl-specifier -Winit-self -Wreturn-type -Wsequence-point -Wstrict-aliasing -Wunused-function -Wunused-label -Wunused-variable"
+CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
+CFLAGS="$CFLAGS -Iarch/x86_64 -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
 
 rm -rf src/complex src/math/x86_64 crt/x86_64
 sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
@@ -206,7 +207,7 @@ EOF
 for src in $SOURCES; do
     obj=obj/${src%.c}.o
     mkdir -p $(dirname $obj)
-    cc $CFLAGS -c -o $obj $src
+    cc $CFLAGS -c -o $obj $src >> /src/logs/boot_musl.log 2>&1
 done
 
 mkdir -p obj/src/env
@@ -255,7 +256,7 @@ echo "Building make..."
 (
 ./configure --disable-dependency-tracking LD=cc
 ./build.sh && ./make -s && ./make -s install
-) > make.log 2>&1
+) > /src/logs/boot_make.log 2>&1
 cd ..
 
 if [ $# -gt 0 ]; then
