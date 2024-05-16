@@ -2,15 +2,11 @@
 
 set -e
 
-# trap '[ $? -eq 0 ] && exit 0 || cat make.log' EXIT
-
 echo
 echo "-----------------"
 echo "Executing boot.sh"
 echo "-----------------"
 echo
-
-cd $(dirname $0)
 
 if which make >/dev/null && tty -s; then
     exec /bin/sh
@@ -20,6 +16,7 @@ echo "Setting up root filesystem..."
 [ ! -L /usr ] && ln -s / /usr
 mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
+cd /tmp
 
 cat > /etc/passwd <<EOF
 root:x:0:0:root:/root:/bin/sh
@@ -57,7 +54,7 @@ fi
 tar -xf /src/tarballs/musl-1.2.5.tar.gz
 cd musl-1.2.5
 
-echo "Building musl..."
+echo "Bootstrapping musl..."
 
 CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
 CFLAGS="$CFLAGS -Iarch/x86_64 -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
@@ -241,10 +238,7 @@ cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src
 cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memset.o src/string/x86_64/memset.s
 
 ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
-
 cd ..
-
-cc -o /usr/local/bin/awk wak.c
 
 if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
     echo "Downloading make-4.4.1 source code..."
@@ -252,7 +246,7 @@ if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
 fi
 tar -xf /src/tarballs/make-4.4.1.tar.gz
 cd make-4.4.1
-echo "Building make..."
+echo "Bootstrapping make..."
 (
 ./configure --disable-dependency-tracking LD=cc
 ./build.sh && ./make -s && ./make -s install
@@ -260,10 +254,9 @@ echo "Building make..."
 cd ..
 
 if [ $# -gt 0 ]; then
-    make $@ # >> make.log 2>&1
+    make $@
 fi
 
 if tty -s; then
-    echo "Booting into an interactive shell..."
     exec /bin/sh
 fi

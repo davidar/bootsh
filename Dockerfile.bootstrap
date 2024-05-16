@@ -1,18 +1,18 @@
 ARG BASE
 FROM $BASE AS build
 
-WORKDIR /root
-RUN ./boot.sh
-RUN make bash
+RUN --mount=type=cache,target=/src/tarballs /bin/boot.sh bash
 
+WORKDIR /tmp
 COPY configure Makefile bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
-
 RUN cd bootsh && HOSTCC=cc ./configure && make clean && make
 
 
 FROM scratch
-COPY --from=build /root/bootsh/bootsh /bin/sh
-COPY root/ /root/
-ENTRYPOINT ["/root/boot.sh"]
+COPY --from=build /tmp/bootsh/bootsh /bin/sh
+COPY boot.sh /bin/boot.sh
+COPY Makefile.packages /tmp/Makefile
+COPY wak.c /bin/awk
+ENTRYPOINT ["/bin/boot.sh"]

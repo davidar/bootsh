@@ -117,45 +117,6 @@ curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 curl: /usr/local/bin/curl
 
 test-host: bash
-	cd test/cc && $(MAKE) && $(MAKE) clean
+	cd test-cc && $(MAKE) && $(MAKE) clean
 	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh && rm -rf generated/testdir
 	@echo "All tests passed!"
-
-sabotage-%.tar.gz: /usr/local/bin/curl
-	@echo "Downloading sabotage source code..."
-	curl -Lk https://github.com/sabotage-linux/sabotage/archive/$*.tar.gz > $@
-
-sabotage-%: sabotage-%.tar.gz
-	tar -xf $<
-
-sabotage-stage0: sabotage-c7a8f2051c17501a6bfef1d8a0a3fc9ab6103761 /usr/local/bin/gawk /usr/local/bin/ar /usr/local/bin/bzip2 /usr/local/bin/curl /usr/local/include/linux
-	mkdir -p /sabotage
-	mv -f $< /sabotage/src
-	cd /sabotage/src && \
-		cp KEEP/config.stage0 config && \
-		sed -e "s@SABOTAGE_BUILDDIR=.*@SABOTAGE_BUILDDIR=/sabotage@" \
-			-e "s@CC=.*@CC=cc@" -e "s@HOSTCC=.*@HOSTCC=cc@" \
-			-e "s@MAKE_THREADS=1@MAKE_THREADS=$(NPROC)@" \
-			-i config && cat config && \
-		utils/setup-rootfs.sh && \
-		CONFIG=/sabotage/src/config BUTCHDB=/sabotage/var/lib/butch.db DEPS=build:stage0 KEEP/bin/butch install stage0 && \
-		echo "export A=$(ARCH)" > config && cat KEEP/config.stage1 >> config && \
-		sed -i "s@MAKE_THREADS=1@MAKE_THREADS=$(NPROC)@" config && cat config
-
-sabotage-stage1: sabotage-stage0
-	cd / && rm -rf root include lib local tmp usr && \
-		rm $(shell find /bin -type f -not -name sh) && \
-		mv /sabotage/etc/hostname /etc/hostname.bak && \
-		mv /sabotage/etc/hosts /etc/hosts.bak && \
-		mv /sabotage/etc/resolv.conf /etc/resolv.conf.bak && \
-		mv /sabotage/bin/* /bin && mv /sabotage/etc/* /etc && \
-		rmdir /sabotage/bin /sabotage/etc /sabotage/dev /sabotage/proc /sabotage/sys && \
-		mv -f /sabotage/* / && \
-		rmdir /sabotage
-	# strip --strip-unneeded /opt/stage0-musl/lib/*.a /opt/stage0-musl/lib/*.o /opt/stage0-musl/lib/*.so
-	# ranlib /opt/stage0-musl/lib/*.a
-	butch install stage1
-
-sabotage: sabotage-stage1
-	/src/utils/clean-stage1.sh
-	/src/utils/rebuild-stage1.sh

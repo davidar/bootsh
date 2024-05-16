@@ -15,8 +15,9 @@ docker-bootstrap: docker-latest
 
 test-%: docker-%
 	docker run --rm \
-		-v $(CURDIR)/test/cc:/root/test/cc \
-		-v $(CURDIR)/lib/toybox:/root/lib/toybox \
+		-v $(CURDIR)/test-cc:/tmp/test-cc \
+		-v $(CURDIR)/lib/toybox:/tmp/lib/toybox \
+		-v $(CURDIR)/tarballs:/src/tarballs \
 		$(IMAGE_NAME):$* test-host
 
 sabotage: docker-latest
