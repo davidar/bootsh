@@ -22,8 +22,8 @@ This image contains four files:
 
 - `/bin/sh`: the *boot*sh executable
 
-- `/root/boot.sh`: a shell script for bootstrapping the system by downloading and building [musl libc](https://musl.libc.org/) and GNU Make from source
+- `/bin/boot.sh`: a [shell script](boot.sh) for bootstrapping the system by downloading and building [musl libc](https://musl.libc.org/) and GNU Make from source
 
-- `/root/Makefile`: which functions as a rudimentary package manager for downloading and compiling further source packages
+- `/tmp/Makefile`: which functions as a rudimentary package manager for downloading and compiling [further source packages](Makefile.packages)
 
-- `/root/wak.c`: a [single-file C implementation of AWK](https://github.com/raygard/wak), which is compiled during the system bootstrap as it's required to configure GNU Make
+- `/bin/awk`: a [C script](wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
