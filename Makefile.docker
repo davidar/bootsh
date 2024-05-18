@@ -3,13 +3,14 @@ GET_DOCKER_IMAGE_ID = docker images --format "{{.ID}}" --no-trunc --filter=refer
 
 test: test-latest test-bootstrap
 
-docker-latest: bootsh
-	docker build . -t $(IMAGE_NAME):latest
+docker-%:
+	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$*
 
-docker-bootstrap: docker-latest
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):latest -t $(IMAGE_NAME):stage0
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):stage0 -t $(IMAGE_NAME):stage1
-	docker build . -f Dockerfile.bootstrap --build-arg BASE=$(IMAGE_NAME):stage1 -t $(IMAGE_NAME):stage2
+docker-stage0: docker-latest
+docker-stage1: docker-stage0
+docker-stage2: docker-stage1
+
+docker-bootstrap: docker-stage2
 	[ `$(GET_DOCKER_IMAGE_ID):stage1` = `$(GET_DOCKER_IMAGE_ID):stage2` ]
 	docker tag $(IMAGE_NAME):stage2 $(IMAGE_NAME):bootstrap
 
@@ -20,8 +21,5 @@ test-%: docker-%
 		-v $(CURDIR)/tarballs:/src/tarballs \
 		$(IMAGE_NAME):$* test-host
 
-sabotage: docker-latest
-	docker run --rm -it $(IMAGE_NAME) sabotage
-
 run: docker-latest
-	docker run --rm -it $(IMAGE_NAME)
+	docker run --rm -it -v $(CURDIR)/tarballs:/src/tarballs $(IMAGE_NAME):latest

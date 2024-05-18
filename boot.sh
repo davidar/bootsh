@@ -13,7 +13,6 @@ if which make >/dev/null && tty -s; then
     exec /bin/sh
 fi
 
-echo "Setting up root filesystem..."
 [ ! -L /usr ] && ln -s / /usr
 mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
@@ -55,7 +54,7 @@ fi
 tar -xf /src/tarballs/musl-1.2.5.tar.gz
 cd musl-1.2.5
 
-echo "Bootstrapping musl..."
+echo "Bootstrapping musl -> /src/logs/boot_musl.log"
 
 CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
 CFLAGS="$CFLAGS -Iarch/x86_64 -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
@@ -247,7 +246,7 @@ if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
 fi
 tar -xf /src/tarballs/make-4.4.1.tar.gz
 cd make-4.4.1
-echo "Bootstrapping make..."
+echo "Bootstrapping make -> /src/logs/boot_make.log"
 (
 ./configure --disable-dependency-tracking LD=cc
 ./build.sh && ./make -s && ./make -s install
@@ -255,7 +254,7 @@ echo "Bootstrapping make..."
 cd ..
 
 if [ $# -gt 0 ]; then
-    make $@
+    make -s $@
 fi
 
 if tty -s; then
