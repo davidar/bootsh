@@ -27,10 +27,11 @@ jobs:
           load: true
           tags: davidar/bootsh:latest
       -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
         name: Test
         run: |
-          pwd
-          ls -lh
           docker run --rm \
             -v $PWD/test-cc:/tmp/test-cc \
             -v $PWD/lib/toybox:/tmp/lib/toybox \

@@ -254,7 +254,7 @@ echo "Bootstrapping make -> /src/logs/boot_make.log"
 cd ..
 
 if [ $# -gt 0 ]; then
-    make $@
+    make -s $@
 fi
 
 if tty -s; then
