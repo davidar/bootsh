@@ -10,7 +10,7 @@ A comprehensive POSIX userspace, including a C compiler, in a single tiny (<1MB)
 
 ## Build
 
-Just run `./configure && make -j$(nproc)`
+Just run `./configure && make -j$(nproc)`. The configure script will prompt you for any missing build dependencies.
 
 ## Usage
 
