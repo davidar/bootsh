@@ -21,6 +21,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: Build and export to Docker
+        uses: docker/build-push-action@v5
+        with:
+          load: true
+          tags: davidar/bootsh:latest
+      -
+        name: Test
+        run: |
+          docker run --rm \
+            -v $PWD/test-cc:/tmp/test-cc \
+            -v $PWD/lib/toybox:/tmp/lib/toybox \
+            -v $PWD/tarballs:/src/tarballs \
+            davidar/bootsh:latest test-host
+      -
         name: Build and push
         uses: docker/build-push-action@v5
         with:
