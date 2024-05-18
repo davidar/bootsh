@@ -59,6 +59,7 @@
 #include "mystring.h"
 #include "exec.h"
 #include "cd.h"
+#include "builtins.h"
 
 #include "libtcc1a.h"
 
@@ -102,6 +103,18 @@ main(int argc, char **argv)
 	int login;
 
 	gunzip_mem(libtcc1a_data, sizeof(libtcc1a_data), libtcc1a = malloc(LIBTCC1A_LEN), LIBTCC1A_LEN);
+
+	if (argc > 1 && strcmp(argv[1], "--list-builtins") == 0) {
+		puts("ar");
+		puts("cc");
+		for (int i = 0; i < NUMBUILTINS; i++) {
+			if (builtincmd[i].flags == 0) {
+				puts(builtincmd[i].name);
+			}
+		}
+		list_toys();
+		return 0;
+	}
 
 #ifdef __GLIBC__
 	dash_errno = __errno_location();

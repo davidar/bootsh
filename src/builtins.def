@@ -48,7 +48,7 @@ breakcmd	-s break -s continue
 cdcmd		-u cd chdir
 commandcmd	-u command
 dotcmd		-s .
-echocmd		echo
+# echocmd		echo
 evalcmd		-ns eval
 execcmd		-s exec
 exitcmd		-s exit
@@ -58,7 +58,7 @@ getoptscmd	-u getopts
 hashcmd		-u hash
 jobscmd		-u jobs
 localcmd	-as local
-printfcmd	printf
+# printfcmd	printf
 pwdcmd		-u pwd
 readcmd		-u read
 returncmd	-s return

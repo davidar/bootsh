@@ -194,21 +194,15 @@ void toy_exec(char *argv[])
   toy_exec_which(toy_find(*argv), argv);
 }
 
-// Multiplexer command, first argument is command to run, rest are args to that.
-// If first argument starts with - output list of command install paths.
-void toybox_main(void)
+void toybox_main(void) {}
+
+void list_toys(void)
 {
-  // For early error reporting
-  toys.which = toy_list;
-
-  if (toys.argv[1] && strcmp(toys.argv[1], "--long")) unknown(toys.argv[1]);
-
   // Output list of commands.
   for (int i = 1; i<ARRAY_LEN(toy_list); i++) {
     int fl = toy_list[i].flags;
     if (fl & TOYMASK_LOCATION) {
-      printf("%s ", toy_list[i].name);
+      puts(toy_list[i].name);
     }
   }
-  xputc('\n');
 }

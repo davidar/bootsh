@@ -40,8 +40,8 @@ EOF
 
 printf '#!/bin/sh\nexit 0' > /bin/true
 printf '#!/bin/sh\nexit 1' > /bin/false
-for cmd in `sh -c toybox` cc ar; do
-    printf '#!/bin/sh\nexec %s "$@"' "$cmd" > /bin/$cmd;
+for cmd in `sh --list-builtins`; do
+    printf '#!/bin/sh\ncommand %s "$@"' "$cmd" > /bin/$cmd;
 done
 chmod +x /bin/*
 
