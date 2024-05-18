@@ -6,13 +6,15 @@ A comprehensive POSIX userspace, including a C compiler, in a single tiny (<1MB)
 
 - **Self-hosting:** *boot*sh can compile itself from source, thanks to its builtin `cc` command which implements a full C99 compiler.
 
-- **Tiny:** *boot*sh can be compiled into a single 620KiB binary executable in less than 5 seconds.
+- **Tiny:** *boot*sh can be compiled into a single ~600KB binary executable in under 10 seconds. With [UPX](https://upx.github.io/) it can be reduced to half that size.
 
-  With [UPX](https://upx.github.io/) it can be compressed down to a 305KiB executable.
+## Build
+
+Just run `./configure && make -j$(nproc)`
 
 ## Usage
 
-A [Docker image](https://hub.docker.com/r/davidar/bootsh/tags) is provided to demonstrate how *boot*sh can be used.
+A [Docker image](https://hub.docker.com/r/davidar/bootsh/tags) is provided to demonstrate how *boot*sh can be used in a self-contained environment.
 
 ```sh
 docker run --rm -it davidar/bootsh
