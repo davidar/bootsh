@@ -247,32 +247,3 @@
 
 /* klibc has bsd_signal instead of signal */
 /* #undef signal */
-
-// #ifdef __TINYC__
-/* 64-bit operations are the same as 32-bit */
-#define dirent64 dirent
-
-/* 64-bit operations are the same as 32-bit */
-#define fstat64 fstat
-
-/* 64-bit operations are the same as 32-bit */
-#define glob64 glob
-
-/* 64-bit operations are the same as 32-bit */
-#define glob64_t glob_t
-
-/* 64-bit operations are the same as 32-bit */
-#define globfree64 globfree
-
-/* 64-bit operations are the same as 32-bit */
-#define lstat64 lstat
-
-/* 64-bit operations are the same as 32-bit */
-#define open64 open
-
-/* 64-bit operations are the same as 32-bit */
-#define readdir64 readdir
-
-/* 64-bit operations are the same as 32-bit */
-#define stat64 stat
-// #endif

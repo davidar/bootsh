@@ -10,11 +10,12 @@ clean:
 	$(MAKE) -C lib/toybox clean
 	$(MAKE) -C src clean
 
-musl-%.tar.gz:
-	wget https://musl.libc.org/releases/$@
+tarballs/musl-%.tar.gz:
+	mkdir -p tarballs
+	wget https://musl.libc.org/releases/musl-$*.tar.gz -O $@
 
-musl-%: musl-%.tar.gz
-	tar xf $<
+musl-%: tarballs/musl-%.tar.gz
+	tar -xf $<
 
 sysroot: $(MUSL)
 	cd $(MUSL) && ./configure --prefix="$(CURDIR)/sysroot"

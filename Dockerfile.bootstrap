@@ -7,7 +7,7 @@ WORKDIR /tmp
 COPY configure Makefile bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
-RUN cd bootsh && HOSTCC=cc ./configure && make clean && make
+RUN cd bootsh && ./configure && make clean && make
 
 
 FROM scratch

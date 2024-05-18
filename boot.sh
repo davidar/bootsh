@@ -3,9 +3,10 @@
 set -e
 
 echo
-echo "-----------------"
-echo "Executing boot.sh"
-echo "-----------------"
+echo "---------------------------------"
+echo "        Executing boot.sh        "
+echo "https://github.com/davidar/bootsh"
+echo "---------------------------------"
 echo
 
 if which make >/dev/null && tty -s; then

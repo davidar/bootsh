@@ -2,7 +2,10 @@
 
 set -e
 
-LDFLAGS="$LDFLAGS -static"
+[ -z "$CC" ] && CC=cc
+[ -z "$HOSTCC" ] && HOSTCC="$CC"
+
+LDFLAGS="$LDFLAGS -static -Wl,--gc-sections"
 
 if [ -z "$DEBUG" ]; then
     CFLAGS="$CFLAGS -Os -s -DNDEBUG"
@@ -12,15 +15,22 @@ else
     LDFLAGS="$LDFLAGS -g"
 fi
 
-if [ -z "$HOSTCC" ]; then
+tmpc=/tmp/tmp$$.c
+cat > $tmpc <<EOF
+#include <netdb.h>
+int main () { gethostbyname("localhost"); return 0; }
+EOF
+if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
+    rm -f $tmpc
+    echo "warning: your libc does not properly support static linking, trying musl instead..." >&2
     CFLAGS="$CFLAGS -nostdinc"
-    LDFLAGS="$LDFLAGS -Wl,--gc-sections"
     HOSTCC="$PWD/sysroot/bin/musl-gcc"
     if [ ! -x "$HOSTCC" ]; then
-        echo "Run 'make sysroot' first, or set HOSTCC to the path of musl-gcc"
+        echo "Run 'make sysroot' to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
         exit 1
     fi
 fi
+rm -f $tmpc $tmpc.out
 
 cd lib/tcc
 ./configure --prefix=/ --config-ldl=no --config-bcheck=no --config-backtrace=no \
@@ -36,7 +46,7 @@ EOF
 cat config.mak
 
 cd lib/toybox
-ln -sf ../../config.mak .config.mak
+cp -f ../../config.mak .config.mak
 cat > .config <<EOF
 # CONFIG_TOYBOX_ON_ANDROID is not set
 CONFIG_TOYBOX_FORK=y

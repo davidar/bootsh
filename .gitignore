@@ -21,7 +21,6 @@
 /scrap/
 
 /musl-*/
-/musl-*.tar.gz
 /sysroot/
 
 /config.mak
