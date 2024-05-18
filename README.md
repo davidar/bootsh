@@ -29,3 +29,14 @@ This image contains four files:
 - `/tmp/Makefile`: which functions as a rudimentary package manager for downloading and compiling [further source packages](Makefile.packages)
 
 - `/bin/awk`: a [C script](wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
+
+## Credits
+
+*boot*sh is based on several MIT/BSD licensed projects:
+
+- The [Debian Almquist shell](http://gondor.apana.org.au/~herbert/dash/)
+- Command line utilities from [toybox](http://landley.net/toybox/)
+- The MIT-relicensed parts of the [Tiny C Compiler](https://bellard.org/tcc/)
+- Version 8.0 of [compiler-rt](https://compiler-rt.llvm.org/) (before it was relicensed from MIT to Apache 2.0)
+- `ar` from the [Cosmopolitan](https://github.com/jart/cosmopolitan) project
+- [musl libc](https://musl.libc.org/)
