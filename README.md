@@ -20,17 +20,18 @@ A [Docker image](https://hub.docker.com/r/davidar/bootsh/tags) is provided to de
 docker run --rm -it davidar/bootsh
 ```
 
-Run `make` once the bootstrap process has completed to list source packages available for installation.
-
 This image contains four files:
 
 - `/bin/sh`: the *boot*sh executable
 
 - `/bin/boot.sh`: a [shell script](boot.sh) for bootstrapping the system by downloading and building [musl libc](https://musl.libc.org/) and GNU Make from source
 
+- `/bin/awk`: a [C script](wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
+
 - `/tmp/Makefile`: which functions as a rudimentary package manager for downloading and compiling [further source packages](Makefile.packages)
 
-- `/bin/awk`: a [C script](wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
+Upon running the Docker image, it will bootstrap itself by constructing a minimal root filesystem and compiling additional build tools.
+Run `make` once the bootstrap process has completed to list additional source packages available for installation.
 
 ## Credits
 
@@ -41,4 +42,5 @@ This image contains four files:
 - The MIT-relicensed parts of the [Tiny C Compiler](https://bellard.org/tcc/)
 - Version 8.0 of [compiler-rt](https://compiler-rt.llvm.org/) (before it was relicensed from MIT to Apache 2.0)
 - `ar` from the [Cosmopolitan](https://github.com/jart/cosmopolitan) project
+- [wak](https://github.com/raygard/wak), the one-file implementation of `awk`
 - [musl libc](https://musl.libc.org/)
