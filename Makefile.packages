@@ -2,7 +2,13 @@ ARCH = $(shell uname -m)
 NPROC = $(shell nproc)
 MAKEFLAGS += -j$(NPROC)
 
-.PHONY: gawk binutils bzip2 linux-headers bash muxzcat perl bearssl curl test-host sabotage-stage0 sabotage-stage1 sabotage
+PACKAGES = bash bearssl binutils bzip2 curl gawk linux-headers muxzcat perl
+
+.PHONY: help test-host $(PACKAGES)
+
+help:
+	@echo "Please run 'make <target>' where <target> is one of the following:"
+	@echo "  $(PACKAGES)"
 
 /src/tarballs/gawk-5.3.0.tar.xz:
 	@echo "Downloading gawk source code..."

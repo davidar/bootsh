@@ -18,6 +18,8 @@ A [Docker image](https://hub.docker.com/r/davidar/bootsh/tags) is provided to de
 docker run --rm -it davidar/bootsh
 ```
 
+Run `make` once the bootstrap process has completed to list source packages available for installation.
+
 This image contains four files:
 
 - `/bin/sh`: the *boot*sh executable
