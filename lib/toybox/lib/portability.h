@@ -317,7 +317,7 @@ pid_t xfork(void);
 // There are occasions to use it, but it is NOT A GENERAL PURPOSE FUNCTION.
 // #define strncpy(...) @@strncpyisbadmmkay@@
 // strncat writes a null terminator one byte PAST the buffer size it's given.
-#define strncat(...) strncatisbadmmkay(__VA_ARGS__)
+// #define strncat(...) strncatisbadmmkay(__VA_ARGS__)
 
 // Support building the Android tools on glibc, so hermetic AOSP builds can
 // use toybox before they're ready to switch to host bionic.

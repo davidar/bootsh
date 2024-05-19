@@ -5,7 +5,7 @@ set -e
 [ -z "$CC" ] && CC=cc
 [ -z "$HOSTCC" ] && HOSTCC="$CC"
 
-CFLAGS="$CFLAGS -std=c99 -Wall -U_FORTIFY_SOURCE"
+CFLAGS="$CFLAGS -std=c99 -Wall -D_FORTIFY_SOURCE=2"
 CFLAGS="$CFLAGS -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-builtin-declaration-mismatch -Wno-clobbered"
 LDFLAGS="$LDFLAGS -static -Wl,--gc-sections"
 
