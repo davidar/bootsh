@@ -99,6 +99,13 @@ STATIC void delete_cmd_entry(void);
 STATIC void addcmdentry(char *, struct cmdentry *);
 STATIC int describe_command(struct output *, char *, const char *, int);
 
+void *toy_find(char *name);
+void toy_exec(char *argv[]);
+
+int tcc_main(int argc, char *argv[]);
+
+int ar_main(int argc, char *argv[]);
+
 
 /*
  * Exec a program.  Never returns.  If you change this routine, you may

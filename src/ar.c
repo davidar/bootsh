@@ -591,7 +591,7 @@ int ar_main(int argc, char *argv[]) {
 
   // get flags and output path
   if (argc < 3) {
-    fprintf(stderr, USAGE);
+    fprintf(stderr, "%s", USAGE);
     exit(1);
   }
   char *flags = argv[1];
@@ -612,7 +612,7 @@ int ar_main(int argc, char *argv[]) {
       !IsEqual(flags, "crsu") &&  //
       !IsEqual(flags, "crs")) {
     fprintf(stderr, "ar: flags should be rcsD\n");
-    fprintf(stderr, USAGE);
+    fprintf(stderr, "%s", USAGE);
     exit(1);
   }
 

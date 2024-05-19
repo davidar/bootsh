@@ -49,6 +49,7 @@
  * a quit signal will generate a core dump.
  */
 
+#include <stddef.h>
 #include <sys/param.h>
 
 #ifndef JOBS
@@ -65,9 +66,9 @@
 #endif
 
 typedef void *pointer;
-#ifndef NULL
-#define NULL (void *)0
-#endif
+// #ifndef NULL
+// #define NULL (void *)0
+// #endif
 #define STATIC static
 #define MKINIT	/* empty */
 

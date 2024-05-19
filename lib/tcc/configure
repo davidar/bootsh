@@ -484,7 +484,7 @@ fi
 
 # a final configuration tuning
 if test "$cc_name" != "tcc"; then
-  OPT1="-Wdeclaration-after-statement -fno-strict-aliasing"
+  OPT1="-fno-strict-aliasing"
   # we want -Wno- but gcc does not always reject unknown -Wno- options
   OPT2="-Wpointer-sign -Wsign-compare -Wunused-result -Wformat-truncation"
   OPT2="$OPT2 -Wstringop-truncation"

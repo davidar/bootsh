@@ -22,7 +22,9 @@
 #endif
 
 // For musl
+#ifndef _ALL_SOURCE
 #define _ALL_SOURCE
+#endif
 #include <regex.h>
 #ifndef REG_STARTEND
 #define REG_STARTEND 0
@@ -62,9 +64,9 @@
 
 // Various constants old build environments might not have even if kernel does
 
-#ifndef AT_FDCWD             // Kernel commit 5590ff0d5528 2006
-#define AT_FDCWD -100
-#endif
+// #ifndef AT_FDCWD             // Kernel commit 5590ff0d5528 2006
+// #define AT_FDCWD -100
+// #endif
 
 #ifndef AT_SYMLINK_NOFOLLOW
 #define AT_SYMLINK_NOFOLLOW 0x100
@@ -284,9 +286,9 @@ static inline void endutxent(void) {;}
 #ifndef O_PATH
 #define O_PATH   010000000
 #endif
-#ifndef SCHED_RESET_ON_FORK
-#define SCHED_RESET_ON_FORK (1<<30)
-#endif
+// #ifndef SCHED_RESET_ON_FORK
+// #define SCHED_RESET_ON_FORK (1<<30)
+// #endif
 #endif
 
 // Glibc won't give you linux-kernel constants unless you say "no, a BUD lite"

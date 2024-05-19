@@ -651,7 +651,7 @@ static void do_diff(char **files)
 
     struct diff *t, *ptr1 = d, *ptr2 = d;
     while (i) {
-      long a,b;
+      long a;
 
       // trim context to file len.
       if (TT.new_line_format || TT.U>TT.file[0].len) TT.U = TT.file[0].len;
@@ -661,7 +661,7 @@ static void do_diff(char **files)
       }
       //Handle the context stuff
       a =  ptr1->a;
-      b = minof(TT.file[0].len, ptr1->b);
+      // b = minof(TT.file[0].len, ptr1->b);
       if (i == x + 1) ptr1->suff = maxof(1, a-TT.U);
       else if (ptr1[-1].prev >= ptr1->a-TT.U) ptr1->suff = ptr1[-1].prev+1;
       else ptr1->suff =  ptr1->a-TT.U;

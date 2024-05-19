@@ -68,6 +68,8 @@ const int libtcc1a_len = LIBTCC1A_LEN;
 
 long long gunzip_mem(char *inbuf, int inlen, char *outbuf, int outlen);
 
+void list_toys(void);
+
 #define PROFILE 0
 
 int rootpid;
@@ -102,7 +104,9 @@ main(int argc, char **argv)
 	struct stackmark smark;
 	int login;
 
-	gunzip_mem(libtcc1a_data, sizeof(libtcc1a_data), libtcc1a = malloc(LIBTCC1A_LEN), LIBTCC1A_LEN);
+	char *outbuf = malloc(LIBTCC1A_LEN);
+	gunzip_mem(libtcc1a_data, sizeof(libtcc1a_data), outbuf, LIBTCC1A_LEN);
+	libtcc1a = outbuf;
 
 	if (argc > 1 && strcmp(argv[1], "--list-builtins") == 0) {
 		puts("ar");

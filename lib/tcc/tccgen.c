@@ -6684,7 +6684,7 @@ static void check_func_return(void)
         gen_assign_cast(&func_vt);
         gfunc_return(&func_vt);
     } else {
-        tcc_warning("function might return no value: '%s'", funcname);
+        // tcc_warning("function might return no value: '%s'", funcname);
     }
 }
 

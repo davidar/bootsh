@@ -5,7 +5,7 @@ set -e
 [ -z "$CC" ] && CC=cc
 [ -z "$HOSTCC" ] && HOSTCC="$CC"
 
-CFLAGS="$CFLAGS -std=c99 -U_FORTIFY_SOURCE"
+CFLAGS="$CFLAGS -std=c99 -Wall -Werror -U_FORTIFY_SOURCE"
 LDFLAGS="$LDFLAGS -static -Wl,--gc-sections"
 
 if [ -z "$DEBUG" ]; then
@@ -85,7 +85,7 @@ CONFIG_EXPAND=y
 # CONFIG_FALSE is not set
 CONFIG_FILE=y
 CONFIG_FIND=y
-# CONFIG_FOLD is not set
+CONFIG_FOLD=y
 CONFIG_GETCONF=y
 CONFIG_GREP=y
 CONFIG_EGREP=y

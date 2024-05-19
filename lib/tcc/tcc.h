@@ -25,8 +25,12 @@
 #ifndef _TCC_H
 #define _TCC_H
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+#ifndef _DARWIN_C_SOURCE
 #define _DARWIN_C_SOURCE
+#endif
 #include "config.h"
 
 #include <stdarg.h>
