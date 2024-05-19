@@ -22,6 +22,8 @@
  * THE SOFTWARE.
  */
 
+#include <sys/mman.h>
+
 #include "../lib/tcc/tcc.h"
 #include "../lib/tcc/tcctools.c"
 
@@ -315,12 +317,11 @@ redo:
         ;
     } else if (0 == ret) {
         if (tcc_run) {
-            char tmpfname[] = "/tmp/.tccrunXXXXXX";
-            int fd = mkstemp(tmpfname);
-            s->outfile = tcc_strdup(tmpfname);
-            close(fd);
+            int fd = memfd_create("tccrun", MFD_CLOEXEC);
+            s->outfile = tcc_malloc(32);
+            snprintf(s->outfile, 32, "/proc/%d/fd/%d", getpid(), fd);
             tcc_output_file(s, s->outfile);
-            execve(s->outfile, argv, environ);
+            fexecve(fd, argv, environ);
         } else {
             if (!s->outfile)
                 s->outfile = default_outputfile(s, first_file);
