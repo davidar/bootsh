@@ -434,5 +434,7 @@ pid_t __attribute__((returns_twice)) xvforkwrap(pid_t pid);
 // Wrapper that discards true/false "did it exit" value.
 #define NOEXIT(x) WOULD_EXIT(_noexit_res, x)
 
-#define minof(a, b) ({typeof(a) aa = (a); typeof(b) bb = (b); aa<bb ? aa : bb;})
-#define maxof(a, b) ({typeof(a) aa = (a); typeof(b) bb = (b); aa>bb ? aa : bb;})
+// #define minof(a, b) ({typeof(a) aa = (a); typeof(b) bb = (b); aa<bb ? aa : bb;})
+// #define maxof(a, b) ({typeof(a) aa = (a); typeof(b) bb = (b); aa>bb ? aa : bb;})
+#define minof(a, b) ((a) < (b) ? (a) : (b))
+#define maxof(a, b) ((a) > (b) ? (a) : (b))

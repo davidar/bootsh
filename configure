@@ -5,7 +5,7 @@ set -e
 [ -z "$CC" ] && CC=cc
 [ -z "$HOSTCC" ] && HOSTCC="$CC"
 
-CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
+CFLAGS="$CFLAGS -std=c99 -U_FORTIFY_SOURCE"
 LDFLAGS="$LDFLAGS -static -Wl,--gc-sections"
 
 if [ -z "$DEBUG" ]; then
