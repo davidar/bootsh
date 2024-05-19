@@ -2843,7 +2843,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
         tcc_add_runtime(s1);
 	resolve_common_syms(s1);
 
-        if (!s1->static_link) {
+        if (0) { // !s1->static_link) {
             if (file_type & TCC_OUTPUT_EXE) {
                 char *ptr;
                 /* allow override the dynamic loader */
@@ -2893,7 +2893,7 @@ static int elf_output_file(TCCState *s1, const char *filename)
     textrel = set_sec_sizes(s1);
     alloc_sec_names(s1, 0);
 
-    if (!s1->static_link) {
+    if (0) { // !s1->static_link) {
         /* add a list of needed dlls */
         for(i = 0; i < s1->nb_loaded_dlls; i++) {
             DLLReference *dllref = s1->loaded_dlls[i];
