@@ -121,7 +121,7 @@ shellexec(char **argv, const char *path, int idx)
 		toy_exec(argv);
 	}
 
-	if (!strcmp(argv[0], "cc")) {
+	if (!strcmp(argv[0], "cc") || !strcmp(argv[0], "c99")) {
 		exit(tcc_main(argc, argv));
 	}
 
@@ -510,7 +510,7 @@ loop:
 		goto success;
 	}
 
-	if (toy_find(name) || !strcmp(name, "cc") || !strcmp(name, "ar")) {
+	if (toy_find(name) || !strcmp(name, "cc") || !strcmp(name, "c99") || !strcmp(name, "ar")) {
 		entry->u.index = -1;
 		entry->cmdtype = CMDNORMAL;
 		return;

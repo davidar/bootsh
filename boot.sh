@@ -40,9 +40,7 @@ EOF
 
 [ ! -f /etc/resolv.conf ] && echo "nameserver 1.1.1.1" > /etc/resolv.conf
 
-printf '#!/bin/sh\nexit 0' > /bin/true
-printf '#!/bin/sh\nexit 1' > /bin/false
-for cmd in `sh --list-builtins`; do
+for cmd in $(sh --list-builtins); do
     printf '#!/bin/sh\ncommand %s "$@"' "$cmd" > /bin/$cmd;
 done
 chmod +x /bin/*

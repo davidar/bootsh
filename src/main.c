@@ -107,6 +107,7 @@ main(int argc, char **argv)
 	if (argc > 1 && strcmp(argv[1], "--list-builtins") == 0) {
 		puts("ar");
 		puts("cc");
+		puts("c99");
 		for (int i = 0; i < NUMBUILTINS; i++) {
 			if (builtincmd[i].flags == 0 || builtincmd[i].flags == BUILTIN_REGULAR) {
 				puts(builtincmd[i].name);
