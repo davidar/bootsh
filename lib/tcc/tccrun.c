@@ -69,7 +69,9 @@ typedef struct rt_frame {
 
 static TCCState *g_s1;
 /* semaphore to protect it */
-TCC_SEM(static rt_sem);
+#if CONFIG_TCC_SEMLOCK
+static TCCSem rt_sem;
+#endif
 static void rt_wait_sem(void) { WAIT_SEM(&rt_sem); }
 static void rt_post_sem(void) { POST_SEM(&rt_sem); }
 static int rt_get_caller_pc(addr_t *paddr, rt_frame *f, int level);
@@ -390,7 +392,10 @@ redo:
                 continue;
 #endif
             f = k;
-            if (f >= CONFIG_RUNMEM_RO) {
+#if CONFIG_RUNMEM_RO
+            if (f >= CONFIG_RUNMEM_RO)
+#endif
+            {
                 if (f != 0)
                     continue;
                 f = 3; /* change only SHF_EXECINSTR to rwx */

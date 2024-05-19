@@ -616,13 +616,13 @@ int ar_main(int argc, char *argv[]) {
     exit(1);
   }
 
-  struct Args args = {reballoc(0, 4096, sizeof(char *))};
-  struct Args names = {reballoc(0, 4096, sizeof(char *))};
-  struct Ints modes = {reballoc(0, 4096, sizeof(int))};
-  struct Ints sizes = {reballoc(0, 4096, sizeof(int))};
-  struct Ints symnames = {reballoc(0, 16384, sizeof(int))};
-  struct Bytes symbols = {reballoc(0, 131072, sizeof(char))};
-  struct Bytes filenames = {reballoc(0, 16384, sizeof(char))};
+  struct Args args = {reballoc(0, 4096, sizeof(char *)), 0};
+  struct Args names = {reballoc(0, 4096, sizeof(char *)), 0};
+  struct Ints modes = {reballoc(0, 4096, sizeof(int)), 0};
+  struct Ints sizes = {reballoc(0, 4096, sizeof(int)), 0};
+  struct Ints symnames = {reballoc(0, 16384, sizeof(int)), 0};
+  struct Bytes symbols = {reballoc(0, 131072, sizeof(char)), 0};
+  struct Bytes filenames = {reballoc(0, 16384, sizeof(char)), 0};
 
   // perform analysis pass on input files
   struct GetArgs ga;

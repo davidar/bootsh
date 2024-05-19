@@ -1849,7 +1849,7 @@ ST_FUNC int gv(int rc)
             (vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
             /* CPUs usually cannot use float constants, so we store them
                generically in data segment */
-            init_params p = { rodata_section };
+            init_params p = { rodata_section, 0, NULL };
             unsigned long offset;
             size = type_size(&vtop->type, &align);
             if (NODATA_WANTED)
@@ -2664,6 +2664,7 @@ static void type_to_str(char *buf, int buf_size,
         tstr = "double";
         if (!(t & VT_LONG))
             goto add_tstr;
+        // fall through
     case VT_LDOUBLE:
         tstr = "long double";
     add_tstr:
@@ -5286,12 +5287,14 @@ static void parse_builtin_params(int nc, const char *args)
 		continue;
 	    case 'V':
                 type.t = VT_CONSTANT;
+                // fall through
 	    case 'v':
                 type.t |= VT_VOID;
                 mk_pointer (&type);
                 break;
 	    case 'S':
                 type.t = VT_CONSTANT;
+                // fall through
 	    case 's':
                 type.t |= char_type.t;
                 mk_pointer (&type);

@@ -70,7 +70,9 @@ void seq_main(void)
   if (!TT.s) TT.s = "\n";
   switch (toys.optc) {
     case 3: increment = parsef(toys.optargs[1]);
+    // fall through
     case 2: first = parsef(*toys.optargs);
+    // fall through
     default: last = parsef(toys.optargs[toys.optc-1]);
   }
 

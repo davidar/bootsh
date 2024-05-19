@@ -125,10 +125,11 @@ void xset_terminal(int fd, int raw, int speed, struct termios *old)
   if (-1 == set_terminal(fd, raw, speed, old)) perror_exit("tcsetattr");
 }
 
+static
 struct scan_key_list {
   int key;
   char *seq;
-} static const scan_key_list[] = {
+} const scan_key_list[] = {
   {KEY_UP, "\e[A"}, {KEY_DOWN, "\e[B"},
   {KEY_RIGHT, "\e[C"}, {KEY_LEFT, "\e[D"},
 

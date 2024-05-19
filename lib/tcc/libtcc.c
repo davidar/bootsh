@@ -74,7 +74,9 @@
 
 /* XXX: get rid of this ASAP (or maybe not) */
 ST_DATA struct TCCState *tcc_state;
-TCC_SEM(static tcc_compile_sem);
+#if CONFIG_TCC_SEMLOCK
+static TCCSem tcc_compile_sem;
+#endif
 /* an array of pointers to memory to be free'd after errors */
 ST_DATA void** stk_data;
 ST_DATA int nb_stk_data;

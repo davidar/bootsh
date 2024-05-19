@@ -17,7 +17,7 @@ WORKDIR /tmp
 COPY configure Makefile bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
-RUN cd bootsh && ./configure && make clean && make -j$(nproc)
+RUN cd bootsh && CFLAGS=-Werror ./configure && make clean && make -j$(nproc)
 
 FROM scratch AS bootsh
 COPY --from=build /tmp/bootsh/bootsh /bin/sh

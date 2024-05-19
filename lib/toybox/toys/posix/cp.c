@@ -115,9 +115,10 @@ GLOBALS(
   int pflags;
 )
 
+static
 struct cp_preserve {
   char *name;
-} static const cp_preserve[] = TAGGED_ARRAY(CP,
+} const cp_preserve[] = TAGGED_ARRAY(CP,
   {"mode"}, {"ownership"}, {"timestamps"}, {"context"}, {"xattr"},
 );
 
