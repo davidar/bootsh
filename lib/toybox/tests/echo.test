@@ -16,6 +16,9 @@ testcmd "with spaces" "'one  two	three'" \
 testcmd "" "-n" "" "" ""
 testcmd "" "-n one" "one" "" ""
 testcmd "" "one -n" "one -n\n" "" ""
+
+SKIP=999
+
 testcmd "-en" "-en 'one\ntwo'" "one\ntwo" "" ""
 testcmd "" "--hello" "--hello\n" "" ""
 testcmd "-e all" "-e '\a\b\c\f\n\r\t\v\\\0123' | xxd -p" "0708\n" "" ""

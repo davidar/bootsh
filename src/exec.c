@@ -432,8 +432,7 @@ absfail:
 
 	/* If %builtin not in path, check for builtin next */
 	bcmd = find_builtin(name);
-	if (bcmd && ((bcmd->flags & BUILTIN_REGULAR) | (act & DO_ALTPATH) |
-		     (builtinloc <= 0)))
+	if (bcmd) // && ((bcmd->flags & BUILTIN_REGULAR) | (act & DO_ALTPATH) | (builtinloc <= 0)))
 		goto builtin_success;
 
 	if (act & DO_REGBLTIN)

@@ -108,7 +108,7 @@ main(int argc, char **argv)
 		puts("ar");
 		puts("cc");
 		for (int i = 0; i < NUMBUILTINS; i++) {
-			if (builtincmd[i].flags == 0) {
+			if (builtincmd[i].flags == 0 || builtincmd[i].flags == BUILTIN_REGULAR) {
 				puts(builtincmd[i].name);
 			}
 		}

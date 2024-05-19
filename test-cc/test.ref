@@ -940,7 +940,7 @@ fancycpy(43)=43
 fancycpy2(44)=44
 regvar=4243
 asmhc: 0x4542
-asmd: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+asmd: /local/bin:/bin
 asm_dot_test 1: 8
 asm_dot_test 2: 123
 asm_dot_test 3: 456

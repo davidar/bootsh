@@ -18,6 +18,8 @@ mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
 cd /tmp
 
+export PATH=/local/bin:/bin
+
 cat > /etc/passwd <<EOF
 root:x:0:0:root:/root:/bin/sh
 daemon:x:1:1:daemon:/dev/null:/bin/false
