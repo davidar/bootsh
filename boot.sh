@@ -258,5 +258,8 @@ if [ $# -gt 0 ]; then
 fi
 
 if tty -s; then
+	export USER=$(whoami)
+	export HOSTNAME=$(hostname)
+	export PS1='$USER@$HOSTNAME:$PWD\$ '
     exec /bin/sh
 fi
