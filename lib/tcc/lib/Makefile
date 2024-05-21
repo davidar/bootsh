@@ -24,7 +24,7 @@ arm-libtcc1-usegcc ?= no
 
 # This makes bounds checking 40%..60% faster.
 x86_64-libtcc1-usegcc=yes
-i386-libtcc1-usegcc=yes
+# i386-libtcc1-usegcc=yes
 
 ifeq "$($(T)-libtcc1-usegcc)" "yes"
  XCC = $(CC)
