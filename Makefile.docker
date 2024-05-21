@@ -4,7 +4,7 @@ GET_DOCKER_IMAGE_ID = docker images --format "{{.ID}}" --no-trunc --filter=refer
 test: test-latest test-bootstrap
 
 docker-%:
-	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$*
+	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$* --platform linux/amd64,linux/i386
 
 docker-stage0: docker-latest
 docker-stage1: docker-stage0

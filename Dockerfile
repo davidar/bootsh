@@ -1,6 +1,13 @@
 ARG TAG=latest
 
-FROM alpine AS build-latest
+FROM alpine AS alpine-amd64
+
+FROM alpine AS alpine-386
+RUN apk add setarch
+SHELL [ "setarch", "i386", "/bin/sh", "-c" ]
+
+ARG TARGETARCH
+FROM alpine-$TARGETARCH AS build-latest
 RUN apk add build-base bash
 
 FROM davidar/bootsh:latest AS build-stage0

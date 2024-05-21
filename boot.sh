@@ -54,12 +54,17 @@ fi
 tar -xf /src/tarballs/musl-1.2.5.tar.gz
 cd musl-1.2.5
 
-echo "Bootstrapping musl -> /src/logs/boot_musl.log"
+echo "Bootstrapping musl"
+
+ARCH=$(uname -m)
+[ "$ARCH" = "i686" ] && ARCH=i386
 
 CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
-CFLAGS="$CFLAGS -Iarch/x86_64 -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
+CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
 
-rm -rf src/complex src/math/x86_64 crt/x86_64
+rm -rf src/complex src/math/$ARCH crt/$ARCH
+
+
 sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
 cat > arch/x86_64/syscall_arch.h <<EOF
 #define __SYSCALL_LL_E(x) (x)
@@ -158,14 +163,84 @@ asm (
 #define IPC_64 0
 EOF
 
+
+sed 's/jecxz/cmp %ecx,0; je/' -i src/signal/i386/sigsetjmp.s
+cat > arch/i386/syscall_arch.h <<EOF
+#define __SYSCALL_LL_E(x) \
+((union { long long ll; long l[2]; }){ .ll = x }).l[0], \
+((union { long long ll; long l[2]; }){ .ll = x }).l[1]
+#define __SYSCALL_LL_O(x) __SYSCALL_LL_E((x))
+
+static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+asm(
+"__syscall6:\n"
+"	pushl %ebp\n"
+"	pushl %edi\n"
+"	pushl %esi\n"
+"	pushl %ebx\n"
+"	movl  20(%esp),%eax\n"
+"	movl  24(%esp),%ebx\n"
+"	movl  28(%esp),%ecx\n"
+"	movl  32(%esp),%edx\n"
+"	movl  36(%esp),%esi\n"
+"	movl  40(%esp),%edi\n"
+"	movl  44(%esp),%ebp\n"
+"	int \$0x80\n"
+"	popl %ebx\n"
+"	popl %esi\n"
+"	popl %edi\n"
+"	popl %ebp\n"
+"	ret"
+);
+
+static inline long __syscall0(long n)
+{
+	return __syscall6(n, 0, 0, 0, 0, 0, 0);
+}
+
+static inline long __syscall1(long n, long a1)
+{
+	return __syscall6(n, a1, 0, 0, 0, 0, 0);
+}
+
+static inline long __syscall2(long n, long a1, long a2)
+{
+	return __syscall6(n, a1, a2, 0, 0, 0, 0);
+}
+
+static inline long __syscall3(long n, long a1, long a2, long a3)
+{
+	return __syscall6(n, a1, a2, a3, 0, 0, 0);
+}
+
+static inline long __syscall4(long n, long a1, long a2, long a3, long a4)
+{
+	return __syscall6(n, a1, a2, a3, a4, 0, 0);
+}
+
+static inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5)
+{
+	return __syscall6(n, a1, a2, a3, a4, a5, 0);
+}
+
+#define VDSO_USEFUL
+#define VDSO_CGT32_SYM "__vdso_clock_gettime"
+#define VDSO_CGT32_VER "LINUX_2.6"
+#define VDSO_CGT_SYM "__vdso_clock_gettime64"
+#define VDSO_CGT_VER "LINUX_2.6"
+EOF
+
+
+sed /_REDIR_TIME64/d -i arch/$ARCH/bits/alltypes.h.in
+
 mkdir -p obj/include/bits
-sed -f ./tools/mkalltypes.sed ./arch/x86_64/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
-cp arch/x86_64/bits/syscall.h.in obj/include/bits/syscall.h
-sed -n -e s/__NR_/SYS_/p < arch/x86_64/bits/syscall.h.in >> obj/include/bits/syscall.h
+sed -f ./tools/mkalltypes.sed ./arch/$ARCH/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
+cp arch/$ARCH/bits/syscall.h.in obj/include/bits/syscall.h
+sed -n -e s/__NR_/SYS_/p < arch/$ARCH/bits/syscall.h.in >> obj/include/bits/syscall.h
 
 cp -r include $PREFIX/
 cp -r arch/generic/bits $PREFIX/include/
-cp -r arch/x86_64/bits $PREFIX/include/
+cp -r arch/$ARCH/bits $PREFIX/include/
 cp -r obj/include/bits $PREFIX/include/
 
 mkdir -p obj/src/internal
@@ -204,38 +279,38 @@ EOF
 for src in $SOURCES; do
     obj=obj/${src%.c}.o
     mkdir -p $(dirname $obj)
-    cc $CFLAGS -c -o $obj $src >> /src/logs/boot_musl.log 2>&1
+    cc $CFLAGS -c -o $obj $src
 done
 
 mkdir -p obj/src/env
-mkdir -p obj/src/fenv/x86_64
-mkdir -p obj/src/ldso/x86_64
-mkdir -p obj/src/process/x86_64
-mkdir -p obj/src/setjmp/x86_64
-mkdir -p obj/src/signal/x86_64
-mkdir -p obj/src/string/x86_64
-mkdir -p obj/src/thread/x86_64
+mkdir -p obj/src/fenv/$ARCH
+mkdir -p obj/src/ldso/$ARCH
+mkdir -p obj/src/process/$ARCH
+mkdir -p obj/src/setjmp/$ARCH
+mkdir -p obj/src/signal/$ARCH
+mkdir -p obj/src/string/$ARCH
+mkdir -p obj/src/thread/$ARCH
 
-cc $CFLAGS -c -o obj/src/fenv/x86_64/fenv.o src/fenv/x86_64/fenv.s
-cc $CFLAGS -c -o obj/src/ldso/x86_64/dlsym.o src/ldso/x86_64/dlsym.s
-cc $CFLAGS -c -o obj/src/ldso/x86_64/tlsdesc.o src/ldso/x86_64/tlsdesc.s
-cc $CFLAGS -c -o obj/src/process/x86_64/vfork.o src/process/x86_64/vfork.s
-cc $CFLAGS -c -o obj/src/setjmp/x86_64/longjmp.o src/setjmp/x86_64/longjmp.s
-cc $CFLAGS -c -o obj/src/setjmp/x86_64/setjmp.o src/setjmp/x86_64/setjmp.s
-cc $CFLAGS -c -o obj/src/signal/x86_64/restore.o src/signal/x86_64/restore.s
-cc $CFLAGS -c -o obj/src/signal/x86_64/sigsetjmp.o src/signal/x86_64/sigsetjmp.s
-cc $CFLAGS -c -o obj/src/thread/x86_64/__unmapself.o src/thread/x86_64/__unmapself.s
-cc $CFLAGS -c -o obj/src/thread/x86_64/clone.o src/thread/x86_64/clone.s
-cc $CFLAGS -c -o obj/src/thread/x86_64/syscall_cp.o src/thread/x86_64/syscall_cp.s
+cc $CFLAGS -c -o obj/src/fenv/$ARCH/fenv.o src/fenv/$ARCH/fenv.s
+cc $CFLAGS -c -o obj/src/ldso/$ARCH/dlsym.o src/ldso/$ARCH/dlsym.s
+cc $CFLAGS -c -o obj/src/ldso/$ARCH/tlsdesc.o src/ldso/$ARCH/tlsdesc.s
+cc $CFLAGS -c -o obj/src/process/$ARCH/vfork.o src/process/$ARCH/vfork.s
+cc $CFLAGS -c -o obj/src/setjmp/$ARCH/longjmp.o src/setjmp/$ARCH/longjmp.s
+cc $CFLAGS -c -o obj/src/setjmp/$ARCH/setjmp.o src/setjmp/$ARCH/setjmp.s
+cc $CFLAGS -c -o obj/src/signal/$ARCH/restore.o src/signal/$ARCH/restore.s
+cc $CFLAGS -c -o obj/src/signal/$ARCH/sigsetjmp.o src/signal/$ARCH/sigsetjmp.s
+cc $CFLAGS -c -o obj/src/thread/$ARCH/__unmapself.o src/thread/$ARCH/__unmapself.s
+cc $CFLAGS -c -o obj/src/thread/$ARCH/clone.o src/thread/$ARCH/clone.s
+cc $CFLAGS -c -o obj/src/thread/$ARCH/syscall_cp.o src/thread/$ARCH/syscall_cp.s
 
 cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__init_tls.o src/env/__init_tls.c
 cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__libc_start_main.o src/env/__libc_start_main.c
 cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__stack_chk_fail.o src/env/__stack_chk_fail.c
-cc $CFLAGS -fno-stack-protector -c -o obj/src/thread/x86_64/__set_thread_area.o src/thread/x86_64/__set_thread_area.s
+cc $CFLAGS -fno-stack-protector -c -o obj/src/thread/$ARCH/__set_thread_area.o src/thread/$ARCH/__set_thread_area.s
 cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/memcmp.o src/string/memcmp.c
-cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/x86_64/memmove.o src/string/x86_64/memmove.s
-cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memcpy.o src/string/x86_64/memcpy.s
-cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/x86_64/memset.o src/string/x86_64/memset.s
+cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/$ARCH/memmove.o src/string/$ARCH/memmove.s
+cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/$ARCH/memcpy.o src/string/$ARCH/memcpy.s
+cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/$ARCH/memset.o src/string/$ARCH/memset.s
 
 ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
 cd ..
