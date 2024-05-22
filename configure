@@ -156,7 +156,7 @@ CONFIG_XARGS=y
 #
 # CONFIG_ARP is not set
 # CONFIG_ARPING is not set
-CONFIG_AWK=y
+# CONFIG_AWK is not set
 # CONFIG_BC is not set
 # CONFIG_BOOTCHARTD is not set
 # CONFIG_BRCTL is not set

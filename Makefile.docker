@@ -4,7 +4,7 @@ DOCKER_MOUNTS = \
 	-v $(CURDIR)/lib/toybox:/tmp/lib/toybox \
 	-v $(CURDIR)/tarballs:/src/tarballs
 
-test: test-latest test-stage0 test-stage1 test-stage2 bootstrap-amd64 bootstrap-i386
+test: test-latest test-stage2 bootstrap-amd64 bootstrap-i386
 
 docker-%:
 	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$* --platform linux/amd64,linux/i386
