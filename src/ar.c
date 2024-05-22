@@ -443,7 +443,7 @@ static void *balloc(size_t n, size_t a) {
 // - can't be freed or reclaimed
 static void *reballoc(void *p, size_t n, size_t z) {
   size_t c;
-  assert(n >= 0);
+  // assert(n >= 0);
   assert(z >= 1 && !(z & (z - 1)));
   n = n * z;
   // if (ckd_mul(&n, n, z))
