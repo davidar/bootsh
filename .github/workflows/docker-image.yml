@@ -26,20 +26,17 @@ jobs:
         with:
           load: true
           tags: davidar/bootsh:latest
+          platforms: linux/amd64,linux/i386
       -
         name: Checkout
         uses: actions/checkout@v4
       -
         name: Test
-        run: |
-          docker run --rm \
-            -v $PWD/test-cc:/tmp/test-cc \
-            -v $PWD/lib/toybox:/tmp/lib/toybox \
-            -v $PWD/tarballs:/src/tarballs \
-            davidar/bootsh:latest test-host
+        run: make test-latest -o docker-latest
       -
         name: Build and push
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: davidar/bootsh:latest
+          platforms: linux/amd64,linux/i386
