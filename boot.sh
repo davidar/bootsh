@@ -56,8 +56,7 @@ cd musl-1.2.5
 
 echo "Bootstrapping musl"
 
-ARCH=$(uname -m)
-[ "$ARCH" = "i686" ] && ARCH=i386
+ARCH=$(uname -m | sed 's/i.86/i386/')
 
 CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
 CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"

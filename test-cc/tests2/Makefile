@@ -151,15 +151,15 @@ endif
 all test tests2.all: $(filter-out $(SKIP),$(TESTS))
 	@$(MAKE) clean --no-print-directory -s
 
-%.test: %.c %.expect
+%.test: %.c $(ARCH)/%.expect
 	@echo Test: $*...
 	$(call T1,$<) $(T3)
 
 T1 = $(TCC) $(FLAGS) $(T2) $(ARGS)
 T2 = $(if $(NORUN),$1 -o $(basename $@).exe && ./$(basename $@).exe,-run $1)
 T3 = $(FILTER) >$*.output 2>&1 || true \
-     && diff -Nbu $(filter %.expect,$^) $*.output \
-     && rm -f $*.output $(filter $*.expect,$(GEN-ALWAYS))
+     && diff -Nbu $(filter $(ARCH)/%.expect,$^) $*.output \
+     && rm -f $*.output $(filter $(ARCH)/$*.expect,$(GEN-ALWAYS))
 
 # run single test and update .expect file, e.g. "make tests2.37+"
 tests2.%+:
@@ -174,13 +174,14 @@ tests2.%:
 	@$(MAKE) $(call F1,$*) --no-print-directory
 
 F1 = $(or $(filter $1_%,$(TESTS)),$1_???.test)
-F2 = $1 UPDATE="$(patsubst %.test,%.expect,$1)"
+F2 = $1 UPDATE="$(patsubst %.test,$(ARCH)/%.expect,$1)"
 
 # automatically generate .expect files with gcc:
-%.expect :
-	@echo Generating: $@
-	@$(call GEN,$(SRC)/$*.c) $(FILTER) >$@ 2>&1
-	@rm -f *.exe *.obj *.pdb
+$(ARCH)/%.expect :
+	false
+	# @echo Generating: $@
+	# @$(call GEN,$(SRC)/$*.c) $(FILTER) >$@ 2>&1
+	# @rm -f *.exe *.obj *.pdb
 
 # using TCC for .expect if -dt in FLAGS
 GEN = $(if $(filter -dt -bt -b,$(FLAGS)),$(GEN-TCC),$(GEN-CC))
@@ -190,7 +191,7 @@ GEN-MSC = $(MS-CC) $1 && ./$(basename $@).exe
 MS-CC = cl
 
 # tell make not to delete
-.PRECIOUS: %.expect
+.PRECIOUS: $(ARCH)/%.expect
 
 # force .expect generation for these files
 $(sort $(GEN-ALWAYS) $(UPDATE)) : force

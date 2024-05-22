@@ -1,10 +1,10 @@
 IMAGE_NAME = davidar/bootsh
 GET_DOCKER_IMAGE_ID = docker images --format "{{.ID}}" --no-trunc --filter=reference=$(IMAGE_NAME)
 
-test: test-latest test-bootstrap
+test: test-latest test-stage0 test-stage1 test-bootstrap
 
 docker-%:
-	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$* --platform linux/amd64,linux/i386
+	docker build . -t $(IMAGE_NAME):$* --build-arg TAG=$* --platform linux/i386
 
 docker-stage0: docker-latest
 docker-stage1: docker-stage0
@@ -22,4 +22,4 @@ test-%: docker-%
 		$(IMAGE_NAME):$* test-host
 
 run: docker-latest
-	docker run --rm -it -v $(CURDIR)/tarballs:/src/tarballs $(IMAGE_NAME):latest
+	docker run --rm -it -v $(CURDIR):/src $(IMAGE_NAME):latest
