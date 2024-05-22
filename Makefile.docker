@@ -23,3 +23,6 @@ test-%: docker-%
 
 run: docker-latest
 	docker run --rm -it -v $(CURDIR):/src $(IMAGE_NAME):latest
+
+bootsh.%: docker-%
+	ID=`docker create $(IMAGE_NAME):$*` && docker cp $$ID:/bin/sh $@ && docker rm $$ID

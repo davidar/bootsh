@@ -37,7 +37,7 @@ void xstrncat(char *dest, char *src, size_t size)
 
 void _xexit(void)
 {
-  if (toys.rebound) siglongjmp(*toys.rebound, 1);
+  if (toys.rebound) longjmp(*toys.rebound, 1);
 
   _exit(toys.exitval);
 }

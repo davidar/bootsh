@@ -120,7 +120,7 @@ extern struct toy_context {
   char wasroot;            // dropped setuid
 
   // toy_init() should not zero past here.
-  sigjmp_buf *rebound;     // siglongjmp here instead of exit when do_rebound
+  jmp_buf *rebound;     // siglongjmp here instead of exit when do_rebound
   struct arg_list *xexit;  // atexit() functions for xexit(), set by sigatexit()
   void *stacktop;          // nested toy_exec() call count, or 0 if vforked
   int envc;                // Count of original environ entries

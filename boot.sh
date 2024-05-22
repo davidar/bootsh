@@ -163,7 +163,7 @@ asm (
 EOF
 
 
-sed 's/jecxz/cmp %ecx,0; je/' -i src/signal/i386/sigsetjmp.s
+echo > src/signal/i386/sigsetjmp.s
 cat > arch/i386/syscall_arch.h <<EOF
 #define __SYSCALL_LL_E(x) \
 ((union { long long ll; long l[2]; }){ .ll = x }).l[0], \
