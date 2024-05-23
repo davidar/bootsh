@@ -60,9 +60,6 @@ echo "Bootstrapping musl"
 
 ARCH=$(uname -m | sed 's/i.86/i386/')
 
-CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
-CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
-
 # Patch musl to be compatible with tcc
 
 rm -rf src/complex src/math/$ARCH crt/$ARCH
@@ -72,221 +69,30 @@ sed -i 's/jecxz/test %ecx,%ecx; jz/' src/signal/i386/sigsetjmp.s
 
 sed /_REDIR_TIME64/d -i arch/$ARCH/bits/alltypes.h.in
 
+# Replace syscall interface with our own assembly implementation
 
-cat > arch/x86_64/syscall_arch.h <<EOF
-#define __SYSCALL_LL_E(x) (x)
-#define __SYSCALL_LL_O(x) (x)
+head -n3 arch/x86_64/syscall_arch.h > arch/x86_64/syscall_arch.h.new
+tail -n8 arch/x86_64/syscall_arch.h >> arch/x86_64/syscall_arch.h.new
+mv -f arch/x86_64/syscall_arch.h.new arch/x86_64/syscall_arch.h
 
-static __inline long __syscall0(long n);
-asm (
-"__syscall0:\n"
-    "movq %rdi, %rax\n"
-    "syscall\n"
-    "ret"
-);
+head -n5 arch/i386/syscall_arch.h > arch/i386/syscall_arch.h.new
+tail -n6 arch/i386/syscall_arch.h >> arch/i386/syscall_arch.h.new
+mv -f arch/i386/syscall_arch.h.new arch/i386/syscall_arch.h
 
-static __inline long __syscall1(long n, long a1);
-asm (
-"__syscall1:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "syscall\n"
-    "ret"
-);
-
-static __inline long __syscall2(long n, long a1, long a2);
-asm (
-"__syscall2:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "movq %rdx, %rsi\n"
-    "syscall\n"
-    "ret"
-);
-
-static __inline long __syscall3(long n, long a1, long a2, long a3);
-asm (
-"__syscall3:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "movq %rdx, %rsi\n"
-    "movq %rcx, %rdx\n"
-    "syscall\n"
-    "ret"
-);
-
-static __inline long __syscall4(long n, long a1, long a2, long a3, long a4);
-asm (
-"__syscall4:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "movq %rdx, %rsi\n"
-    "movq %rcx, %rdx\n"
-    "movq %r8, %r10\n"
-    "syscall\n"
-    "ret"
-);
-
-static __inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5);
-asm (
-"__syscall5:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "movq %rdx, %rsi\n"
-    "movq %rcx, %rdx\n"
-    "movq %r8, %r10\n"
-    "movq %r9, %r8\n"
-    "syscall\n"
-    "ret"
-);
-
-static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
-asm (
-"__syscall6:\n"
-    "movq %rdi, %rax\n"
-    "movq %rsi, %rdi\n"
-    "movq %rdx, %rsi\n"
-    "movq %rcx, %rdx\n"
-    "movq %r8, %r10\n"
-    "movq %r9, %r8\n"
-    "movq 8(%rsp), %r9\n"
-    "syscall\n"
-    "ret"
-);
-
-#define VDSO_USEFUL
-#define VDSO_CGT_SYM "__vdso_clock_gettime"
-#define VDSO_CGT_VER "LINUX_2.6"
-#define VDSO_GETCPU_SYM "__vdso_getcpu"
-#define VDSO_GETCPU_VER "LINUX_2.6"
-
-#define IPC_64 0
+cat >> arch/$ARCH/syscall_arch.h <<EOF
+long __syscall0(long);
+long __syscall1(long, long);
+long __syscall2(long, long, long);
+long __syscall3(long, long, long, long);
+long __syscall4(long, long, long, long, long);
+long __syscall5(long, long, long, long, long, long);
+long __syscall6(long, long, long, long, long, long, long);
 EOF
-
-
-cat > arch/i386/syscall_arch.h <<EOF
-#define __SYSCALL_LL_E(x) \\
-((union { long long ll; long l[2]; }){ .ll = x }).l[0], \\
-((union { long long ll; long l[2]; }){ .ll = x }).l[1]
-#define __SYSCALL_LL_O(x) __SYSCALL_LL_E((x))
-
-#define SYSCALL_NO_TLS 1
-
-#if SYSCALL_NO_TLS
-#define SYSCALL_INSNS "int \$128"
-#else
-#define SYSCALL_INSNS "call *%gs:16"
-#endif
-
-#define SYSCALL_INSNS_12 "xchg %ebx,%edx ; " SYSCALL_INSNS " ; xchg %ebx,%edx"
-#define SYSCALL_INSNS_34 "xchg %ebx,%edi ; " SYSCALL_INSNS " ; xchg %ebx,%edi"
-
-static inline long __syscall0(long n);
-asm(
-"__syscall0:\n"
-"    movl   4(%esp),%eax\n"
-     SYSCALL_INSNS "\n"
-"    ret"
-);
-
-static inline long __syscall1(long n, long a1);
-asm(
-"__syscall1:\n"
-"    movl   4(%esp),%eax\n"
-"    movl   8(%esp),%edx\n"
-     SYSCALL_INSNS_12 "\n"
-"    ret"
-);
-
-static inline long __syscall2(long n, long a1, long a2);
-asm(
-"__syscall2:\n"
-"    movl   4(%esp),%eax\n"
-"    movl   8(%esp),%edx\n"
-"    movl  12(%esp),%ecx\n"
-     SYSCALL_INSNS_12 "\n"
-"    ret"
-);
-
-static inline long __syscall3(long n, long a1, long a2, long a3);
-asm(
-"__syscall3:\n"
-"    pushl %ebx\n"
-"    movl   8(%esp),%eax\n"
-"    movl  12(%esp),%ebx\n"
-"    movl  16(%esp),%ecx\n"
-"    movl  20(%esp),%edx\n"
-     SYSCALL_INSNS "\n"
-"    popl  %ebx\n"
-"    ret"
-);
-
-static inline long __syscall4(long n, long a1, long a2, long a3, long a4);
-asm(
-"__syscall4:\n"
-"    pushl %esi\n"
-"    pushl %ebx\n"
-"    movl  12(%esp),%eax\n"
-"    movl  16(%esp),%ebx\n"
-"    movl  20(%esp),%ecx\n"
-"    movl  24(%esp),%edx\n"
-"    movl  28(%esp),%esi\n"
-     SYSCALL_INSNS "\n"
-"    popl  %ebx\n"
-"    popl  %esi\n"
-"    ret"
-);
-
-static inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5);
-asm(
-"__syscall5:\n"
-"    pushl %edi\n"
-"    pushl %esi\n"
-"    pushl %ebx\n"
-"    movl  16(%esp),%eax\n"
-"    movl  20(%esp),%ebx\n"
-"    movl  24(%esp),%ecx\n"
-"    movl  28(%esp),%edx\n"
-"    movl  32(%esp),%esi\n"
-"    movl  36(%esp),%edi\n"
-     SYSCALL_INSNS "\n"
-"    popl  %ebx\n"
-"    popl  %esi\n"
-"    popl  %edi\n"
-"    ret"
-);
-
-static inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
-asm(
-"__syscall6:\n"
-"    pushl %ebp\n"
-"    pushl %edi\n"
-"    pushl %esi\n"
-"    pushl %ebx\n"
-"    movl  20(%esp),%eax\n"
-"    movl  24(%esp),%ebx\n"
-"    movl  28(%esp),%ecx\n"
-"    movl  32(%esp),%edx\n"
-"    movl  36(%esp),%esi\n"
-"    movl  40(%esp),%edi\n"
-"    movl  44(%esp),%ebp\n"
-     SYSCALL_INSNS "\n"
-"    popl  %ebx\n"
-"    popl  %esi\n"
-"    popl  %edi\n"
-"    popl  %ebp\n"
-"    ret"
-);
-
-#define VDSO_USEFUL
-#define VDSO_CGT32_SYM "__vdso_clock_gettime"
-#define VDSO_CGT32_VER "LINUX_2.6"
-#define VDSO_CGT_SYM "__vdso_clock_gettime64"
-#define VDSO_CGT_VER "LINUX_2.6"
-EOF
-
 
 # Build musl
+
+CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
+CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
 
 mkdir -p obj/include/bits
 sed -f ./tools/mkalltypes.sed ./arch/$ARCH/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
@@ -305,6 +111,8 @@ mkdir -p $PREFIX/lib
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crt1.o crt/crt1.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crti.o crt/crti.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crtn.o crt/crtn.c
+
+cc $CFLAGS -c -o obj/src/syscall_$ARCH.o /tmp/syscall_$ARCH.s
 
 ls src/*/*.c src/malloc/mallocng/*.c | sort > sources.txt
 
