@@ -422,10 +422,10 @@ pid_t __attribute__((returns_twice)) xvforkwrap(pid_t pid);
 
 // Wrapper to make xfuncs() return (via siglongjmp) instead of exiting.
 // Assigns true/false "did it exit" value to first argument.
-#define WOULD_EXIT(y, x) do { jmp_buf _noexit; \
+#define WOULD_EXIT(y, x) do { sigjmp_buf _noexit; \
   int _noexit_res; \
   toys.rebound = &_noexit; \
-  _noexit_res = setjmp(_noexit); \
+  _noexit_res = sigsetjmp(_noexit, 1); \
   if (!_noexit_res) do {x;} while(0); \
   toys.rebound = 0; \
   y = _noexit_res; \

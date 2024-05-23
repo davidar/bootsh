@@ -33,14 +33,14 @@ GLOBALS(
   char *s, *k;
 
   struct pollfd pfd;
-  jmp_buf sj;
+  sigjmp_buf sj;
   int fds[2], pid, rc;
 )
 
 static void handler(int sig, siginfo_t *si)
 {
   TT.rc = si->si_status + ((si->si_code!=CLD_EXITED)<<7);
-  longjmp(TT.sj, 1);
+  siglongjmp(TT.sj, 1);
 }
 
 static long nantomil(struct timespec *ts)
@@ -67,7 +67,7 @@ void timeout_main(void)
   toys.exitval = 0;
   TT.pfd.events = POLLIN;
   TT.fds[1] = -1;
-  if (setjmp(TT.sj)) goto done;
+  if (sigsetjmp(TT.sj, 1)) goto done;
   xsignal_flags(SIGCHLD, handler, SA_NOCLDSTOP|SA_SIGINFO);
 
   TT.pid = xpopen_setup(toys.optargs+1, FLAG(i) ? TT.fds : 0, callback);
