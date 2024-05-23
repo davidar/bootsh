@@ -28,7 +28,6 @@ RUN cd bootsh && CFLAGS=-Werror ./configure && make clean && make -j$(nproc)
 
 FROM scratch AS bootsh
 COPY wak.c /bin/awk
-COPY syscall_i386.s syscall_x86_64.s /tmp/
 COPY Makefile.packages /tmp/Makefile
 COPY boot.sh /bin/boot.sh
 COPY --from=build /tmp/bootsh/bootsh /bin/sh

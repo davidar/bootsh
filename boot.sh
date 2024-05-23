@@ -69,8 +69,6 @@ sed -i 's/jecxz/test %ecx,%ecx; jz/' src/signal/i386/sigsetjmp.s
 
 sed /_REDIR_TIME64/d -i arch/$ARCH/bits/alltypes.h.in
 
-# Replace syscall interface with our own assembly implementation
-
 head -n3 arch/x86_64/syscall_arch.h > arch/x86_64/syscall_arch.h.new
 tail -n8 arch/x86_64/syscall_arch.h >> arch/x86_64/syscall_arch.h.new
 mv -f arch/x86_64/syscall_arch.h.new arch/x86_64/syscall_arch.h
@@ -79,6 +77,7 @@ head -n5 arch/i386/syscall_arch.h > arch/i386/syscall_arch.h.new
 tail -n6 arch/i386/syscall_arch.h >> arch/i386/syscall_arch.h.new
 mv -f arch/i386/syscall_arch.h.new arch/i386/syscall_arch.h
 
+# These functions are provided by libtcc1.a
 cat >> arch/$ARCH/syscall_arch.h <<EOF
 long __syscall0(long);
 long __syscall1(long, long);
@@ -111,8 +110,6 @@ mkdir -p $PREFIX/lib
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crt1.o crt/crt1.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crti.o crt/crti.c
 cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crtn.o crt/crtn.c
-
-cc $CFLAGS -c -o obj/src/syscall_$ARCH.o /tmp/syscall_$ARCH.s
 
 ls src/*/*.c src/malloc/mallocng/*.c | sort > sources.txt
 
