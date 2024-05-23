@@ -19,19 +19,57 @@
 
 #include "ar.h"
 
+#ifdef __i386__
+# define ElfW(type) Elf##32##_##type
+#elif defined(__x86_64__)
+# define ElfW(type) Elf##64##_##type
+#else
+# error "unsupported architecture"
+#endif
+
 /**
- * Returns true if `elf` is a 64-bit elf executable.
+ * Returns true if `elf` is a valid elf executable.
  *
  * @param elf points to the start of the executable image
  * @param mapsize is the number of bytes past `elf` we can access
  * @return true if elf header looks legit
  */
-bool IsElf64Binary(const Elf64_Ehdr *elf, size_t mapsize) {
-  if (mapsize < sizeof(Elf64_Ehdr))
+bool IsElfBinary(const ElfW(Ehdr) *elf, size_t mapsize) {
+  if (mapsize < sizeof(ElfW(Ehdr)))
     return false;
   if (READ32LE(elf->e_ident) != READ32LE(ELFMAG))
     return false;
-  return elf->e_ident[EI_CLASS] != ELFCLASS32;
+  return elf->e_ident[EI_CLASS] == ELFCLASS32 || elf->e_ident[EI_CLASS] == ELFCLASS64;
+}
+
+/**
+ * Returns pointer to ELF section file content.
+ *
+ * This function computes `elf + sh_offset` with safety checks.
+ *
+ * @param elf points to the start of the executable image data
+ * @param mapsize is the number of bytes of `elf` we can access
+ * @param shdr is from GetElfSectionHeaderAddress(), or null
+ * @return pointer to section data within image, or null if
+ *     1. `shdr` was null, or
+ *     2. content wasn't contained within `[elf,elf+mapsize)`, or
+ *     3. an arithmetic overflow occurred
+ */
+void *GetElfSectionAddress(const ElfW(Ehdr) *elf,     // validated
+                           size_t mapsize,            // validated
+                           const ElfW(Shdr) *shdr) {  // foreign
+  // ElfW(Off) last;
+  if (!shdr)
+    return 0;
+  if (!shdr->sh_size)
+    return (void *)elf;
+  if (shdr->sh_type == SHT_NOBITS)
+    return 0;
+  // if (ckd_add(&last, shdr->sh_offset, shdr->sh_size))
+  //   return 0;
+  // if (last > mapsize)
+  //   return 0;
+  return (char *)elf + shdr->sh_offset;
 }
 
 /**
@@ -47,10 +85,10 @@ bool IsElf64Binary(const Elf64_Ehdr *elf, size_t mapsize) {
  *     4. section header wasn't contained by `[elf,elf+mapsize)`, or
  *     5. an arithmetic overflow occurred
  */
-Elf64_Shdr *GetElfSectionHeaderAddress(const Elf64_Ehdr *elf,  //
+ElfW(Shdr) *GetElfSectionHeaderAddress(const ElfW(Ehdr) *elf,  //
                                        size_t mapsize,         //
-                                       Elf64_Half i) {         //
-  Elf64_Off off;
+                                       ElfW(Half) i) {         //
+  ElfW(Off) off;
   if (i >= SHN_LORESERVE)
     return 0;
   if (i >= elf->e_shnum)
@@ -59,11 +97,48 @@ Elf64_Shdr *GetElfSectionHeaderAddress(const Elf64_Ehdr *elf,  //
     return 0;
   if (elf->e_shoff >= mapsize)
     return 0;
-  if (elf->e_shentsize < sizeof(Elf64_Shdr))
+  if (elf->e_shentsize < sizeof(ElfW(Shdr)))
     return 0;
   if ((off = elf->e_shoff + (unsigned)i * elf->e_shentsize) > mapsize)
     return 0;
-  return (Elf64_Shdr *)((char *)elf + off);
+  return (ElfW(Shdr) *)((char *)elf + off);
+}
+
+/**
+ * Returns `strtab + i` from elf string table.
+ *
+ * @param elf points to the start of the executable image data
+ * @param mapsize is the number of bytes past `elf` we can access
+ * @param strtab is double-nul string list from GetElfStringTable()
+ *     which may be null, in which case only the `!i` name is valid
+ * @param i is byte index into strtab where needed string starts or
+ *     zero (no name) in which case empty string is always returned
+ *     as a pointer to the read-only string literal, rather than in
+ *     the elf image, since the elf spec permits an empty or absent
+ *     string table section
+ * @return a const nul-terminated string pointer, otherwise null if
+ *     1. `i` was nonzero and `strtab` was null, or
+ *     2. `strtab+i` wasn't inside `[elf,elf+mapsize)`, or
+ *     3. a nul byte wasn't present within `[strtab+i,elf+mapsize)`, or
+ *     4. an arithmetic overflow occurred
+ */
+char *GetElfString(const ElfW(Ehdr) *elf,  // validated
+                   size_t mapsize,         // validated
+                   const char *strtab,     // validated
+                   ElfW(Word) i) {         // foreign
+  const char *e;
+  if (!i)
+    return "";
+  e = (const char *)elf;
+  if (!strtab)
+    return 0;
+  if (i >= mapsize)
+    return 0;
+  if (strtab + i >= e + mapsize)
+    return 0;
+  if (!memchr(strtab + i, 0, (e + mapsize) - (strtab + i)))
+    return 0;
+  return (char *)strtab + i;
 }
 
 /**
@@ -73,13 +148,13 @@ Elf64_Shdr *GetElfSectionHeaderAddress(const Elf64_Ehdr *elf,  //
  * @param mapsize is the number of bytes past `elf` we can access
  * @return double-nul terminated string list, or null on error
  */
-char *GetElfSectionNameStringTable(const Elf64_Ehdr *elf, size_t mapsize) {
+char *GetElfSectionNameStringTable(const ElfW(Ehdr) *elf, size_t mapsize) {
   return GetElfSectionAddress(
       elf, mapsize, GetElfSectionHeaderAddress(elf, mapsize, elf->e_shstrndx));
 }
 
-char *GetElfSectionName(const Elf64_Ehdr *elf, size_t mapsize,
-                        const Elf64_Shdr *shdr) {
+char *GetElfSectionName(const ElfW(Ehdr) *elf, size_t mapsize,
+                        const ElfW(Shdr) *shdr) {
   if (!shdr)
     return 0;
   return GetElfString(elf, mapsize, GetElfSectionNameStringTable(elf, mapsize),
@@ -100,12 +175,12 @@ char *GetElfSectionName(const Elf64_Ehdr *elf, size_t mapsize,
  *     noting that the ELF spec does consider that legal, or lastly
  *     (4) an overflow or boundary violation occurred
  */
-char *GetElfStringTable(const Elf64_Ehdr *elf,  //
+char *GetElfStringTable(const ElfW(Ehdr) *elf,  //
                         size_t mapsize,         //
                         const char *section_name) {
   int i;
   char *name;
-  const Elf64_Shdr *shdr;
+  const ElfW(Shdr) *shdr;
   for (i = 0; i < elf->e_shnum; ++i) {
     if ((shdr = GetElfSectionHeaderAddress(elf, mapsize, i)) &&
         shdr->sh_type == SHT_STRTAB &&
@@ -116,7 +191,6 @@ char *GetElfStringTable(const Elf64_Ehdr *elf,  //
   }
   return 0;
 }
-
 
 /**
  * Returns pointer to the elf section header for a symbol table.
@@ -154,91 +228,23 @@ char *GetElfStringTable(const Elf64_Ehdr *elf,  //
  * @param out_count optionally receives number of symbols
  * @return pointer to symbol table section header, otherwise null
  */
-Elf64_Shdr *GetElfSymbolTable(const Elf64_Ehdr *elf,  //
+ElfW(Shdr) *GetElfSymbolTable(const ElfW(Ehdr) *elf,  //
                               size_t mapsize,         //
                               int section_type,       //
-                              Elf64_Xword *out_count) {
+                              ElfW(Xword) *out_count) {
   int i;
-  Elf64_Shdr *shdr;
+  ElfW(Shdr) *shdr;
   for (i = elf->e_shnum; i > 0; --i) {
     if ((shdr = GetElfSectionHeaderAddress(elf, mapsize, i - 1)) &&  //
-        shdr->sh_entsize == sizeof(Elf64_Sym) &&                     //
+        shdr->sh_entsize == sizeof(ElfW(Sym)) &&                     //
         shdr->sh_type == section_type) {
       if (out_count) {
-        *out_count = shdr->sh_size / sizeof(Elf64_Sym);
+        *out_count = shdr->sh_size / sizeof(ElfW(Sym));
       }
       return shdr;
     }
   }
   return 0;
-}
-
-
-/**
- * Returns pointer to ELF section file content.
- *
- * This function computes `elf + sh_offset` with safety checks.
- *
- * @param elf points to the start of the executable image data
- * @param mapsize is the number of bytes of `elf` we can access
- * @param shdr is from GetElfSectionHeaderAddress(), or null
- * @return pointer to section data within image, or null if
- *     1. `shdr` was null, or
- *     2. content wasn't contained within `[elf,elf+mapsize)`, or
- *     3. an arithmetic overflow occurred
- */
-void *GetElfSectionAddress(const Elf64_Ehdr *elf,     // validated
-                           size_t mapsize,            // validated
-                           const Elf64_Shdr *shdr) {  // foreign
-  // Elf64_Off last;
-  if (!shdr)
-    return 0;
-  if (!shdr->sh_size)
-    return (void *)elf;
-  if (shdr->sh_type == SHT_NOBITS)
-    return 0;
-  // if (ckd_add(&last, shdr->sh_offset, shdr->sh_size))
-  //   return 0;
-  // if (last > mapsize)
-  //   return 0;
-  return (char *)elf + shdr->sh_offset;
-}
-
-/**
- * Returns `strtab + i` from elf string table.
- *
- * @param elf points to the start of the executable image data
- * @param mapsize is the number of bytes past `elf` we can access
- * @param strtab is double-nul string list from GetElfStringTable()
- *     which may be null, in which case only the `!i` name is valid
- * @param i is byte index into strtab where needed string starts or
- *     zero (no name) in which case empty string is always returned
- *     as a pointer to the read-only string literal, rather than in
- *     the elf image, since the elf spec permits an empty or absent
- *     string table section
- * @return a const nul-terminated string pointer, otherwise null if
- *     1. `i` was nonzero and `strtab` was null, or
- *     2. `strtab+i` wasn't inside `[elf,elf+mapsize)`, or
- *     3. a nul byte wasn't present within `[strtab+i,elf+mapsize)`, or
- *     4. an arithmetic overflow occurred
- */
-char *GetElfString(const Elf64_Ehdr *elf,  // validated
-                   size_t mapsize,         // validated
-                   const char *strtab,     // validated
-                   Elf64_Word i) {         // foreign
-  const char *e;
-  if (!i)
-    return "";
-  e = (const char *)elf;
-  if (!strtab)
-    return 0;
-  if (i >= mapsize)
-    return 0;
-  if (strtab + i >= e + mapsize)
-    return 0;
-  if (!memchr(strtab + i, 0, (e + mapsize) - (strtab + i)))
-    return 0;
-  return (char *)strtab + i;
 }
 
 /**
@@ -511,9 +517,9 @@ static void MakeArHeader(struct ar_hdr *h,  //
     h->ar_gid[0] = '0';
     memcpy(h->ar_mode, b, FormatOctal32(b, mode & 0777, false) - b);
   }
-  if (size > 9999999999) {
-    Die("ar", "ar_size overflow");
-  }
+  // if (size > 9999999999) {
+  //   Die("ar", "ar_size overflow");
+  // }
   memcpy(h->ar_size, b, FormatUint64(b, size) - b);
   memcpy(h->ar_fmag, ARFMAG, sizeof(h->ar_fmag));
 }
@@ -665,17 +671,17 @@ int ar_main(int argc, char *argv[]) {
     void *elf = mmap(0, mapsize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (elf == MAP_FAILED)
       SysDie(arg, "mmap");
-    if (!IsElf64Binary(elf, mapsize))
-      Die(arg, "not an elf64 binary");
+    if (!IsElfBinary(elf, mapsize))
+      Die(arg, "not an elf binary");
     char *strs = GetElfStringTable(elf, mapsize, ".strtab");
     if (!strs)
       Die(arg, "elf .strtab not found");
-    Elf64_Xword symcount;
-    Elf64_Shdr *symsec = GetElfSymbolTable(elf, mapsize, SHT_SYMTAB, &symcount);
-    Elf64_Sym *syms = GetElfSectionAddress(elf, mapsize, symsec);
+    ElfW(Xword) symcount;
+    ElfW(Shdr) *symsec = GetElfSymbolTable(elf, mapsize, SHT_SYMTAB, &symcount);
+    ElfW(Sym) *syms = GetElfSectionAddress(elf, mapsize, symsec);
     if (!syms)
       Die(arg, "elf symbol table not found");
-    for (Elf64_Xword j = symsec->sh_info; j < symcount; ++j) {
+    for (ElfW(Xword) j = symsec->sh_info; j < symcount; ++j) {
       if (!syms[j].st_name)
         continue;
       if (syms[j].st_shndx == SHN_UNDEF)

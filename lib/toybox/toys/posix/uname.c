@@ -47,6 +47,7 @@ void uname_main(void)
   for (i=0; i<6; i++) if (toys.optflags & ((1<<i)|FLAG_a)) {
     if (i==5) c = " Toybox"+!needspace;
 #ifdef __i386__
+    // emulate the result of "setarch i386"
     else if ((1<<i) == FLAG_m) c = " i686"+!needspace;
 #endif
     else {

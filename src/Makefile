@@ -1,6 +1,6 @@
 -include ../config.mak
 
-ARCH=$(shell uname -m)
+ARCH=$(shell uname -m | sed 's/i.86/i386/')
 
 SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c \
@@ -8,13 +8,11 @@ SHSRCS=	bltin/printf.c bltin/test.c bltin/times.c \
 	input.c jobs.c mail.c main.c memalloc.c miscbltin.c \
 	mystring.c options.c output.c parser.c redir.c show.c \
 	signames.c trap.c var.c \
-	toybox.c tcc.c
+	toybox.c tcc.c ar.c
 
 ifeq ($(ARCH),x86_64)
-SHSRCS+= ar.c
 CFLAGS+= '-DCONFIG_TRIPLET="x86_64-linux-gnu"' -DTCC_TARGET_X86_64
-else ifeq ($(ARCH),i686)
-SHSRCS+= tinyar.c
+else ifeq ($(ARCH),i386)
 CFLAGS+= '-DCONFIG_TRIPLET="i386-linux-gnu"' -DTCC_TARGET_I386
 else
 $(error Unsupported architecture $(ARCH))
