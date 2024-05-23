@@ -1,6 +1,13 @@
 ARG TAG=latest
 
-FROM alpine AS build-latest
+FROM alpine AS alpine-amd64
+
+FROM alpine AS alpine-386
+RUN apk add setarch
+SHELL [ "setarch", "i386", "/bin/sh", "-c" ]
+
+ARG TARGETARCH
+FROM alpine-$TARGETARCH AS build-latest
 RUN apk add build-base bash
 
 FROM davidar/bootsh:latest AS build-stage0
@@ -20,8 +27,8 @@ COPY lib bootsh/lib
 RUN cd bootsh && CFLAGS=-Werror ./configure && make clean && make -j$(nproc)
 
 FROM scratch AS bootsh
-COPY --from=build /tmp/bootsh/bootsh /bin/sh
-COPY boot.sh /bin/boot.sh
-COPY Makefile.packages /tmp/Makefile
 COPY wak.c /bin/awk
+COPY Makefile.packages /tmp/Makefile
+COPY boot.sh /bin/boot.sh
+COPY --from=build /tmp/bootsh/bootsh /bin/sh
 ENTRYPOINT ["/bin/boot.sh"]

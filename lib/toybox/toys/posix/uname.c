@@ -46,6 +46,10 @@ void uname_main(void)
   if (!toys.optflags) toys.optflags = FLAG_s;
   for (i=0; i<6; i++) if (toys.optflags & ((1<<i)|FLAG_a)) {
     if (i==5) c = " Toybox"+!needspace;
+#ifdef __i386__
+    // emulate the result of "setarch i386"
+    else if ((1<<i) == FLAG_m) c = " i686"+!needspace;
+#endif
     else {
       c = toybuf+sizeof(((struct utsname *)0)->sysname)*i;
       if (needspace++) *(--c)=' '; // Can't decrement first entry

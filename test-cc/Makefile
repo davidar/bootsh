@@ -48,15 +48,15 @@ ifeq ($(ARCH),arm)
 # tcctest refers to the alignment of functions, and with thumb mode
 # the low bit of code addresses selects the mode, so the "alignment"
 # of functions via bit masking comes out as 1.  Just disable thumb.
-test.ref: CFLAGS+=-marm
+test.$(ARCH).ref: CFLAGS+=-marm
 endif
 ifeq ($(ARCH)$(CONFIG_WIN32),i386)
 # tcctest.c:get_asm_string uses a construct that is checked too strictly
 # by GCC in 32bit mode when PIC is enabled.
-test.ref: CFLAGS+=-fno-PIC -fno-PIE -Wl,-z,notext
+test.$(ARCH).ref: CFLAGS+=-fno-PIC -fno-PIE -Wl,-z,notext
 endif
 ifeq ($(CC_NAME),msvc)
-test.ref abitest : CC = gcc
+test.$(ARCH).ref abitest : CC = gcc
 endif
 ifeq ($(TARGETOS),OpenBSD)
 dlltest: CFLAGS+=-fno-stack-protector
@@ -101,58 +101,58 @@ hello-run: ./examples/ex1.c
 
 %-dir:
 	@echo ------------ $@ ------------
-	$(MAKE) -C $*
+	$(MAKE) -C $* ARCH=$(ARCH)
 
-# test.ref - generate using cc
-# test.ref: tcctest.c
+# test.$(ARCH).ref - generate using cc
+# test.$(ARCH).ref: tcctest.c
 # 	$(CC) -o tcctest.gcc $< $(NATIVE_DEFINES) $(CFLAGS) -w -O0 -std=gnu99 -fno-omit-frame-pointer
 # 	./tcctest.gcc > $@
 
 # auto test
-test1 test1b: tcctest.c test.ref
+test1 test1b: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 	$(TCC) $(RUN_TCC) -w -run $< > test.out1
-	@diff -u test.ref test.out1 && echo "$(AUTO_TEST) OK"
+	@diff -u test.$(ARCH).ref test.out1 && echo "$(AUTO_TEST) OK"
 
 # iterated test2 (compile tcc then compile tcctest.c !)
-test2 test2b: tcctest.c test.ref
+test2 test2b: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 	$(TCC) $(RUN_TCC) $(RUN_TCC) -w -run $< > test.out2
-	@diff -u test.ref test.out2 && echo "$(AUTO_TEST)2 OK"
+	@diff -u test.$(ARCH).ref test.out2 && echo "$(AUTO_TEST)2 OK"
 
 # iterated test3 (compile tcc then compile tcc then compile tcctest.c !)
-test3 test3b: tcctest.c test.ref
+test3 test3b: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 	$(TCC) $(RUN_TCC) $(RUN_TCC) $(RUN_TCC) -w -run $< > test.out3
-	@diff -u test.ref test.out3 && echo "$(AUTO_TEST)3 OK"
+	@diff -u test.$(ARCH).ref test.out3 && echo "$(AUTO_TEST)3 OK"
 
 AUTO_TEST = Auto Test
 test%b : TCCFLAGS += -b -bt1
 test%b : AUTO_TEST = Auto Bound-Test
 
 # binary output test
-test4: tcctest.c test.ref
+test4: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 # object + link output
 	$(TCC) -c -o tcctest3.o $<
 	$(TCC) -o tcctest3 tcctest3.o
 	./tcctest3 > test3.out
-	diff -u test.ref test3.out
+	diff -u test.$(ARCH).ref test3.out
 # # dynamic output
 # 	$(TCC) -o tcctest1 $<
 # 	./tcctest1 > test1.out
-# 	@if diff -u test.ref test1.out ; then echo "Dynamic $(AUTO_TEST) OK"; fi
+# 	@if diff -u test.$(ARCH).ref test1.out ; then echo "Dynamic $(AUTO_TEST) OK"; fi
 # # dynamic output + bound check
 # 	$(TCC) -b -o tcctest4 $<
 # 	./tcctest4 > test4.out
-# 	@if diff -u test.ref test4.out ; then echo "BCheck $(AUTO_TEST) OK"; fi
+# 	@if diff -u test.$(ARCH).ref test4.out ; then echo "BCheck $(AUTO_TEST) OK"; fi
 
-test4_static: tcctest.c test.ref
+test4_static: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 # static output.
 	$(TCC) -static -o tcctest2 $<
 	./tcctest2 > test2.out
-	@if diff -u test.ref test2.out ; then echo "Static $(AUTO_TEST) OK"; fi
+	@if diff -u test.$(ARCH).ref test2.out ; then echo "Static $(AUTO_TEST) OK"; fi
 
 # use tcc to create libtcc.so/.dll and the tcc(.exe) frontend and run them
 # dlltest:
@@ -214,7 +214,7 @@ btest: boundtest.c
 # 	time ./ex3 35
 # 	time $(TCC) -run $(TOPSRC)/examples/ex3.c 35
 
-weaktest: tcctest.c test.ref
+weaktest: tcctest.c test.$(ARCH).ref
 	@echo ------------ $@ ------------
 	$(TCC) -c $< -o weaktest.tcc.o
 	$(CC) -c $< -o weaktest.gcc.o $(NATIVE_DEFINES) $(CFLAGS) -w -O0 -std=gnu99 -fno-omit-frame-pointer

@@ -9,6 +9,7 @@ clean:
 	$(MAKE) -C lib/tcc clean
 	$(MAKE) -C lib/toybox clean
 	$(MAKE) -C src clean
+	if [ -d test-cc ]; then $(MAKE) -C test-cc clean; fi
 
 tarballs/musl-%.tar.gz:
 	mkdir -p tarballs

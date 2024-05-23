@@ -14,7 +14,7 @@ XCC = $(XTCC)
 XAR = $(AR)
 XFLAGS-unx = -B$(TOPSRC)
 XFLAGS-win = -B$(TOPSRC)/win32 -I$(TOPSRC)/include
-XFLAGS = $(XFLAGS$(XCFG)) -I$(TOP)
+XFLAGS = $(XFLAGS$(XCFG)) -I$(TOP) -D__SOFT_FP__
 BFLAGS = -bt
 XCFG = $(or $(findstring -win,$T),-unx)
 S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
@@ -24,7 +24,7 @@ arm-libtcc1-usegcc ?= no
 
 # This makes bounds checking 40%..60% faster.
 x86_64-libtcc1-usegcc=yes
-i386-libtcc1-usegcc=yes
+# i386-libtcc1-usegcc=yes
 
 ifeq "$($(T)-libtcc1-usegcc)" "yes"
  XCC = $(CC)
@@ -48,8 +48,8 @@ DSO_O = dsohandle.o
 RT_C := $(wildcard rt/*.c)
 RT_O := $(patsubst rt/%.c,rt/%.o,$(RT_C))
 
-I386_O = $(RT_O) alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
-X86_64_O = $(RT_O) lib-x86_64.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
+I386_O = $(RT_O) syscall-i386.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
+X86_64_O = $(RT_O) syscall-x86_64.o lib-x86_64.o alloca.o alloca-bt.o stdatomic.o atomic.o builtin.o $(BT_O)
 ARM_O = $(RT_O) armeabi.o alloca.o armflush.o stdatomic.o atomic.o builtin.o $(BT_O)
 ARM64_O = lib-arm64.o stdatomic.o atomic.o builtin.o $(BT_O)
 RISCV64_O = lib-arm64.o stdatomic.o atomic.o builtin.o $(BT_O)

@@ -1,4 +1,4 @@
-ARCH = $(shell uname -m)
+ARCH = $(shell uname -m | sed 's/i.86/i386/')
 NPROC = $(shell nproc)
 MAKEFLAGS += -j$(NPROC)
 
@@ -60,7 +60,7 @@ linux-headers-4.19.88: /src/tarballs/linux-headers-4.19.88.tar.xz
 
 /usr/local/include/linux: linux-headers-4.19.88
 	@echo "Bootstrapping linux-headers -> /src/logs/boot_linux-headers.log"
-	(cd $< && $(MAKE) install ARCH=$(shell uname -m)) > /src/logs/boot_linux-headers.log 2>&1
+	(cd $< && $(MAKE) install ARCH=$(ARCH)) > /src/logs/boot_linux-headers.log 2>&1
 
 linux-headers: /usr/local/include/linux
 
@@ -123,6 +123,6 @@ curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 curl: /usr/local/bin/curl
 
 test-host: bash
-	cd test-cc && $(MAKE) && $(MAKE) clean
+	cd test-cc && $(MAKE) -j1 ARCH=$(ARCH) && $(MAKE) clean
 	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh && rm -rf generated/testdir
 	@echo "All tests passed!"
