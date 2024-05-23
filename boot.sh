@@ -13,6 +13,8 @@ if which make >/dev/null && tty -s; then
     exec /bin/sh
 fi
 
+# Setup root filesystem
+
 [ ! -L /usr ] && ln -s / /usr
 mkdir -p /etc /local/bin /tmp
 chmod 1777 /tmp
@@ -61,96 +63,95 @@ ARCH=$(uname -m | sed 's/i.86/i386/')
 CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
 CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
 
+# Patch musl to be compatible with tcc
+
 rm -rf src/complex src/math/$ARCH crt/$ARCH
 
-
 sed -i s/@PLT//g src/signal/x86_64/sigsetjmp.s
+sed -i 's/jecxz/test %ecx,%ecx; jz/' src/signal/i386/sigsetjmp.s
+
+sed /_REDIR_TIME64/d -i arch/$ARCH/bits/alltypes.h.in
+
+
 cat > arch/x86_64/syscall_arch.h <<EOF
 #define __SYSCALL_LL_E(x) (x)
 #define __SYSCALL_LL_O(x) (x)
 
 static __inline long __syscall0(long n);
 asm (
-	".type __syscall0, @function;"
-	"__syscall0:;"
-	"movq %rdi, %rax;"
-	"syscall;"
-	"ret"
+"__syscall0:\n"
+    "movq %rdi, %rax\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall1(long n, long a1);
 asm (
-	".type __syscall1, @function;"
-	"__syscall1:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"syscall;"
-	"ret"
+"__syscall1:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall2(long n, long a1, long a2);
 asm (
-	".type __syscall2, @function;"
-	"__syscall2:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"movq %rdx, %rsi;"
-	"syscall;"
-	"ret"
+"__syscall2:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "movq %rdx, %rsi\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall3(long n, long a1, long a2, long a3);
 asm (
-	".type __syscall3, @function;"
-	"__syscall3:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"movq %rdx, %rsi;"
-	"movq %rcx, %rdx;"
-	"syscall;"
-	"ret"
+"__syscall3:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "movq %rdx, %rsi\n"
+    "movq %rcx, %rdx\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall4(long n, long a1, long a2, long a3, long a4);
 asm (
-	".type __syscall4, @function;"
-	"__syscall4:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"movq %rdx, %rsi;"
-	"movq %rcx, %rdx;"
-	"movq %r8, %r10;"
-	"syscall;"
-	"ret"
+"__syscall4:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "movq %rdx, %rsi\n"
+    "movq %rcx, %rdx\n"
+    "movq %r8, %r10\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5);
 asm (
-	".type __syscall5, @function;"
-	"__syscall5:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"movq %rdx, %rsi;"
-	"movq %rcx, %rdx;"
-	"movq %r8, %r10;"
-	"movq %r9, %r8;"
-	"syscall;"
-	"ret"
+"__syscall5:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "movq %rdx, %rsi\n"
+    "movq %rcx, %rdx\n"
+    "movq %r8, %r10\n"
+    "movq %r9, %r8\n"
+    "syscall\n"
+    "ret"
 );
 
 static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
 asm (
-	".type __syscall6, @function;"
-	"__syscall6:;"
-	"movq %rdi, %rax;"
-	"movq %rsi, %rdi;"
-	"movq %rdx, %rsi;"
-	"movq %rcx, %rdx;"
-	"movq %r8, %r10;"
-	"movq %r9, %r8;"
-	"movq 8(%rsp), %r9;"
-	"syscall;"
-	"ret"
+"__syscall6:\n"
+    "movq %rdi, %rax\n"
+    "movq %rsi, %rdi\n"
+    "movq %rdx, %rsi\n"
+    "movq %rcx, %rdx\n"
+    "movq %r8, %r10\n"
+    "movq %r9, %r8\n"
+    "movq 8(%rsp), %r9\n"
+    "syscall\n"
+    "ret"
 );
 
 #define VDSO_USEFUL
@@ -163,64 +164,119 @@ asm (
 EOF
 
 
-echo > src/signal/i386/sigsetjmp.s
 cat > arch/i386/syscall_arch.h <<EOF
-#define __SYSCALL_LL_E(x) \
-((union { long long ll; long l[2]; }){ .ll = x }).l[0], \
+#define __SYSCALL_LL_E(x) \\
+((union { long long ll; long l[2]; }){ .ll = x }).l[0], \\
 ((union { long long ll; long l[2]; }){ .ll = x }).l[1]
 #define __SYSCALL_LL_O(x) __SYSCALL_LL_E((x))
 
-static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+#define SYSCALL_NO_TLS 1
+
+#if SYSCALL_NO_TLS
+#define SYSCALL_INSNS "int \$128"
+#else
+#define SYSCALL_INSNS "call *%gs:16"
+#endif
+
+#define SYSCALL_INSNS_12 "xchg %ebx,%edx ; " SYSCALL_INSNS " ; xchg %ebx,%edx"
+#define SYSCALL_INSNS_34 "xchg %ebx,%edi ; " SYSCALL_INSNS " ; xchg %ebx,%edi"
+
+static inline long __syscall0(long n);
 asm(
-"__syscall6:\n"
-"	pushl %ebp\n"
-"	pushl %edi\n"
-"	pushl %esi\n"
-"	pushl %ebx\n"
-"	movl  20(%esp),%eax\n"
-"	movl  24(%esp),%ebx\n"
-"	movl  28(%esp),%ecx\n"
-"	movl  32(%esp),%edx\n"
-"	movl  36(%esp),%esi\n"
-"	movl  40(%esp),%edi\n"
-"	movl  44(%esp),%ebp\n"
-"	int \$0x80\n"
-"	popl %ebx\n"
-"	popl %esi\n"
-"	popl %edi\n"
-"	popl %ebp\n"
-"	ret"
+"__syscall0:\n"
+"    movl   4(%esp),%eax\n"
+     SYSCALL_INSNS "\n"
+"    ret"
 );
 
-static inline long __syscall0(long n)
-{
-	return __syscall6(n, 0, 0, 0, 0, 0, 0);
-}
+static inline long __syscall1(long n, long a1);
+asm(
+"__syscall1:\n"
+"    movl   4(%esp),%eax\n"
+"    movl   8(%esp),%edx\n"
+     SYSCALL_INSNS_12 "\n"
+"    ret"
+);
 
-static inline long __syscall1(long n, long a1)
-{
-	return __syscall6(n, a1, 0, 0, 0, 0, 0);
-}
+static inline long __syscall2(long n, long a1, long a2);
+asm(
+"__syscall2:\n"
+"    movl   4(%esp),%eax\n"
+"    movl   8(%esp),%edx\n"
+"    movl  12(%esp),%ecx\n"
+     SYSCALL_INSNS_12 "\n"
+"    ret"
+);
 
-static inline long __syscall2(long n, long a1, long a2)
-{
-	return __syscall6(n, a1, a2, 0, 0, 0, 0);
-}
+static inline long __syscall3(long n, long a1, long a2, long a3);
+asm(
+"__syscall3:\n"
+"    pushl %ebx\n"
+"    movl   8(%esp),%eax\n"
+"    movl  12(%esp),%ebx\n"
+"    movl  16(%esp),%ecx\n"
+"    movl  20(%esp),%edx\n"
+     SYSCALL_INSNS "\n"
+"    popl  %ebx\n"
+"    ret"
+);
 
-static inline long __syscall3(long n, long a1, long a2, long a3)
-{
-	return __syscall6(n, a1, a2, a3, 0, 0, 0);
-}
+static inline long __syscall4(long n, long a1, long a2, long a3, long a4);
+asm(
+"__syscall4:\n"
+"    pushl %esi\n"
+"    pushl %ebx\n"
+"    movl  12(%esp),%eax\n"
+"    movl  16(%esp),%ebx\n"
+"    movl  20(%esp),%ecx\n"
+"    movl  24(%esp),%edx\n"
+"    movl  28(%esp),%esi\n"
+     SYSCALL_INSNS "\n"
+"    popl  %ebx\n"
+"    popl  %esi\n"
+"    ret"
+);
 
-static inline long __syscall4(long n, long a1, long a2, long a3, long a4)
-{
-	return __syscall6(n, a1, a2, a3, a4, 0, 0);
-}
+static inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5);
+asm(
+"__syscall5:\n"
+"    pushl %edi\n"
+"    pushl %esi\n"
+"    pushl %ebx\n"
+"    movl  16(%esp),%eax\n"
+"    movl  20(%esp),%ebx\n"
+"    movl  24(%esp),%ecx\n"
+"    movl  28(%esp),%edx\n"
+"    movl  32(%esp),%esi\n"
+"    movl  36(%esp),%edi\n"
+     SYSCALL_INSNS "\n"
+"    popl  %ebx\n"
+"    popl  %esi\n"
+"    popl  %edi\n"
+"    ret"
+);
 
-static inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a5)
-{
-	return __syscall6(n, a1, a2, a3, a4, a5, 0);
-}
+static inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+asm(
+"__syscall6:\n"
+"    pushl %ebp\n"
+"    pushl %edi\n"
+"    pushl %esi\n"
+"    pushl %ebx\n"
+"    movl  20(%esp),%eax\n"
+"    movl  24(%esp),%ebx\n"
+"    movl  28(%esp),%ecx\n"
+"    movl  32(%esp),%edx\n"
+"    movl  36(%esp),%esi\n"
+"    movl  40(%esp),%edi\n"
+"    movl  44(%esp),%ebp\n"
+     SYSCALL_INSNS "\n"
+"    popl  %ebx\n"
+"    popl  %esi\n"
+"    popl  %edi\n"
+"    popl  %ebp\n"
+"    ret"
+);
 
 #define VDSO_USEFUL
 #define VDSO_CGT32_SYM "__vdso_clock_gettime"
@@ -230,7 +286,7 @@ static inline long __syscall5(long n, long a1, long a2, long a3, long a4, long a
 EOF
 
 
-sed /_REDIR_TIME64/d -i arch/$ARCH/bits/alltypes.h.in
+# Build musl
 
 mkdir -p obj/include/bits
 sed -f ./tools/mkalltypes.sed ./arch/$ARCH/bits/alltypes.h.in ./include/alltypes.h.in > obj/include/bits/alltypes.h
@@ -332,8 +388,8 @@ if [ $# -gt 0 ]; then
 fi
 
 if tty -s; then
-	export USER=$(whoami)
-	export HOSTNAME=$(hostname)
-	export PS1='$USER@$HOSTNAME:$PWD\$ '
+    export USER=$(whoami)
+    export HOSTNAME=$(hostname)
+    export PS1='$USER@$HOSTNAME:$PWD\$ '
     exec /bin/sh
 fi
