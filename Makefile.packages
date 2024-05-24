@@ -19,7 +19,7 @@ gawk-5.3.0: /src/tarballs/gawk-5.3.0.tar.xz
 
 /usr/local/bin/gawk: gawk-5.3.0
 	@echo "Bootstrapping gawk -> /src/logs/boot_gawk.log"
-	(cd $< && ./configure --disable-shared LD=cc && $(MAKE) && $(MAKE) install) > /src/logs/boot_gawk.log 2>&1
+	(cd $< && ./configure --disable-shared && $(MAKE) && $(MAKE) install) > /src/logs/boot_gawk.log 2>&1
 	ln -sf /usr/local/bin/gawk /usr/local/bin/awk
 
 gawk: /usr/local/bin/gawk
@@ -73,7 +73,7 @@ bash-5.2.21: /src/tarballs/bash-5.2.21.tar.gz
 
 /bin/bash: bash-5.2.21
 	@echo "Bootstrapping bash -> /src/logs/boot_bash.log"
-	(cd $< && ./configure --prefix=/ --without-bash-malloc LD=cc && $(MAKE) && $(MAKE) install) > /src/logs/boot_bash.log 2>&1
+	(cd $< && ./configure --prefix=/ --without-bash-malloc && $(MAKE) && $(MAKE) install) > /src/logs/boot_bash.log 2>&1
 
 bash: /bin/bash
 
@@ -117,7 +117,7 @@ curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 
 /usr/local/bin/curl: curl-8.0.1 /usr/local/lib/libbearssl.a
 	@echo "Bootstrapping curl -> /src/logs/boot_curl.log"
-	(cd $< && ./configure --disable-docs --disable-manual --disable-shared --with-bearssl LD=cc && \
+	(cd $< && ./configure --disable-docs --disable-manual --disable-shared --with-bearssl && \
 		$(MAKE) && $(MAKE) install) > /src/logs/boot_curl.log 2>&1
 
 curl: /usr/local/bin/curl

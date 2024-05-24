@@ -17,8 +17,8 @@ test-%: docker-%
 	docker run --rm --platform linux/amd64 $(DOCKER_MOUNTS) $(IMAGE_NAME):$* test-host
 	docker run --rm --platform linux/i386 $(DOCKER_MOUNTS) $(IMAGE_NAME):$* test-host
 
-run: docker-latest
-	docker run --rm -it -v $(CURDIR):/src $(IMAGE_NAME):latest
+run-%: docker-latest
+	docker run --rm --platform linux/$* -it -v $(CURDIR):/src $(IMAGE_NAME):latest
 
 bootsh.amd64.%: docker-%
 	ID=`docker create --platform linux/amd64 $(IMAGE_NAME):$*` && docker cp $$ID:/bin/sh $@ && docker rm $$ID
