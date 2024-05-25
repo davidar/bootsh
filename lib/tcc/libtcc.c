@@ -1511,6 +1511,8 @@ static int tcc_set_linker(TCCState *s, const char *option)
             ignoring = 1;
         } else if (link_option(option, "fatal-warnings", &p)) {
             ignoring = 1;
+        } else if (link_option(option, "static", &p)) {
+            s->static_link = 1;
         } else if (p) {
             return 0;
         } else {
