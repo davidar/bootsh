@@ -3583,7 +3583,11 @@ static ssize_t getrec_f(struct zfile *zfp)
 #define RS_LENGTH_MARGIN    (INIT_RECBUF_LEN / 8)
       if (!zfp->recbuf)
         zfp->recbuf = xmalloc((zfp->recbufsize = INIT_RECBUF_LEN) + 1);
-      zfp->endoffs = fread(zfp->recbuf, 1, zfp->recbufsize, zfp->fp);
+      if (fgets(zfp->recbuf, zfp->recbufsize, zfp->fp)) {
+        zfp->endoffs = strlen(zfp->recbuf);
+      } else {
+        zfp->endoffs = 0;
+      }
       zfp->recoffs = 0;
       zfp->recbuf[zfp->endoffs] = 0;
       if (!zfp->endoffs) break;
