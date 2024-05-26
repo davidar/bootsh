@@ -124,6 +124,17 @@ shellexec(char **argv, const char *path, int idx)
 
 	envp = environment();
 
+	for (int i = 0; envp[i]; i++) {
+		char name[strlen(envp[i])+1];
+		strcpy(name, envp[i]);
+		char *eq = strchr(name, '=');
+		if (eq) {
+			*eq = '\0';
+			if (strcmp(name, "PWD") == 0) continue;
+			setenv(name, eq+1, 1);
+		}
+	}
+
 	if (toy_find(argv[0])) {
 		toy_exec(argv);
 	}
