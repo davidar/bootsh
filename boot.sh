@@ -3,15 +3,9 @@
 set -e
 
 echo
-echo "---------------------------------"
-echo "        Executing boot.sh        "
-echo "https://github.com/davidar/bootsh"
-echo "---------------------------------"
-echo
-
-if which make >/dev/null && tty -s; then
-    exec /bin/sh
-fi
+echo "-----------------------------------"
+echo "         Executing boot.sh         "
+echo " https://github.com/davidar/bootsh "
 
 # Setup root filesystem
 
@@ -55,8 +49,6 @@ if [ ! -f /src/tarballs/musl-1.2.5.tar.gz ]; then
 fi
 tar -xf /src/tarballs/musl-1.2.5.tar.gz
 cd musl-1.2.5
-
-echo "Bootstrapping musl"
 
 ARCH=$(uname -m | sed 's/i.86/i386/')
 
@@ -140,7 +132,9 @@ for src in $SOURCES; do
     obj=obj/${src%.c}.o
     mkdir -p $(dirname $obj)
     cc $CFLAGS -c -o $obj $src
+    [ $((i = (i+1) % 35)) -eq 0 ] && echo -n -
 done
+echo
 
 mkdir -p obj/src/env
 mkdir -p obj/src/fenv/$ARCH
@@ -195,5 +189,6 @@ if tty -s; then
     export USER=$(whoami)
     export HOSTNAME=$(hostname)
     export PS1='$USER@$HOSTNAME:$PWD\$ '
+    echo
     exec /bin/sh
 fi
