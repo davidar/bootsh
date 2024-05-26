@@ -175,20 +175,19 @@ cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src
 ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
 cd ..
 
-if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
-    echo "Downloading make-4.4.1 source code..."
-    wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
-fi
-tar -xf /src/tarballs/make-4.4.1.tar.gz
-cd make-4.4.1
-echo "Bootstrapping make -> /src/logs/boot_make.log"
-(
-./configure --disable-dependency-tracking LD=cc
-./build.sh && ./make -s && ./make -s install
-) > /src/logs/boot_make.log 2>&1
-cd ..
-
 if [ $# -gt 0 ]; then
+    if [ ! -f /src/tarballs/make-4.4.1.tar.gz ]; then
+        echo "Downloading make-4.4.1 source code..."
+        wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
+    fi
+    tar -xf /src/tarballs/make-4.4.1.tar.gz
+    cd make-4.4.1
+    echo "Bootstrapping make -> /src/logs/boot_make.log"
+    ( ./configure --disable-dependency-tracking LD=cc
+      ./build.sh && ./make -s && ./make -s install
+      ) > /src/logs/boot_make.log 2>&1
+    cd ..
+
     make -s $@
 fi
 
