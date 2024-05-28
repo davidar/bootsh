@@ -122,6 +122,9 @@ curl-8.0.1: /src/tarballs/curl-8.0.1.tar.xz
 
 curl: /usr/local/bin/curl
 
+make:
+	true
+
 test-host: bash
 	cd test-cc && $(MAKE) -j1 ARCH=$(ARCH) && $(MAKE) clean
 	cd lib/toybox && TEST_HOST=1 USER=root scripts/test.sh && rm -rf generated/testdir

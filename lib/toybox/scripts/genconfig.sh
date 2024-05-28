@@ -1,9 +1,11 @@
-#!/bin/bash
+#!/bin/sh
+
+set -ex
 
 # This has to be a separate file from scripts/make.sh so it can be called
 # before menuconfig. (It's called again from scripts/make.sh just to be sure.)
 
-source scripts/portability.sh
+. scripts/portability.sh
 
 mkdir -p "$GENDIR"
 
@@ -16,9 +18,11 @@ probecc()
 # Symbol name is first argument, flags second, feed C file to stdin
 probesymbol()
 {
-  probecc "${@:2}" 2>/dev/null && DEFAULT=y || DEFAULT=n
+  symbol="$1"
+  shift
+  probecc "$@" 2>/dev/null && DEFAULT=y || DEFAULT=n
   rm a.out 2>/dev/null
-  echo -e "config $1\n\tbool\n\tdefault $DEFAULT\n" || exit 1
+  printf "config $symbol\n\tbool\n\tdefault $DEFAULT\n\n" || exit 1
 }
 
 probeconfig()
@@ -35,7 +39,7 @@ EOF
     #include <unistd.h>
     int main(int argc, char *argv[]) { return fork(); }
 EOF
-  echo -e '\tdepends on !TOYBOX_FORCE_NOMMU'
+  printf '\tdepends on !TOYBOX_FORCE_NOMMU\n'
 }
 
 genconfig()
@@ -77,18 +81,20 @@ WORKING= PENDING= EXAMPLE=
 toys toys/*/*.c | (
 while IFS=":" read FILE NAME
 do
-  echo -e "test_$NAME:\n\tscripts/test.sh $NAME\n"
-  [ "$NAME" == help ] && continue
-  [ "$NAME" == install ] && continue
-  [ "$NAME" == sh ] && FILE="toys/*/*.c"
-  echo -e "$NAME: $FILE *.[ch] lib/*.[ch]\n\tscripts/single.sh $NAME\n"
-  [ "${FILE/example//}" != "$FILE" ] && EXAMPLE="$EXAMPLE $NAME" ||
-  [ "${FILE/pending//}" != "$FILE" ] && PENDING="$PENDING $NAME" ||
-    WORKING="$WORKING $NAME"
+  printf "test_$NAME:\n\tscripts/test.sh $NAME\n\n"
+  [ "$NAME" = help ] && continue
+  [ "$NAME" = install ] && continue
+  [ "$NAME" = sh ] && FILE="toys/*/*.c"
+  printf "$NAME: $FILE *.[ch] lib/*.[ch]\n\tscripts/single.sh $NAME\n\n"
+  case "$FILE" in
+    *example*) EXAMPLE="$EXAMPLE $NAME" ;;
+    *pending*) PENDING="$PENDING $NAME" ;;
+    *) WORKING="$WORKING $NAME" ;;
+  esac
 done &&
-echo -e "clean::\n\t@rm -f $WORKING $PENDING" &&
-echo -e "list:\n\t@echo $(echo $WORKING | tr ' ' '\n' | sort | xargs)" &&
-echo -e "list_example:\n\t@echo $(echo $EXAMPLE | tr ' ' '\n' | sort | xargs)"&&
-echo -e "list_pending:\n\t@echo $(echo $PENDING | tr ' ' '\n' | sort | xargs)"&&
-echo -e ".PHONY: $WORKING $PENDING" | $SED 's/ \([^ ]\)/ test_\1/g'
+printf "clean::\n\t@rm -f $WORKING $PENDING\n" &&
+printf "list:\n\t@echo $(echo $WORKING | tr ' ' '\n' | sort | xargs)\n" &&
+printf "list_example:\n\t@echo $(echo $EXAMPLE | tr ' ' '\n' | sort | xargs)\n" &&
+printf "list_pending:\n\t@echo $(echo $PENDING | tr ' ' '\n' | sort | xargs)\n" &&
+printf ".PHONY: $WORKING $PENDING\n" | $SED 's/ \([^ ]\)/ test_\1/g'
 ) > .singlemake

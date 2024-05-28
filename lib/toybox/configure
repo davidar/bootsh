@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 
 # set environment variables used by scripts/make.sh
 
 # People run ./configure out of habit, so do "defconfig" for them.
 
-if [ "$(basename "$0")" == configure ]
+if [ "$(basename "$0")" = configure ]
 then
   echo "Assuming you want 'make defconfig', but you should probably check the README."
   make defconfig
@@ -12,8 +12,8 @@ then
 fi
 
 # Warn about stuff, disable stupid warnings, be 8-bit clean for utf8.
-[ "${CFLAGS/-funsigned-char//}" == "$CFLAGS" ] &&
-  CFLAGS+=" -Wall -Wundef -Werror=implicit-function-declaration -Wno-char-subscripts -Wno-pointer-sign -funsigned-char"
+echo "$CFLAGS" | grep -q funsigned-char ||
+  CFLAGS="$CFLAGS -Wall -Wundef -Werror=implicit-function-declaration -Wno-char-subscripts -Wno-pointer-sign -funsigned-char"
 
 # Set default values if variable not already set
 : ${CC:=cc} ${HOSTCC:=cc} ${GENDIR:=generated} ${KCONFIG_CONFIG:=.config}

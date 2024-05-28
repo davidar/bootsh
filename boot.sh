@@ -82,7 +82,7 @@ EOF
 
 # Build musl
 
-CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700"
+CFLAGS="$CFLAGS -std=c99 -nostdinc -D_XOPEN_SOURCE=700 -g"
 CFLAGS="$CFLAGS -Iarch/$ARCH -Iarch/generic -Iobj/src/internal -Isrc/include -Isrc/internal -Iobj/include -Iinclude"
 
 mkdir -p obj/include/bits

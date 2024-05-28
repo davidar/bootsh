@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/bin/sh
+
+set -ex
 
 # Grab default values for $CFLAGS and such.
 set -o pipefail
-source scripts/portability.sh
+. scripts/portability.sh
 
 # Shell functions called by the build
 
@@ -13,9 +15,9 @@ ratelimit()
   if [ "$#" -eq 0 ]
   then
     [ -z "$DASHN" ] && PIDS="$PIDS$! "
-    [ $((++COUNT)) -lt $CPUS ] && return 0
+    [ $((COUNT=COUNT+1)) -lt $CPUS ] && return 0
   fi
-  ((--COUNT))
+  COUNT=$((COUNT-1))
   if [ -n "$DASHN" ]
   then
     wait -n
@@ -42,9 +44,11 @@ do_loudly()
 # Is anything under directory $2 newer than generated/$1 (or does it not exist)?
 isnewer()
 {
-  [ -e "$GENDIR/$1" ] && [ -z "$(find "${@:2}" -newer "$GENDIR/$1")" ] &&
+  file="$1"
+  shift
+  [ -e "$GENDIR/$file" ] && [ -z "$(find "$@" -newer "$GENDIR/$file")" ] &&
     return 1
-  echo -n "${DIDNEWER:-$GENDIR/{}$1"
+  echo -n "${DIDNEWER:-$GENDIR/{}$file"
   DIDNEWER=,
 }
 
@@ -64,8 +68,9 @@ LIBRARIES=$(
   [ -z "$V" ] && X=/dev/null || X=/dev/stderr
   for i in util crypt m resolv selinux smack attr crypto z log iconv tls ssl
   do
+    echo "int main(int argc,char*argv[]){return 0;}" | \
     do_loudly ${CROSS_COMPILE}${CC} $CFLAGS $LDFLAGS -xc - -l$i >>$X 2>&1 \
-      -o /dev/null <<<"int main(int argc,char*argv[]){return 0;}" &&
+      -o /dev/null &&
       echo -l$i &
   done | sort | xargs
 )
@@ -89,34 +94,48 @@ compflags()
 }
 
 # Make sure rm -rf isn't gonna go funny
-B="$(readlink -f "$PWD")/" A="$(readlink -f "$GENDIR")" A="${A%/}"/
-[ "$A" == "${B::${#A}}" ] &&
-  { echo "\$GENDIR=$GENDIR cannot include \$PWD=$PWD"; exit 1; }
+B="$(readlink -f "$PWD")/"
+A="$(readlink -f "$GENDIR")"
+A="${A%/}"/
+A_len=$(echo "$A" | awk '{print length}')
+B_sub=$(echo "$B" | awk '{print substr($0, 1, '"$A_len"')}')
+if [ "$A" = "$B_sub" ]
+then
+  echo "\$GENDIR=$GENDIR cannot include \$PWD=$PWD"
+  exit 1
+fi
 unset A B DOTPROG DIDNEWER
 
 # Force full rebuild if our compiler/linker options changed
-cmp -s <(compflags | grep '#d') <(grep '%d' "$GENDIR"/build.sh 2>/dev/null) ||
-  rm -rf "$GENDIR"/* # Keep symlink, delete contents
+if [ -f "$GENDIR"/build.sh ]
+then
+  NEWFLAGS="$(compflags | grep '#d')"
+  OLDFLAGS="$(grep '%d' "$GENDIR"/build.sh 2>/dev/null)"
+  if [ "$OLDFLAGS" != "$NEWFLAGS" ]
+  then
+    rm -rf "$GENDIR"/* # Keep symlink, delete contents
+  fi
+fi
 mkdir -p "$UNSTRIPPED"  "$(dirname $OUTNAME)" || exit 1
 
 # Extract a list of toys/*/*.c files to compile from the data in $KCONFIG_CONFIG
 # (First command names, then filenames with relevant {NEW,OLD}TOY() macro.)
 
-[ -n "$V" ] && echo -e "\nWhich C files to build..."
+[ -n "$V" ] && printf "\nWhich C files to build...\n"
 TOYFILES="$($SED -n 's/^CONFIG_\([^=]*\)=.*/\1/p' "$KCONFIG_CONFIG" | xargs | tr ' ' '|')"
 TOYFILES="main.c $(egrep -l "^USE_($TOYFILES)[(]...TOY[(]" toys/*/*.c | xargs)"
 
-if [ "${TOYFILES/pending//}" != "$TOYFILES" ]
-then
-  echo -e "\n\033[1;31mwarning: using unfinished code from toys/pending\033[0m"
-fi
+# if [ "${TOYFILES/pending//}" != "$TOYFILES" ]
+# then
+#   printf "\n\033[1;31mwarning: using unfinished code from toys/pending\033[0m\n"
+# fi
 
 # Write build variables (and set them locally), then append build invocation.
-compflags > "$GENDIR"/build.sh && source "$GENDIR/build.sh" &&
+compflags > "$GENDIR"/build.sh && . "$GENDIR/build.sh" &&
   {
-    echo FILES=$'"\n'"$(fold -s <<<"$TOYFILES")"$'\n"' &&
+    printf 'FILES="\n%s\n"' "$(echo "$TOYFILES" | fold -s)" &&
     echo &&
-    echo -e "\$BUILD lib/*.c \$FILES \$LINK -o $OUTNAME"
+    printf "\$BUILD lib/*.c \$FILES \$LINK -o $OUTNAME\n"
   } >> "$GENDIR"/build.sh &&
   chmod +x "$GENDIR"/build.sh || exit 1
 
@@ -130,7 +149,7 @@ A="$($SED -n '/^config .*$/h;s/default \(.\)/\1/;T;H;g;s/config \([^\n]*\)[^yn]*
 B="$(egrep "^CONFIG_($(echo "$A" | sed 's/=[yn]//' | xargs | tr ' ' '|'))=" "$KCONFIG_CONFIG" | $SED 's/^CONFIG_//' | sort)"
 A="$(echo "$A" | grep -v =n)"
 [ "$A" != "$B" ] &&
-  { echo -e "\nWarning: Config.probed changed, run 'make oldconfig'" >&2; }
+  { printf "\nWarning: Config.probed changed, run 'make oldconfig'\n" >&2; }
 unset A B
 
 # Create a list of all the commands toybox can provide.
@@ -168,7 +187,7 @@ then
 
     echo "#define NEWTOY(aa,bb,cc) aa $I bb"
     echo '#define OLDTOY(...)'
-    if [ "$I" == A ]
+    if [ "$I" = A ]
     then
       cat "$GENDIR"/config.h
     else
@@ -204,8 +223,7 @@ fi
   $TOYFILES)"
   echo "$STRUX" &&
   echo "extern union global_union {" &&
-  $SED -n 's/^struct \(.*\)_data .*/\1/;T;s/.*/\tstruct &_data &;/p' \
-    <<<"$STRUX" &&
+  echo "$STRUX" | $SED -n 's/^struct \(.*\)_data .*/\1/;T;s/.*/\tstruct &_data &;/p' &&
   echo "} this;"
 } > "$GENDIR"/globals.h || exit 1
 
@@ -243,7 +261,7 @@ DOTPROG=.
 # This is a parallel version of: do_loudly $BUILD lib/*.c $TOYFILES $LINK
 
 # Build all if oldest generated/obj file isn't newer than all header files.
-X="$(ls -1t "$GENDIR"/obj/* 2>/dev/null | tail -n 1)"
+[ -d "$GENDIR"/obj/] && X="$(ls -1t "$GENDIR"/obj/* 2>/dev/null | tail -n 1)"
 if [ ! -e "$X" ] || [ -n "$(find toys -name "*.h" -newer "$X")" ]
 then
   rm -rf "$GENDIR"/obj && mkdir -p "$GENDIR"/obj || exit 1
@@ -257,9 +275,9 @@ fi
 PENDING= LNKFILES= CLICK= DONE=0 COUNT=0
 for i in lib/*.c click $TOYFILES
 do
-  [ "$i" == click ] && CLICK=1 && continue
+  [ "$i" = click ] && CLICK=1 && continue
 
-  X=${i/lib\//lib_}
+  X=$(echo "$i" | sed 's|lib/|lib_|')
   X=${X##*/}
   OUT="$GENDIR/obj/${X%%.c}.o"
   LNKFILES="$LNKFILES $OUT"
@@ -280,7 +298,7 @@ do
 done
 [ $DONE -ne 0 ] && exit 1
 
-UNSTRIPPED="$UNSTRIPPED/${OUTNAME/*\//}"
+UNSTRIPPED="$UNSTRIPPED/$(echo "$OUTNAME" | sed 's|.*/||')"
 do_loudly $BUILD $LNKFILES $LINK -o "$UNSTRIPPED" || exit 1
 if [ -n "$NOSTRIP" ] ||
   ! do_loudly ${CROSS_COMPILE}${STRIP} "$UNSTRIPPED" -o "$OUTNAME"

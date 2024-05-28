@@ -34,8 +34,6 @@ if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
 fi
 rm -f $tmpc $tmpc.out
 
-[ ! -x /bin/bash ] && echo "error: please install bash as it is required for some build steps" && exit 1
-
 which nl >/dev/null || (echo "error: nl not found, please install coreutils" && exit 1)
 
 cd lib/tcc

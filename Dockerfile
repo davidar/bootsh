@@ -8,16 +8,16 @@ SHELL [ "setarch", "i386", "/bin/sh", "-c" ]
 
 ARG TARGETARCH
 FROM alpine-$TARGETARCH AS build-latest
-RUN apk add build-base bash
+RUN apk add build-base
 
 FROM davidar/bootsh:latest AS build-stage0
-RUN --mount=type=cache,target=/src/tarballs boot.sh bash
+RUN --mount=type=cache,target=/src/tarballs boot.sh make
 
 FROM davidar/bootsh:stage0 AS build-stage1
-RUN --mount=type=cache,target=/src/tarballs boot.sh bash
+RUN --mount=type=cache,target=/src/tarballs boot.sh make
 
 FROM davidar/bootsh:stage1 AS build-stage2
-RUN --mount=type=cache,target=/src/tarballs boot.sh bash
+RUN --mount=type=cache,target=/src/tarballs boot.sh make
 
 FROM build-$TAG AS build
 WORKDIR /tmp

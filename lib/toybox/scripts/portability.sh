@@ -1,6 +1,6 @@
 # sourced to find alternate names for things
 
-source ./configure
+. ./configure
 
 if [ -z "$(command -v "$CROSS_COMPILE$CC")" ]
 then
@@ -14,9 +14,9 @@ then
 fi
 
 # Tell linker to do dead code elimination at function level
-if [ "$(uname)" == "Darwin" ]
+if [ "$(uname)" = "Darwin" ]
 then
-  CFLAGS+=" -Wno-deprecated-declarations"
+  CFLAGS="$CFLAGS -Wno-deprecated-declarations"
   : ${LDOPTIMIZE:=-Wl,-dead_strip} ${STRIP:=strip}
 else
   : ${LDOPTIMIZE:=-Wl,--gc-sections -Wl,--as-needed} ${STRIP:=strip -s -R .note* -R .comment}
@@ -24,9 +24,9 @@ fi
 
 # Disable pointless warnings only clang produces
 [ -n "$("$CROSS_COMPILE$CC" --version | grep -w clang)" ] &&
-  CFLAGS+=" -Wno-string-plus-int -Wno-invalid-source-encoding" ||
+  CFLAGS="$CFLAGS -Wno-string-plus-int -Wno-invalid-source-encoding" ||
 # And ones only gcc produces
-  CFLAGS+=" -Wno-restrict -Wno-format-overflow"
+  CFLAGS="$CFLAGS -Wno-restrict -Wno-format-overflow"
 
 # Address Sanitizer
 if [ -n "$ASAN" ]; then
