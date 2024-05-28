@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 # Grab default values for $CFLAGS and such.
 # set -o pipefail
