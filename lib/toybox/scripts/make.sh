@@ -3,7 +3,7 @@
 set -ex
 
 # Grab default values for $CFLAGS and such.
-set -o pipefail
+# set -o pipefail
 . scripts/portability.sh
 
 # Shell functions called by the build
@@ -110,7 +110,7 @@ unset A B DOTPROG DIDNEWER
 if [ -f "$GENDIR"/build.sh ]
 then
   NEWFLAGS="$(compflags | grep '#d')"
-  OLDFLAGS="$(grep '%d' "$GENDIR"/build.sh 2>/dev/null)"
+  OLDFLAGS="$(grep '%d' "$GENDIR"/build.sh 2>/dev/null || true)"
   if [ "$OLDFLAGS" != "$NEWFLAGS" ]
   then
     rm -rf "$GENDIR"/* # Keep symlink, delete contents
