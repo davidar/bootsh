@@ -7,7 +7,6 @@ all: bootsh
 clean:
 	rm -f bootsh
 	$(MAKE) -C lib/tcc clean
-	$(MAKE) -C lib/toybox clean
 	rm -rf build
 	if [ -d test-cc ]; then $(MAKE) -C test-cc clean; fi
 

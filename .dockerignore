@@ -18,6 +18,9 @@
 *.o
 *.a
 
+build.ninja
+.ninja_log
+
 /scrap/
 
 /musl-*/

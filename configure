@@ -49,6 +49,8 @@ EOF
 
 cat config.mak
 
+export CC=$HOSTCC CFLAGS LDFLAGS
+
 cd lib/toybox
 cp -f ../../config.mak .config.mak
 cat > .config <<EOF
@@ -440,6 +442,11 @@ CONFIG_TOYBOX_UID_SYS=100
 CONFIG_TOYBOX_UID_USR=500
 # CONFIG_TOYBOX_FORCE_NOMMU is not set
 EOF
+
+rm -rf generated
+
+scripts/configure.sh
+
 cd ../..
 
 case $(uname -m) in
@@ -467,6 +474,8 @@ SH_GENHDR="\$builddir/builtins.h \$builddir/nodes.h \$builddir/syntax.h \$buildd
 cat > src/build.ninja <<EOF
 builddir = $PWD/build
 
+subninja ../lib/toybox/build.ninja
+
 rule cc
   command = $HOSTCC $CFLAGS $SH_CFLAGS -o \$out \$in $LDFLAGS $LIBS
   description = Compiling \$out
@@ -491,11 +500,6 @@ rule generate_init
   command = \$builddir/mkinit $SH_SRC && mv init.c \$builddir
   description = Generating init.c
 
-rule build_toybox
-  command = cd ../lib/toybox && scripts/genconfig.sh && NOSTRIP=1 scripts/make.sh && \
-    rm -f generated/obj/main.o && ar rcs \$builddir/libtoybox.a generated/obj/*.o
-  description = Building toybox
-
 
 build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins mkbuiltins builtins.def
 build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes nodetypes nodes.c.pat
@@ -506,8 +510,6 @@ build \$builddir/init.c: generate_init \$builddir/mkinit
 build \$builddir/mknodes: cc mknodes.c
 build \$builddir/mksyntax: cc mksyntax.c | \$builddir/token.h
 build \$builddir/mkinit: cc mkinit.c
-
-build \$builddir/libtoybox.a: build_toybox
 
 build \$builddir/ash: cc $SH_SRC $SH_GENSRC \$builddir/libtoybox.a ../lib/tcc/libtcc.a | $SH_GENHDR \$builddir/libtcc1a.h
 
