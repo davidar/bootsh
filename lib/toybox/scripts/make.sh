@@ -261,7 +261,7 @@ DOTPROG=.
 # This is a parallel version of: do_loudly $BUILD lib/*.c $TOYFILES $LINK
 
 # Build all if oldest generated/obj file isn't newer than all header files.
-[ -d "$GENDIR"/obj/] && X="$(ls -1t "$GENDIR"/obj/* 2>/dev/null | tail -n 1)"
+[ -d "$GENDIR"/obj/ ] && X="$(ls -1t "$GENDIR"/obj/* 2>/dev/null | tail -n 1)"
 if [ ! -e "$X" ] || [ -n "$(find toys -name "*.h" -newer "$X")" ]
 then
   rm -rf "$GENDIR"/obj && mkdir -p "$GENDIR"/obj || exit 1
