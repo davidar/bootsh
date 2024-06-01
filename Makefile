@@ -35,10 +35,7 @@ build/libtcc1a.h: lib/tcc/libtcc1.a
 	gzip -9 < $< | od -Anone -vtx1 | \
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' >> $@
 
-lib/toybox/libtoybox.a: FORCE
-	$(MAKE) -C lib/toybox libtoybox.a NOSTRIP=1
-
-build/ash: FORCE lib/tcc/libtcc.a build/libtcc1a.h lib/toybox/libtoybox.a
+build/ash: FORCE lib/tcc/libtcc.a build/libtcc1a.h
 	cd src && ninja
 
 bootsh: build/ash
