@@ -6,6 +6,8 @@ echo
 echo "-----------------------------------"
 echo "         Executing boot.sh         "
 echo " https://github.com/davidar/bootsh "
+echo "-----------------------------------"
+echo
 
 # Setup root filesystem
 
@@ -98,11 +100,6 @@ cp -r obj/include/bits $PREFIX/include/
 mkdir -p obj/src/internal
 printf '#define VERSION "%s"\n' "$(sh tools/version.sh)" > obj/src/internal/version.h
 
-mkdir -p $PREFIX/lib
-cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crt1.o crt/crt1.c
-cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crti.o crt/crti.c
-cc $CFLAGS -fno-stack-protector -DCRT -c -o $PREFIX/lib/crtn.o crt/crtn.c
-
 ls src/*/*.c src/malloc/mallocng/*.c | sort > sources.txt
 
 SOURCES=$(comm -23 sources.txt - <<EOF
@@ -128,45 +125,65 @@ src/thread/syscall_cp.c
 EOF
 )
 
+cat > build.ninja <<EOF
+rule cc
+    command = cc $CFLAGS \$cflags -c -o \$out \$in
+    description = Compiling \$in
+
+rule ar
+    command = ar rcs \$out \$in
+    description = Archiving \$out
+
+build $PREFIX/lib/crt1.o: cc crt/crt1.c
+  cflags = -fno-stack-protector -DCRT
+build $PREFIX/lib/crti.o: cc crt/crti.c
+  cflags = -fno-stack-protector -DCRT
+build $PREFIX/lib/crtn.o: cc crt/crtn.c
+  cflags = -fno-stack-protector -DCRT
+
+build obj/src/fenv/$ARCH/fenv.o: cc src/fenv/$ARCH/fenv.s
+build obj/src/ldso/$ARCH/dlsym.o: cc src/ldso/$ARCH/dlsym.s
+build obj/src/ldso/$ARCH/tlsdesc.o: cc src/ldso/$ARCH/tlsdesc.s
+build obj/src/process/$ARCH/vfork.o: cc src/process/$ARCH/vfork.s
+build obj/src/setjmp/$ARCH/longjmp.o: cc src/setjmp/$ARCH/longjmp.s
+build obj/src/setjmp/$ARCH/setjmp.o: cc src/setjmp/$ARCH/setjmp.s
+build obj/src/signal/$ARCH/restore.o: cc src/signal/$ARCH/restore.s
+build obj/src/signal/$ARCH/sigsetjmp.o: cc src/signal/$ARCH/sigsetjmp.s
+build obj/src/thread/$ARCH/__unmapself.o: cc src/thread/$ARCH/__unmapself.s
+build obj/src/thread/$ARCH/clone.o: cc src/thread/$ARCH/clone.s
+build obj/src/thread/$ARCH/syscall_cp.o: cc src/thread/$ARCH/syscall_cp.s
+
+build obj/src/env/__init_tls.o: cc src/env/__init_tls.c
+  cflags = -fno-stack-protector
+build obj/src/env/__libc_start_main.o: cc src/env/__libc_start_main.c
+  cflags = -fno-stack-protector
+build obj/src/env/__stack_chk_fail.o: cc src/env/__stack_chk_fail.c
+  cflags = -fno-stack-protector
+build obj/src/thread/$ARCH/__set_thread_area.o: cc src/thread/$ARCH/__set_thread_area.s
+  cflags = -fno-stack-protector
+build obj/src/string/memcmp.o: cc src/string/memcmp.c
+  cflags = -fno-tree-loop-distribute-patterns
+build obj/src/string/$ARCH/memmove.o: cc src/string/$ARCH/memmove.s
+  cflags = -fno-tree-loop-distribute-patterns
+build obj/src/string/$ARCH/memcpy.o: cc src/string/$ARCH/memcpy.s
+  cflags = -fno-tree-loop-distribute-patterns -fno-stack-protector
+build obj/src/string/$ARCH/memset.o: cc src/string/$ARCH/memset.s
+  cflags = -fno-tree-loop-distribute-patterns -fno-stack-protector
+EOF
+
 for src in $SOURCES; do
-    obj=obj/${src%.c}.o
-    mkdir -p $(dirname $obj)
-    cc $CFLAGS -c -o $obj $src
-    [ $((i = (i+1) % 35)) -eq 0 ] && echo -n -
+    echo build obj/${src%.c}.o: cc $src >> build.ninja
+done
+
+OBJS=$(grep '^build obj/' build.ninja | sed 's/^build \([^:]\+\):.*$/\1/')
+
+echo build $PREFIX/lib/libc.a: ar $OBJS >> build.ninja
+
+ninja | while read line; do
+  printf "\r%-80s" "$line"
 done
 echo
 
-mkdir -p obj/src/env
-mkdir -p obj/src/fenv/$ARCH
-mkdir -p obj/src/ldso/$ARCH
-mkdir -p obj/src/process/$ARCH
-mkdir -p obj/src/setjmp/$ARCH
-mkdir -p obj/src/signal/$ARCH
-mkdir -p obj/src/string/$ARCH
-mkdir -p obj/src/thread/$ARCH
-
-cc $CFLAGS -c -o obj/src/fenv/$ARCH/fenv.o src/fenv/$ARCH/fenv.s
-cc $CFLAGS -c -o obj/src/ldso/$ARCH/dlsym.o src/ldso/$ARCH/dlsym.s
-cc $CFLAGS -c -o obj/src/ldso/$ARCH/tlsdesc.o src/ldso/$ARCH/tlsdesc.s
-cc $CFLAGS -c -o obj/src/process/$ARCH/vfork.o src/process/$ARCH/vfork.s
-cc $CFLAGS -c -o obj/src/setjmp/$ARCH/longjmp.o src/setjmp/$ARCH/longjmp.s
-cc $CFLAGS -c -o obj/src/setjmp/$ARCH/setjmp.o src/setjmp/$ARCH/setjmp.s
-cc $CFLAGS -c -o obj/src/signal/$ARCH/restore.o src/signal/$ARCH/restore.s
-cc $CFLAGS -c -o obj/src/signal/$ARCH/sigsetjmp.o src/signal/$ARCH/sigsetjmp.s
-cc $CFLAGS -c -o obj/src/thread/$ARCH/__unmapself.o src/thread/$ARCH/__unmapself.s
-cc $CFLAGS -c -o obj/src/thread/$ARCH/clone.o src/thread/$ARCH/clone.s
-cc $CFLAGS -c -o obj/src/thread/$ARCH/syscall_cp.o src/thread/$ARCH/syscall_cp.s
-
-cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__init_tls.o src/env/__init_tls.c
-cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__libc_start_main.o src/env/__libc_start_main.c
-cc $CFLAGS -fno-stack-protector -c -o obj/src/env/__stack_chk_fail.o src/env/__stack_chk_fail.c
-cc $CFLAGS -fno-stack-protector -c -o obj/src/thread/$ARCH/__set_thread_area.o src/thread/$ARCH/__set_thread_area.s
-cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/memcmp.o src/string/memcmp.c
-cc $CFLAGS -fno-tree-loop-distribute-patterns -c -o obj/src/string/$ARCH/memmove.o src/string/$ARCH/memmove.s
-cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/$ARCH/memcpy.o src/string/$ARCH/memcpy.s
-cc $CFLAGS -fno-tree-loop-distribute-patterns -fno-stack-protector -c -o obj/src/string/$ARCH/memset.o src/string/$ARCH/memset.s
-
-ar rcs $PREFIX/lib/libc.a `find obj/src -name '*.o'`
 cd ..
 
 if [ $# -gt 0 ]; then
