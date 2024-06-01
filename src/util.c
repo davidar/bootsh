@@ -90,6 +90,7 @@ xmemdup(const char *s, size_t n)
 
 	return p;
 }
+*/
 
 int
 xasprintf(char **s, const char *fmt, ...)
@@ -113,7 +114,6 @@ xasprintf(char **s, const char *fmt, ...)
 
 	return ret;
 }
-*/
 
 void
 bufadd(struct buffer *buf, char c)

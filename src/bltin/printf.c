@@ -76,13 +76,13 @@ static char  **gargv;
 	int ret; \
 	switch ((char *)param - (char *)array) { \
 	default: \
-		ret = xasprintf(sp, f, array[0], array[1], func); \
+		ret = xasprintf2(sp, f, array[0], array[1], func); \
 		break; \
 	case sizeof(*param): \
-		ret = xasprintf(sp, f, array[0], func); \
+		ret = xasprintf2(sp, f, array[0], func); \
 		break; \
 	case 0: \
-		ret = xasprintf(sp, f, func); \
+		ret = xasprintf2(sp, f, func); \
 		break; \
 	} \
 	ret; \

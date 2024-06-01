@@ -456,52 +456,56 @@ case $(uname -m) in
 esac
 
 SH_CFLAGS="$SH_CFLAGS -DHAVE_CONFIG_H -I. -I.. -include config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall"
-SH_CFLAGS="$SH_CFLAGS -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -D_LARGEFILE64_SOURCE"
+SH_CFLAGS="$SH_CFLAGS -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -D_LARGEFILE64_SOURCE -I\$builddir"
 
 SH_SRC="bltin/printf.c bltin/test.c bltin/times.c alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c exec.c expand.c input.c jobs.c mail.c main.c memalloc.c miscbltin.c mystring.c options.c output.c parser.c redir.c show.c signames.c trap.c var.c toybox.c tcc.c ar.c util.c"
 SH_SRC="$SH_SRC samu.c samu/build.c samu/deps.c samu/env.c samu/graph.c samu/htab.c samu/log.c samu/parse.c samu/scan.c samu/tool.c samu/tree.c"
 
-SH_GENSRC="builtins.c nodes.c syntax.c init.c"
-SH_GENHDR="builtins.h nodes.h syntax.h token.h token_vars.h"
+SH_GENSRC="\$builddir/builtins.c \$builddir/nodes.c \$builddir/syntax.c \$builddir/init.c"
+SH_GENHDR="\$builddir/builtins.h \$builddir/nodes.h \$builddir/syntax.h \$builddir/token.h \$builddir/token_vars.h"
 
 SH_LIBS="../lib/toybox/libtoybox.a ../lib/tcc/libtcc.a"
 
 cat > src/build.ninja <<EOF
+builddir = ../build
+
 rule cc
   command = $HOSTCC $CFLAGS $SH_CFLAGS -o \$out \$in $LDFLAGS $LIBS
   description = Compiling \$out
 
 rule generate_builtins
-  command = sh ./mkbuiltins builtins.def
+  command = sh ./mkbuiltins builtins.def && mv builtins.c builtins.h \$builddir
   description = Generating builtins.c and builtins.h
 
 rule generate_nodes
-  command = ./mknodes nodetypes nodes.c.pat
+  command = \$builddir/mknodes nodetypes nodes.c.pat && mv nodes.c nodes.h \$builddir
   description = Generating nodes.c and nodes.h
 
 rule generate_syntax
-  command = ./mksyntax
+  command = \$builddir/mksyntax && mv syntax.c syntax.h \$builddir
   description = Generating syntax.c and syntax.h
 
 rule generate_tokens
-  command = sh ./mktokens
+  command = sh ./mktokens && mv token.h token_vars.h \$builddir
   description = Generating token.h and token_vars.h
 
 rule generate_init
-  command = ./mkinit $SH_SRC
+  command = \$builddir/mkinit $SH_SRC && mv init.c \$builddir
   description = Generating init.c
 
 
-build builtins.c builtins.h: generate_builtins mkbuiltins builtins.def
-build nodes.c nodes.h: generate_nodes mknodes nodetypes nodes.c.pat
-build syntax.c syntax.h: generate_syntax mksyntax
-build token.h token_vars.h: generate_tokens mktokens
-build init.c: generate_init mkinit
+build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins mkbuiltins builtins.def
+build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes nodetypes nodes.c.pat
+build \$builddir/syntax.c \$builddir/syntax.h: generate_syntax \$builddir/mksyntax
+build \$builddir/token.h \$builddir/token_vars.h: generate_tokens mktokens
+build \$builddir/init.c: generate_init \$builddir/mkinit
 
-build mknodes: cc mknodes.c
-build mksyntax: cc mksyntax.c
-build mkinit: cc mkinit.c
+build \$builddir/mknodes: cc mknodes.c
+build \$builddir/mksyntax: cc mksyntax.c | \$builddir/token.h
+build \$builddir/mkinit: cc mkinit.c
 
-build ash: cc $SH_SRC $SH_GENSRC $SH_LIBS | $SH_GENHDR libtcc1a.h
+build \$builddir/ash: cc $SH_SRC $SH_GENSRC $SH_LIBS | $SH_GENHDR \$builddir/libtcc1a.h
+
+default \$builddir/ash
 
 EOF

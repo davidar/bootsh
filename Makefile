@@ -8,7 +8,7 @@ clean:
 	rm -f bootsh
 	$(MAKE) -C lib/tcc clean
 	$(MAKE) -C lib/toybox clean
-	$(MAKE) -C src clean
+	rm -rf build
 	if [ -d test-cc ]; then $(MAKE) -C test-cc clean; fi
 
 tarballs/musl-%.tar.gz:
@@ -29,7 +29,8 @@ lib/tcc/libtcc.a: FORCE
 lib/tcc/libtcc1.a: FORCE lib/tcc/libtcc.a
 	$(MAKE) -C lib/tcc libtcc1.a
 
-src/libtcc1a.h: lib/tcc/libtcc1.a
+build/libtcc1a.h: lib/tcc/libtcc1.a
+	mkdir -p build
 	echo "#define LIBTCC1A_LEN $$(wc -c < $<)" > $@
 	gzip -9 < $< | od -Anone -vtx1 | \
 		sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;$$s/.*/&};/' >> $@
@@ -37,10 +38,10 @@ src/libtcc1a.h: lib/tcc/libtcc1.a
 lib/toybox/libtoybox.a: FORCE
 	$(MAKE) -C lib/toybox libtoybox.a NOSTRIP=1
 
-src/ash: FORCE lib/tcc/libtcc.a src/libtcc1a.h lib/toybox/libtoybox.a
-	cd src && ninja ash
+build/ash: FORCE lib/tcc/libtcc.a build/libtcc1a.h lib/toybox/libtoybox.a
+	cd src && ninja
 
-bootsh: src/ash
+bootsh: build/ash
 	cp -f $< $@
 
 FORCE:

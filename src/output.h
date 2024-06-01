@@ -76,7 +76,7 @@ void out1fmt(const char *, ...)
     __attribute__((__format__(__printf__,1,2)));
 int fmtstr(char *, size_t, const char *, ...)
     __attribute__((__format__(__printf__,3,4)));
-int xasprintf(char **, const char *, ...);
+int xasprintf2(char **, const char *, ...);
 #ifndef USE_GLIBC_STDIO
 void doformat(struct output *, const char *, va_list);
 #endif
