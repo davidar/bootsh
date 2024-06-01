@@ -70,6 +70,8 @@ long long gunzip_mem(char *inbuf, int inlen, char *outbuf, int outlen);
 
 void list_toys(void);
 
+void sbase_list(void);
+
 #define PROFILE 0
 
 int rootpid;
@@ -119,6 +121,7 @@ main(int argc, char **argv)
 			}
 		}
 		list_toys();
+		sbase_list();
 		return 0;
 	}
 

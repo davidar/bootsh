@@ -1,0 +1,3 @@
+[submodule "sbase"]
+	path = lib/sbase
+	url = https://github.com/davidar/sbase.git

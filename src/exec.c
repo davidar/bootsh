@@ -106,6 +106,10 @@ int tcc_main(int argc, char *argv[]);
 
 int ar_main(int argc, char *argv[]);
 
+typedef int (*main_fn)(int, char **);
+
+main_fn sbase_find(const char *s);
+
 
 /*
  * Exec a program.  Never returns.  If you change this routine, you may
@@ -133,6 +137,11 @@ shellexec(char **argv, const char *path, int idx)
 			if (strcmp(name, "PWD") == 0) continue;
 			setenv(name, eq+1, 1);
 		}
+	}
+
+	main_fn sbase_main = sbase_find(argv[0]);
+	if (sbase_main) {
+		exit(sbase_main(argc, argv));
 	}
 
 	if (toy_find(argv[0])) {
@@ -528,7 +537,7 @@ loop:
 		goto success;
 	}
 
-	if (toy_find(name) || !strcmp(name, "cc") || !strcmp(name, "c99") || !strcmp(name, "ld") || !strcmp(name, "ar")) {
+	if (toy_find(name) || sbase_find(name) || !strcmp(name, "cc") || !strcmp(name, "c99") || !strcmp(name, "ld") || !strcmp(name, "ar")) {
 		entry->u.index = -1;
 		entry->cmdtype = CMDNORMAL;
 		return;
