@@ -659,3 +659,93 @@ if test "$source_path_used" = "yes" ; then
 fi
 
 # ---------------------------------------------------------------------------
+
+ARCH=$cpu
+if [ "$ARCH" = "x86_64" ]; then
+  TCC_TARGET=-DTCC_TARGET_X86_64
+  XTCC="$cc -fPIC -fno-omit-frame-pointer -Wno-unused-function -Wno-unused-variable"
+elif [ "$ARCH" = "i386" ]; then
+  TCC_TARGET=-DTCC_TARGET_I386
+  XTCC="\$builddir/tcc/tcc -D__SOFT_FP__"
+fi
+
+cat > build.ninja <<EOF
+rule cc_tcc
+  command = $cc $CFLAGS $TCC_TARGET -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -I$PWD -I\$builddir/tcc -c \$in -o \$out
+  description = Compiling \$in
+
+rule cc_static
+  command = $cc $CFLAGS -I$PWD $LDFLAGS \$in -o \$out \$libs
+  description = Building \$out
+
+rule ar
+  command = $ar rcs \$out \$in
+  description = Archiving \$out
+
+rule run_c2str
+  command = $cc $CFLAGS -I$PWD $LDFLAGS -DC2STR $PWD/conftest.c -o \$builddir/tcc/c2str.exe && \$builddir/tcc/c2str.exe \$in \$out
+  description = Generating \$out
+
+rule cc_rt
+  command = $XTCC $CFLAGS -I$PWD -c \$in -o \$out
+  description = Compiling runtime \$in
+
+
+build \$builddir/tcc/tccdefs_.h: run_c2str $PWD/include/tccdefs.h
+
+build \$builddir/tcc/libtcc.o: cc_tcc $PWD/libtcc.c
+build \$builddir/tcc/tccpp.o: cc_tcc $PWD/tccpp.c | \$builddir/tcc/tccdefs_.h
+build \$builddir/tcc/tccgen.o: cc_tcc $PWD/tccgen.c
+build \$builddir/tcc/tccdbg.o: cc_tcc $PWD/tccdbg.c
+build \$builddir/tcc/tccelf.o: cc_tcc $PWD/tccelf.c
+build \$builddir/tcc/tccasm.o: cc_tcc $PWD/tccasm.c
+build \$builddir/tcc/tccrun.o: cc_tcc $PWD/tccrun.c
+build \$builddir/tcc/$ARCH-gen.o: cc_tcc $PWD/$ARCH-gen.c
+build \$builddir/tcc/$ARCH-link.o: cc_tcc $PWD/$ARCH-link.c
+build \$builddir/tcc/i386-asm.o: cc_tcc $PWD/i386-asm.c
+EOF
+
+TCC_OBJS=$(grep '\.o' build.ninja | sed 's/^build \([^:]\+\):.*/\1/')
+
+echo build \$builddir/tcc/libtcc.a: ar $TCC_OBJS >> build.ninja
+
+cat >> build.ninja <<EOF
+build \$builddir/tcc/tcc.o: cc_tcc $PWD/tcc.c
+build \$builddir/tcc/tcc: cc_static \$builddir/tcc/tcc.o \$builddir/tcc/libtcc.a
+  libs = -lm -lpthread
+
+
+build \$builddir/tcc/lib/rt/ashldi3.o: cc_rt $PWD/lib/rt/ashldi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/ashrdi3.o: cc_rt $PWD/lib/rt/ashrdi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/divdi3.o: cc_rt $PWD/lib/rt/divdi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixdfdi.o: cc_rt $PWD/lib/rt/fixdfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixsfdi.o: cc_rt $PWD/lib/rt/fixsfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixunsdfdi.o: cc_rt $PWD/lib/rt/fixunsdfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixunssfdi.o: cc_rt $PWD/lib/rt/fixunssfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixunsxfdi.o: cc_rt $PWD/lib/rt/fixunsxfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/fixxfdi.o: cc_rt $PWD/lib/rt/fixxfdi.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/floatundidf.o: cc_rt $PWD/lib/rt/floatundidf.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/floatundisf.o: cc_rt $PWD/lib/rt/floatundisf.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/floatundixf.o: cc_rt $PWD/lib/rt/floatundixf.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/lshrdi3.o: cc_rt $PWD/lib/rt/lshrdi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/moddi3.o: cc_rt $PWD/lib/rt/moddi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/udivdi3.o: cc_rt $PWD/lib/rt/udivdi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/udivmoddi4.o: cc_rt $PWD/lib/rt/udivmoddi4.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/rt/umoddi3.o: cc_rt $PWD/lib/rt/umoddi3.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/syscall-$ARCH.o: cc_rt $PWD/lib/syscall-$ARCH.S | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/alloca.o: cc_rt $PWD/lib/alloca.S | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/alloca-bt.o: cc_rt $PWD/lib/alloca-bt.S | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/stdatomic.o: cc_rt $PWD/lib/stdatomic.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/atomic.o: cc_rt $PWD/lib/atomic.S | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/builtin.o: cc_rt $PWD/lib/builtin.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/va_list.o: cc_rt $PWD/lib/va_list.c | \$builddir/tcc/tcc
+build \$builddir/tcc/lib/dsohandle.o: cc_rt $PWD/lib/dsohandle.c | \$builddir/tcc/tcc
+EOF
+
+if [ "$ARCH" = "x86_64" ]; then
+  echo "build \$builddir/tcc/lib/lib-x86_64.o: cc_rt $PWD/lib/lib-x86_64.c | \$builddir/tcc/tcc" >> build.ninja
+fi
+
+RT_OBJS=$(grep 'tcc/lib/' build.ninja | sed 's/^build \([^:]\+\):.*/\1/')
+
+echo build \$builddir/tcc/libtcc1.a: ar $RT_OBJS >> build.ninja

@@ -474,6 +474,7 @@ SH_GENHDR="\$builddir/builtins.h \$builddir/nodes.h \$builddir/syntax.h \$buildd
 cat > src/build.ninja <<EOF
 builddir = $PWD/build
 
+subninja ../lib/tcc/build.ninja
 subninja ../lib/toybox/build.ninja
 
 rule cc
@@ -508,6 +509,10 @@ rule generate_init
   command = \$builddir/mkinit $SH_SRC && mv init.c \$builddir
   description = Generating init.c
 
+rule generate_libtcc1a
+  command = echo "#define LIBTCC1A_LEN \$\$(wc -c < \$in)" > \$out && gzip -9 < \$in | od -Anone -vtx1 | sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;\$\$s/.*/&};/' >> \$out
+  description = Generating \$out
+
 
 build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins mkbuiltins builtins.def
 build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes nodetypes nodes.c.pat
@@ -518,6 +523,8 @@ build \$builddir/init.c: generate_init \$builddir/mkinit
 build \$builddir/mknodes: exe mknodes.c
 build \$builddir/mksyntax: exe mksyntax.c | \$builddir/token.h
 build \$builddir/mkinit: exe mkinit.c
+
+build \$builddir/libtcc1a.h: generate_libtcc1a \$builddir/tcc/libtcc1.a
 EOF
 
 SH_OBJ=
@@ -528,6 +535,6 @@ for f in $SH_SRC $SH_GENSRC; do
 done
 
 cat >> src/build.ninja <<EOF
-build \$builddir/ash: link $SH_OBJ \$builddir/libtoybox.a ../lib/tcc/libtcc.a
+build \$builddir/ash: link $SH_OBJ \$builddir/libtoybox.a \$builddir/tcc/libtcc.a
 default \$builddir/ash
 EOF
