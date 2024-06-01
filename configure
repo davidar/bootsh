@@ -441,3 +441,67 @@ CONFIG_TOYBOX_UID_USR=500
 # CONFIG_TOYBOX_FORCE_NOMMU is not set
 EOF
 cd ../..
+
+case $(uname -m) in
+  x86_64)
+    SH_CFLAGS='-DCONFIG_TRIPLET="x86_64-linux-gnu" -DTCC_TARGET_X86_64'
+    ;;
+  i*86)
+    SH_CFLAGS='-DCONFIG_TRIPLET="i386-linux-gnu" -DTCC_TARGET_I386'
+    ;;
+  *)
+    echo "Unsupported architecture"
+    exit 1
+    ;;
+esac
+
+SH_CFLAGS="$SH_CFLAGS -DHAVE_CONFIG_H -I. -I.. -include config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall"
+SH_CFLAGS="$SH_CFLAGS -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -D_LARGEFILE64_SOURCE"
+
+SH_SRC="bltin/printf.c bltin/test.c bltin/times.c alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c exec.c expand.c input.c jobs.c mail.c main.c memalloc.c miscbltin.c mystring.c options.c output.c parser.c redir.c show.c signames.c trap.c var.c toybox.c tcc.c ar.c util.c"
+SH_SRC="$SH_SRC samu.c samu/build.c samu/deps.c samu/env.c samu/graph.c samu/htab.c samu/log.c samu/parse.c samu/scan.c samu/tool.c samu/tree.c"
+
+SH_GENSRC="builtins.c nodes.c syntax.c init.c"
+SH_GENHDR="builtins.h nodes.h syntax.h token.h token_vars.h"
+
+SH_LIBS="../lib/toybox/libtoybox.a ../lib/tcc/libtcc.a"
+
+cat > src/build.ninja <<EOF
+rule cc
+  command = $HOSTCC $CFLAGS $SH_CFLAGS -o \$out \$in $LDFLAGS $LIBS
+  description = Compiling \$out
+
+rule generate_builtins
+  command = sh ./mkbuiltins builtins.def
+  description = Generating builtins.c and builtins.h
+
+rule generate_nodes
+  command = ./mknodes nodetypes nodes.c.pat
+  description = Generating nodes.c and nodes.h
+
+rule generate_syntax
+  command = ./mksyntax
+  description = Generating syntax.c and syntax.h
+
+rule generate_tokens
+  command = sh ./mktokens
+  description = Generating token.h and token_vars.h
+
+rule generate_init
+  command = ./mkinit $SH_SRC
+  description = Generating init.c
+
+
+build builtins.c builtins.h: generate_builtins mkbuiltins builtins.def
+build nodes.c nodes.h: generate_nodes mknodes nodetypes nodes.c.pat
+build syntax.c syntax.h: generate_syntax mksyntax
+build token.h token_vars.h: generate_tokens mktokens
+build init.c: generate_init mkinit
+
+build mknodes: cc mknodes.c
+build mksyntax: cc mksyntax.c
+build mkinit: cc mkinit.c
+
+build ash: cc $SH_SRC $SH_GENSRC $SH_LIBS | $SH_GENHDR libtcc1a.h
+
+EOF

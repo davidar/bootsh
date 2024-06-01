@@ -113,6 +113,8 @@ main(int argc, char **argv)
 		puts("cc");
 		puts("c99");
 		puts("ld");
+		puts("samu");
+		puts("ninja");
 		for (int i = 0; i < NUMBUILTINS; i++) {
 			if (builtincmd[i].flags == 0 || builtincmd[i].flags == BUILTIN_REGULAR) {
 				puts(builtincmd[i].name);

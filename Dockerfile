@@ -9,6 +9,7 @@ SHELL [ "setarch", "i386", "/bin/sh", "-c" ]
 ARG TARGETARCH
 FROM alpine-$TARGETARCH AS build-latest
 RUN apk add build-base
+RUN apk add ninja
 
 FROM davidar/bootsh:latest AS build-stage0
 RUN --mount=type=cache,target=/src/tarballs boot.sh make
