@@ -477,6 +477,14 @@ builddir = $PWD/build
 subninja ../lib/toybox/build.ninja
 
 rule cc
+  command = $CC $CFLAGS $SH_CFLAGS -c -o \$out \$in
+  description = Compiling \$in
+
+rule link
+  command = $CC -o \$out \$in $LDFLAGS $LIBS
+  description = Linking \$out
+
+rule exe
   command = $HOSTCC $CFLAGS $SH_CFLAGS -o \$out \$in $LDFLAGS $LIBS
   description = Compiling \$out
 
@@ -507,12 +515,19 @@ build \$builddir/syntax.c \$builddir/syntax.h: generate_syntax \$builddir/mksynt
 build \$builddir/token.h \$builddir/token_vars.h: generate_tokens mktokens
 build \$builddir/init.c: generate_init \$builddir/mkinit
 
-build \$builddir/mknodes: cc mknodes.c
-build \$builddir/mksyntax: cc mksyntax.c | \$builddir/token.h
-build \$builddir/mkinit: cc mkinit.c
+build \$builddir/mknodes: exe mknodes.c
+build \$builddir/mksyntax: exe mksyntax.c | \$builddir/token.h
+build \$builddir/mkinit: exe mkinit.c
+EOF
 
-build \$builddir/ash: cc $SH_SRC $SH_GENSRC \$builddir/libtoybox.a ../lib/tcc/libtcc.a | $SH_GENHDR \$builddir/libtcc1a.h
+SH_OBJ=
+for f in $SH_SRC $SH_GENSRC; do
+    obj="\$builddir/$(basename $f .c).o"
+    SH_OBJ="$SH_OBJ $obj"
+    echo "build $obj: cc $f | $SH_GENHDR \$builddir/libtcc1a.h" >> src/build.ninja
+done
 
+cat >> src/build.ninja <<EOF
+build \$builddir/ash: link $SH_OBJ \$builddir/libtoybox.a ../lib/tcc/libtcc.a
 default \$builddir/ash
-
 EOF
