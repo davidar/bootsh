@@ -442,9 +442,15 @@ jobdone(struct job *j)
 	int status;
 	struct edge *e, *new;
 	struct pool *p;
+	int ret;
 
 	++nfinished;
-	if (waitpid(j->pid, &status, 0) < 0) {
+	while ((ret = waitpid(j->pid, &status, 0)) < 0) {
+		if (errno == EINTR)
+			continue;
+		break;
+	}
+	if (ret < 0) {
 		warn("waitpid %d:", j->pid);
 		j->failed = true;
 	} else if (WIFEXITED(status)) {
@@ -599,8 +605,11 @@ build(void)
 		}
 		if (numjobs == 0)
 			break;
-		if (poll(fds, jobslen, 5000) < 0)
+		while (poll(fds, jobslen, 5000) < 0) {
+			if (errno == EINTR)
+				continue;
 			fatal("poll:");
+		}
 		for (i = 0; i < jobslen; ++i) {
 			if (!fds[i].revents || jobwork(&jobs[i]))
 				continue;
