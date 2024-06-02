@@ -29,7 +29,6 @@ RUN cd bootsh && CFLAGS=-Werror ./configure && ninja
 
 FROM scratch AS bootsh
 COPY wak.c /bin/awk
-COPY Makefile.packages /tmp/Makefile
-COPY boot.sh /bin/boot.sh
+COPY boot.sh configure-musl.sh /bin/
 COPY --from=build /tmp/bootsh/build/bootsh /bin/sh
 ENTRYPOINT ["/bin/boot.sh"]

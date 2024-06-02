@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -ex
+set -e
 
 IMAGE=davidar/bootsh
 
@@ -14,7 +14,38 @@ for tag in latest stage2; do
         -v $PWD/test-cc:/tmp/test-cc \
         -v $PWD/lib/toybox:/tmp/lib/toybox \
         -v $PWD/tarballs:/src/tarballs \
-        $IMAGE:$tag test-host
+        $IMAGE:$tag -c "
+            set -e
+
+            [ -f /src/tarballs/make-4.4.1.tar.gz ] || wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
+            tar -xf /src/tarballs/make-4.4.1.tar.gz
+            cd make-4.4.1
+            ./configure --disable-dependency-tracking
+            ./build.sh
+            ./make
+            ./make install
+            cd ..
+
+            [ -f /src/tarballs/bash-5.2.21.tar.gz ] || wget http://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz -O /src/tarballs/bash-5.2.21.tar.gz
+            tar -xf /src/tarballs/bash-5.2.21.tar.gz
+            cd bash-5.2.21
+            ./configure --prefix=/ --without-bash-malloc
+            make
+            make install
+            cd ..
+
+            cd test-cc
+            make ARCH=\$(uname -m | sed 's/i.86/i386/')
+            make clean
+            cd ..
+
+            cd lib/toybox
+            TEST_HOST=1 USER=root scripts/test.sh
+            rm -rf generated/testdir
+            cd ..
+
+            echo All tests passed!
+        "
   done
 done
 
