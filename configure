@@ -462,20 +462,22 @@ case $(uname -m) in
     ;;
 esac
 
-SH_CFLAGS="$SH_CFLAGS -DHAVE_CONFIG_H -I. -I.. -include config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall"
+SH_CFLAGS="$SH_CFLAGS -DHAVE_CONFIG_H -I$PWD/src -include $PWD/src/config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall"
 SH_CFLAGS="$SH_CFLAGS -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -D_LARGEFILE64_SOURCE -I\$builddir"
 
-SH_SRC="bltin/printf.c bltin/test.c bltin/times.c alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c exec.c expand.c input.c jobs.c mail.c main.c memalloc.c miscbltin.c mystring.c options.c output.c parser.c redir.c show.c signames.c trap.c var.c toybox.c tcc.c ar.c util.c"
-SH_SRC="$SH_SRC samu.c samu/build.c samu/deps.c samu/env.c samu/graph.c samu/htab.c samu/log.c samu/parse.c samu/scan.c samu/tool.c samu/tree.c"
+SH_SRC=
+for f in bltin/printf.c bltin/test.c bltin/times.c alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c exec.c expand.c input.c jobs.c mail.c main.c memalloc.c miscbltin.c mystring.c options.c output.c parser.c redir.c show.c signames.c trap.c var.c toybox.c tcc.c ar.c util.c samu.c samu/build.c samu/deps.c samu/env.c samu/graph.c samu/htab.c samu/log.c samu/parse.c samu/scan.c samu/tool.c samu/tree.c; do
+  SH_SRC="$SH_SRC $PWD/src/$f"
+done
 
 SH_GENSRC="\$builddir/builtins.c \$builddir/nodes.c \$builddir/syntax.c \$builddir/init.c"
 SH_GENHDR="\$builddir/builtins.h \$builddir/nodes.h \$builddir/syntax.h \$builddir/token.h \$builddir/token_vars.h"
 
-cat > src/build.ninja <<EOF
+cat > build.ninja <<EOF
 builddir = $PWD/build
 
-subninja ../lib/tcc/build.ninja
-subninja ../lib/toybox/build.ninja
+subninja lib/tcc/build.ninja
+subninja lib/toybox/build.ninja
 
 rule cc
   command = $CC $CFLAGS $SH_CFLAGS -c -o \$out \$in
@@ -490,11 +492,11 @@ rule exe
   description = Compiling \$out
 
 rule generate_builtins
-  command = sh ./mkbuiltins builtins.def && mv builtins.c builtins.h \$builddir
+  command = sh $PWD/src/mkbuiltins $PWD/src/builtins.def && mv builtins.c builtins.h \$builddir
   description = Generating builtins.c and builtins.h
 
 rule generate_nodes
-  command = \$builddir/mknodes nodetypes nodes.c.pat && mv nodes.c nodes.h \$builddir
+  command = \$builddir/mknodes $PWD/src/nodetypes $PWD/src/nodes.c.pat && mv nodes.c nodes.h \$builddir
   description = Generating nodes.c and nodes.h
 
 rule generate_syntax
@@ -502,7 +504,7 @@ rule generate_syntax
   description = Generating syntax.c and syntax.h
 
 rule generate_tokens
-  command = sh ./mktokens && mv token.h token_vars.h \$builddir
+  command = sh $PWD/src/mktokens && mv token.h token_vars.h \$builddir
   description = Generating token.h and token_vars.h
 
 rule generate_init
@@ -514,27 +516,27 @@ rule generate_libtcc1a
   description = Generating \$out
 
 
-build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins mkbuiltins builtins.def
-build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes nodetypes nodes.c.pat
+build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins $PWD/src/mkbuiltins $PWD/src/builtins.def
+build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes $PWD/src/nodetypes $PWD/src/nodes.c.pat
 build \$builddir/syntax.c \$builddir/syntax.h: generate_syntax \$builddir/mksyntax
-build \$builddir/token.h \$builddir/token_vars.h: generate_tokens mktokens
+build \$builddir/token.h \$builddir/token_vars.h: generate_tokens $PWD/src/mktokens
 build \$builddir/init.c: generate_init \$builddir/mkinit
 
-build \$builddir/mknodes: exe mknodes.c
-build \$builddir/mksyntax: exe mksyntax.c | \$builddir/token.h
-build \$builddir/mkinit: exe mkinit.c
+build \$builddir/mknodes: exe $PWD/src/mknodes.c
+build \$builddir/mksyntax: exe $PWD/src/mksyntax.c | \$builddir/token.h
+build \$builddir/mkinit: exe $PWD/src/mkinit.c
 
 build \$builddir/libtcc1a.h: generate_libtcc1a \$builddir/tcc/libtcc1.a
-EOF
 
+$(
 SH_OBJ=
 for f in $SH_SRC $SH_GENSRC; do
     obj="\$builddir/$(basename $f .c).o"
     SH_OBJ="$SH_OBJ $obj"
-    echo "build $obj: cc $f | $SH_GENHDR \$builddir/libtcc1a.h" >> src/build.ninja
+    echo "build $obj: cc $f | $SH_GENHDR \$builddir/libtcc1a.h"
 done
+echo build \$builddir/bootsh: link $SH_OBJ \$builddir/libtoybox.a \$builddir/tcc/libtcc.a
+)
 
-cat >> src/build.ninja <<EOF
-build \$builddir/ash: link $SH_OBJ \$builddir/libtoybox.a \$builddir/tcc/libtcc.a
-default \$builddir/ash
+default \$builddir/bootsh
 EOF
