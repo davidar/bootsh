@@ -18,6 +18,9 @@
 *.o
 *.a
 
+build.ninja
+.ninja_log
+
 /scrap/
 
 /musl-*/
@@ -28,33 +31,7 @@
 /bootsh
 /bootsh.*
 
-/src/builtins.[ch]
-/src/ash
-/src/init.c
-/src/mkinit
-/src/mknodes
-/src/mksignames
-/src/mksyntax
-/src/nodes.[ch]
-/src/syntax.[ch]
-/src/token.h
-/src/token_vars.h
-/src/libtcc1a.h
-
-/test/cc/tcctest[1234]
-/test/cc/tcctest.gcc
-/test/cc/*.out*
-/test/cc/*.txt
-/test/cc/*.gcc
-/test/cc/*-cc*
-/test/cc/*-tcc*
-/test/cc/libtcc_test
-/test/cc/libtcc_test_mt
-/test/cc/asm-c-connect
-/test/cc/asm-c-connect-sep
-/test/cc/vla_test
-/test/cc/hello
-/test/cc/tests2/fred.txt
+/build/
 
 /tarballs/
 /logs/

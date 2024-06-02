@@ -311,7 +311,7 @@ static int xvasprintf(char **sp, size_t size, const char *f, va_list ap)
 }
 
 
-int xasprintf(char **sp, const char *f, ...)
+int xasprintf2(char **sp, const char *f, ...)
 {
 	va_list ap;
 	int ret;

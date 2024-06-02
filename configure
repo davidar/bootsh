@@ -28,13 +28,11 @@ if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
     CFLAGS="$CFLAGS -nostdinc"
     HOSTCC="$PWD/sysroot/bin/musl-gcc"
     if [ ! -x "$HOSTCC" ]; then
-        echo "Run 'make sysroot' to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
+        echo "Run ./make-sysroot.sh to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
         exit 1
     fi
 fi
 rm -f $tmpc $tmpc.out
-
-which nl >/dev/null || (echo "error: nl not found, please install coreutils" && exit 1)
 
 cd lib/tcc
 ./configure --prefix=/ --config-ldl=no --config-bcheck=no --config-backtrace=no \
@@ -48,6 +46,8 @@ LDFLAGS = $LDFLAGS
 EOF
 
 cat config.mak
+
+export CC=$HOSTCC CFLAGS LDFLAGS
 
 cd lib/toybox
 cp -f ../../config.mak .config.mak
@@ -440,4 +440,101 @@ CONFIG_TOYBOX_UID_SYS=100
 CONFIG_TOYBOX_UID_USR=500
 # CONFIG_TOYBOX_FORCE_NOMMU is not set
 EOF
+
+rm -rf generated
+
+scripts/configure.sh
+
 cd ../..
+
+case $(uname -m) in
+  x86_64)
+    SH_CFLAGS='-DCONFIG_TRIPLET="x86_64-linux-gnu" -DTCC_TARGET_X86_64'
+    ;;
+  i*86)
+    SH_CFLAGS='-DCONFIG_TRIPLET="i386-linux-gnu" -DTCC_TARGET_I386'
+    ;;
+  *)
+    echo "Unsupported architecture"
+    exit 1
+    ;;
+esac
+
+SH_CFLAGS="$SH_CFLAGS -DHAVE_CONFIG_H -I$PWD/src -include $PWD/src/config.h -DBSD=1 -DSHELL -DDEBUG=1 -Wall"
+SH_CFLAGS="$SH_CFLAGS -DCONFIG_TCC_BCHECK=0 -DCONFIG_TCC_BACKTRACE=0 -DONE_SOURCE=0 -D_LARGEFILE64_SOURCE -I\$builddir"
+
+SH_SRC=
+for f in bltin/printf.c bltin/test.c bltin/times.c alias.c arith_yacc.c arith_yylex.c cd.c error.c eval.c exec.c expand.c input.c jobs.c mail.c main.c memalloc.c miscbltin.c mystring.c options.c output.c parser.c redir.c show.c signames.c trap.c var.c toybox.c tcc.c ar.c util.c samu.c samu/build.c samu/deps.c samu/env.c samu/graph.c samu/htab.c samu/log.c samu/parse.c samu/scan.c samu/tool.c samu/tree.c; do
+  SH_SRC="$SH_SRC $PWD/src/$f"
+done
+
+SH_GENSRC="\$builddir/builtins.c \$builddir/nodes.c \$builddir/syntax.c \$builddir/init.c"
+SH_GENHDR="\$builddir/builtins.h \$builddir/nodes.h \$builddir/syntax.h \$builddir/token.h \$builddir/token_vars.h"
+
+cat > build.ninja <<EOF
+builddir = $PWD/build
+
+subninja lib/tcc/build.ninja
+subninja lib/toybox/build.ninja
+
+rule cc
+  command = $CC $CFLAGS $SH_CFLAGS -c -o \$out \$in
+  description = Compiling \$in
+
+rule link
+  command = $CC -o \$out \$in $LDFLAGS $LIBS
+  description = Linking \$out
+
+rule exe
+  command = $HOSTCC $CFLAGS $SH_CFLAGS -o \$out \$in $LDFLAGS $LIBS
+  description = Compiling \$out
+
+rule generate_builtins
+  command = sh $PWD/src/mkbuiltins $PWD/src/builtins.def && mv builtins.c builtins.h \$builddir
+  description = Generating builtins.c and builtins.h
+
+rule generate_nodes
+  command = \$builddir/mknodes $PWD/src/nodetypes $PWD/src/nodes.c.pat && mv nodes.c nodes.h \$builddir
+  description = Generating nodes.c and nodes.h
+
+rule generate_syntax
+  command = \$builddir/mksyntax && mv syntax.c syntax.h \$builddir
+  description = Generating syntax.c and syntax.h
+
+rule generate_tokens
+  command = sh $PWD/src/mktokens && mv token.h token_vars.h \$builddir
+  description = Generating token.h and token_vars.h
+
+rule generate_init
+  command = \$builddir/mkinit $SH_SRC && mv init.c \$builddir
+  description = Generating init.c
+
+rule generate_libtcc1a
+  command = echo "#define LIBTCC1A_LEN \$\$(wc -c < \$in)" > \$out && gzip -9 < \$in | od -Anone -vtx1 | sed 's/ /,0x/g;1s/^,/static char libtcc1a_data[] = {\n /;\$\$s/.*/&};/' >> \$out
+  description = Generating \$out
+
+
+build \$builddir/builtins.c \$builddir/builtins.h: generate_builtins $PWD/src/mkbuiltins $PWD/src/builtins.def
+build \$builddir/nodes.c \$builddir/nodes.h: generate_nodes \$builddir/mknodes $PWD/src/nodetypes $PWD/src/nodes.c.pat
+build \$builddir/syntax.c \$builddir/syntax.h: generate_syntax \$builddir/mksyntax
+build \$builddir/token.h \$builddir/token_vars.h: generate_tokens $PWD/src/mktokens
+build \$builddir/init.c: generate_init \$builddir/mkinit
+
+build \$builddir/mknodes: exe $PWD/src/mknodes.c
+build \$builddir/mksyntax: exe $PWD/src/mksyntax.c | \$builddir/token.h
+build \$builddir/mkinit: exe $PWD/src/mkinit.c
+
+build \$builddir/libtcc1a.h: generate_libtcc1a \$builddir/tcc/libtcc1.a
+
+$(
+SH_OBJ=
+for f in $SH_SRC $SH_GENSRC; do
+    obj="\$builddir/$(basename $f .c).o"
+    SH_OBJ="$SH_OBJ $obj"
+    echo "build $obj: cc $f | $SH_GENHDR \$builddir/libtcc1a.h"
+done
+echo build \$builddir/bootsh: link $SH_OBJ \$builddir/libtoybox.a \$builddir/tcc/libtcc.a
+)
+
+default \$builddir/bootsh
+EOF
