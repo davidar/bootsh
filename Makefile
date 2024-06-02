@@ -6,3 +6,6 @@ src/samu/samu:
 
 clean:
 	rm -rf build
+
+install: all
+	./install.sh

@@ -22,13 +22,11 @@ RUN --mount=type=cache,target=/src/tarballs boot.sh
 
 FROM build-$TAG AS build
 WORKDIR /tmp
-COPY configure bootsh/
+COPY configure boot.sh configure-musl.sh wak.c install.sh bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
-RUN cd bootsh && CFLAGS=-Werror ./configure && ninja
+RUN cd bootsh && CFLAGS=-Werror ./configure && ninja && DESTDIR=/dest ./install.sh
 
 FROM scratch AS bootsh
-COPY wak.c /bin/awk
-COPY boot.sh configure-musl.sh /bin/
-COPY --from=build /tmp/bootsh/build/bootsh /bin/sh
+COPY --from=build /dest /
 ENTRYPOINT ["/bin/boot.sh"]
