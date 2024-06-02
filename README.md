@@ -10,7 +10,7 @@ A comprehensive POSIX userspace, including a C compiler, in a single tiny (<1MB)
 
 ## Build
 
-Just run `./configure && ninja` (or `samu` if using [samurai](https://github.com/michaelforney/samurai)). The configure script will prompt you for any missing build dependencies.
+Just run `./configure && ninja`. The configure script will prompt you for any missing build dependencies. If you don't have `ninja`, you can run `make` to bootstrap with the builtin copy of [samurai](https://github.com/michaelforney/samurai).
 
 ## Usage
 
