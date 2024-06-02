@@ -29,24 +29,17 @@ jobs:
         name: Set up containerd
         uses: crazy-max/ghaction-setup-containerd@v3
       -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Test
+        run: ./run-tests.sh
+      -
         name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: davidar
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Build and export to Docker
-        uses: docker/build-push-action@v5
-        with:
-          load: true
-          tags: davidar/bootsh:latest
-          platforms: linux/amd64,linux/i386
-      -
-        name: Checkout
-        uses: actions/checkout@v4
-      -
-        name: Test
-        run: make test-latest -o docker-latest
       -
         name: Build and push
         uses: docker/build-push-action@v5
