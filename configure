@@ -34,8 +34,6 @@ if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
 fi
 rm -f $tmpc $tmpc.out
 
-which nl >/dev/null || (echo "error: nl not found, please install coreutils" && exit 1)
-
 cd lib/tcc
 ./configure --prefix=/ --config-ldl=no --config-bcheck=no --config-backtrace=no \
     --ar=ar --cc="$HOSTCC" --extra-cflags="$CFLAGS -DCONFIG_TCC_STATIC" --extra-ldflags="$LDFLAGS"

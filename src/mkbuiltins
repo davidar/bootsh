@@ -101,7 +101,7 @@ cat <<\!
  */
 
 !
-sed 's/	-[a-z]*//' $temp2 | nl -ba -v0 |
+sed 's/	-[a-z]*//' $temp2 | awk '{printf "%d %s\n", NR-1, $0}' |
 	LC_ALL= LC_COLLATE=C sort -u -k 3,3 |
 	tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ |
 	awk '{	printf "#define %s (builtincmd + %d)\n", $3, $1}'
