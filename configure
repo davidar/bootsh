@@ -28,7 +28,7 @@ if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
     CFLAGS="$CFLAGS -nostdinc"
     HOSTCC="$PWD/sysroot/bin/musl-gcc"
     if [ ! -x "$HOSTCC" ]; then
-        echo "Run 'make sysroot' to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
+        echo "Run ./make-sysroot.sh to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
         exit 1
     fi
 fi

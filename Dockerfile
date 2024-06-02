@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/src/tarballs boot.sh
 
 FROM build-$TAG AS build
 WORKDIR /tmp
-COPY configure Makefile bootsh/
+COPY configure bootsh/
 COPY src bootsh/src
 COPY lib bootsh/lib
 RUN cd bootsh && CFLAGS=-Werror ./configure && ninja
