@@ -13,7 +13,7 @@ hostcomp()
 {
   if [ ! -f "$UNSTRIPPED"/$1 ] || [ "$UNSTRIPPED"/$1 -ot scripts/$1.c ]
   then
-    $HOSTCC scripts/$1.c -o "$UNSTRIPPED"/$1 || exit 1
+    $HOSTCC $CFLAGS $LDFLAGS scripts/$1.c -o "$UNSTRIPPED"/$1 || exit 1
   fi
 }
 
