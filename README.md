@@ -30,6 +30,17 @@ This image contains four files:
 
 Upon running the Docker image, it will bootstrap itself by constructing a minimal root filesystem on top of this.
 
+## POSIX Compliance
+
+*boot*sh implements all of the [mandatory POSIX commands](https://en.wikipedia.org/wiki/List_of_POSIX_commands)
+(and a number of optional commands) except for the following:
+
+- system administration: `at`, `batch`, `crontab`, `df`, `logger`, `lp`, `man`, `newgrp`, `ps`
+- text/locale processing: `csplit`, `gencat`, `iconv`, `locale`, `localedef`, `pr`, `split`
+- interactive tools: `ed`, `mailx`, `mesg`, `unexpand`, `write`
+- terminal control: `stty`, `tabs`, `tput`
+- miscellaneous: `bc`, `join`, `m4`, `pathchk`, `pax`, `tsort`
+
 ## Credits
 
 *boot*sh is based on several MIT/BSD licensed projects:
