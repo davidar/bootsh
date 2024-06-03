@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
   // entry until we run out of matching pairs.
   for (;;) {
     struct symbol *throw = 0, *catch;
-    char *this, *that, *cusage, *tusage, *name = 0;
+    char *this = 0, *that, *cusage, *tusage, *name = 0;
     int len;
 
     // find a usage: name and collate all enabled entries with that name
