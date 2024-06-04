@@ -344,14 +344,14 @@ int main(int argc, char *argv[])
   for (;;) {
     struct symbol *throw = 0, *catch;
     char *this = 0, *that, *cusage, *tusage, *name = 0;
-    int len;
+    int len = 0;
 
     // find a usage: name and collate all enabled entries with that name
     for (catch = sym; catch; catch = catch->next) {
       if (catch->enabled != 1) continue;
       if (catch->help && (that = keyword("usage:", catch->help->data))) {
         struct double_list *cfrom, *tfrom, *anchor;
-        char *try, **cdashlines, **tdashlines, *usage;
+        char *try, **cdashlines, **tdashlines, *usage = NULL;
         int clen, tlen;
 
         // Align usage: lines, finding a matching pair so we can suck help
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
         while (!isspace(*that) && *that) that++;
         if (!throw) len = that-usage;
         free(name);
-        name = strndup(usage, len);
+        if (usage) name = strndup(usage, len);
         that = skip_spaces(that);
         if (!throw) {
           throw = catch;
