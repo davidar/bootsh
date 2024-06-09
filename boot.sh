@@ -36,6 +36,11 @@ EOF
 
 [ ! -f /etc/resolv.conf ] && echo "nameserver 1.1.1.1" > /etc/resolv.conf
 
+[ ! -e /proc/self ] && mkdir -p /proc && mount -t proc none /proc
+[ ! -e /sys/kernel ] && mkdir -p /sys && mount -t sysfs none /sys
+[ ! -e /dev/null ] && mkdir -p /dev && mknod -m 666 /dev/null c 1 3
+[ ! -e /dev/tty ] && mknod -m 666 /dev/tty c 5 0
+
 for cmd in $(sh --list-builtins); do
   printf '#!/bin/sh\ncommand %s "$@"' "$cmd" > /bin/$cmd;
 done

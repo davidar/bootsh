@@ -34,3 +34,5 @@ build.ninja
 /build/
 
 /logs/
+
+/linux-6.9.3/
