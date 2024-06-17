@@ -15,6 +15,7 @@ struct evalstring {
 	struct evalstring *next;
 };
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
 #define LEN(a) (sizeof(a) / sizeof((a)[0]))
 
 void warn(const char *, ...);
@@ -42,3 +43,7 @@ void canonpath(struct string *);
 int makedirs(struct string *, _Bool);
 /* write a new file with the given name and contents */
 int writefile(const char *, struct string *);
+
+void weprintf(const char *, ...);
+void eprintf(const char *, ...);
+void enprintf(int, const char *, ...);

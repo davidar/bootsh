@@ -105,6 +105,7 @@ void toy_exec(char *argv[]);
 int tcc_main(int argc, char *argv[]);
 int ar_main(int argc, char *argv[]);
 int samu_main(int argc, char *argv[]);
+int sdhcp_main(int argc, char *argv[]);
 
 
 /*
@@ -149,6 +150,10 @@ shellexec(char **argv, const char *path, int idx)
 
 	if (!strcmp(argv[0], "samu") || !strcmp(argv[0], "ninja")) {
 		exit(samu_main(argc, argv));
+	}
+
+	if (!strcmp(argv[0], "sdhcp")) {
+		exit(sdhcp_main(argc, argv));
 	}
 
 	if (strchr(argv[0], '/') != NULL) {
@@ -533,7 +538,8 @@ loop:
 	}
 
 	if (toy_find(name) || !strcmp(name, "cc") || !strcmp(name, "c99") || !strcmp(name, "ld") ||
-	    !strcmp(name, "ar") || !strcmp(name, "samu") || !strcmp(name, "ninja")) {
+	    !strcmp(name, "ar") || !strcmp(name, "samu") || !strcmp(name, "ninja") ||
+	    !strcmp(name, "sdhcp")) {
 		entry->u.index = -1;
 		entry->cmdtype = CMDNORMAL;
 		return;

@@ -48,6 +48,7 @@ mkdir -p /src/tarballs /src/logs
 
 if [ ! -f /src/tarballs/musl-1.2.5.tar.gz ]; then
   echo "Downloading musl-1.2.5 source code..."
+  ifconfig eth0 up && sdhcp -e env eth0
   wget http://www.musl-libc.org/releases/musl-1.2.5.tar.gz -O /src/tarballs/musl-1.2.5.tar.gz
 fi
 tar -xf /src/tarballs/musl-1.2.5.tar.gz
