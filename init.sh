@@ -5,14 +5,15 @@ INITPWD=$(pwd)
 mkdir -p /etc /proc /sys /tmp
 chmod 1777 /tmp
 
+[ ! -e /usr ] && ln -s / /usr
+
 if [ ! -e /proc/mounts ]; then
   mount -t proc none /proc
   mount -t sysfs none /sys
 fi
 
-[ ! -L /etc/mtab ] && ln -s /proc/mounts /etc/mtab
-
-[ ! -L /usr ] && ln -s / /usr
+[ ! -f /etc/mtab ] && ln -s /proc/mounts /etc/mtab
+[ ! -f /etc/resolv.conf ] && [ -e /proc/net/pnp ] && ln -s /proc/net/pnp /etc/resolv.conf
 
 [ ! -f /etc/passwd ] && cat > /etc/passwd <<EOF
 root:x:0:0:root:/root:/bin/sh
@@ -36,15 +37,6 @@ for cmd in $(sh --list-builtins); do
   printf '#!/bin/sh\ncommand %s "$@"' "$cmd" > /bin/$cmd;
 done
 chmod +x /bin/*
-
-if ! ifconfig | grep -q UP; then
-  echo "Configuring network..."
-  ifconfig lo 127.0.0.1
-  ifconfig eth0 up
-  sdhcp -e env eth0
-elif [ ! -f /etc/resolv.conf ]; then
-  echo "nameserver 1.1.1.1" > /etc/resolv.conf
-fi
 
 if [ ! -f /lib/libc.a ]; then
   cd /tmp

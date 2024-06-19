@@ -21,4 +21,4 @@ rootfs.cpio.xz:
 	cd rootfs && find . | cpio -H newc -o | xz --check=crc32 > ../rootfs.cpio.xz
 
 run: bzImage rootfs.cpio.xz
-	qemu-system-i386 -kernel bzImage -initrd rootfs.cpio.xz -m 1G -nographic -nic user
+	qemu-system-i386 -kernel bzImage -initrd rootfs.cpio.xz -append ip=dhcp -m 1G -nographic -nic user

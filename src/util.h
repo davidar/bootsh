@@ -43,7 +43,3 @@ void canonpath(struct string *);
 int makedirs(struct string *, _Bool);
 /* write a new file with the given name and contents */
 int writefile(const char *, struct string *);
-
-void weprintf(const char *, ...);
-void eprintf(const char *, ...);
-void enprintf(int, const char *, ...);
