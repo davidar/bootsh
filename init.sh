@@ -56,20 +56,6 @@ if [ ! -f /lib/libc.a ]; then
   echo
 fi
 
-cat > /bin/poweroff <<EOF
-#!/bin/cc -run
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/reboot.h>
-main() {
-  sync();
-  if (reboot(RB_POWER_OFF) < 0) {
-    perror("reboot");
-  }
-}
-EOF
-chmod +x /bin/poweroff
-
 export USER=$(whoami)
 export HOSTNAME=$(hostname)
 export PS1='$USER:$PWD\$ '
@@ -77,7 +63,8 @@ export PS1='$USER:$PWD\$ '
 cd "$INITPWD"
 
 if [ -z "$1" ]; then
-  exec /bin/sh
+  /bin/sh
+  poweroff -f
 else
   exec "$@"
 fi
