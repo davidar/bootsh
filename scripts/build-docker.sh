@@ -8,6 +8,10 @@ for tag in latest stage0 stage1 stage2; do
   docker build . -t $IMAGE:$tag --build-arg TAG=$tag --platform linux/amd64,linux/i386
 done
 
+if [ "$1" = "--kernel" ]; then
+  docker build . --target output -o build/ --build-arg TAG=latest --platform linux/i386
+fi
+
 if [ "$1" = "--test" ]; then
   for tag in latest stage2; do
     for arch in amd64 i386; do

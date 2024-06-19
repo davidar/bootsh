@@ -34,9 +34,3 @@ build.ninja
 /build/
 
 /logs/
-
-/linux-6.9.3/
-/bzImage
-
-/rootfs/
-/rootfs.cpio.xz
