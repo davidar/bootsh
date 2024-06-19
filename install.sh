@@ -2,9 +2,9 @@
 
 set -ex
 
-BINDIR="$DESTDIR$PREFIX/bin"
+R="$DESTDIR$PREFIX"
 
-install -D -m 755 wak.c "$BINDIR/awk"
-install -D -m 755 boot.sh "$BINDIR/boot.sh"
-install -D -m 755 configure-musl.sh "$BINDIR/configure-musl.sh"
-install -D -m 755 build/bootsh "$BINDIR/sh"
+install -D -m 755 wak.c "$R/bin/awk"
+install -D -m 755 configure-musl.sh "$R/bin/configure-musl.sh"
+install -D -m 755 build/bootsh "$R/bin/sh"
+install -D -m 755 init.sh "$R/sbin/init"

@@ -15,8 +15,11 @@ if [ "$1" = "--test" ]; then
         -v $PWD/test-cc:/tmp/test-cc \
         -v $PWD/lib/toybox:/tmp/lib/toybox \
         -v $PWD/tarballs:/src/tarballs \
-        $IMAGE:$tag -c "
+        $IMAGE:$tag sh -c "
             set -e
+
+            cd /tmp
+            export PATH=/local/bin:/bin
 
             [ -f /src/tarballs/make-4.4.1.tar.gz ] || wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
             tar -xf /src/tarballs/make-4.4.1.tar.gz
