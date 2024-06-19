@@ -11,7 +11,7 @@ clean:
 	rm -rf build lib/toybox/generated
 
 install: all
-	./install.sh
+	scripts/install.sh
 
 bzImage:
 	cd linux-6.9.3 && cp -f ../linux-6.9.3.config .config && \

@@ -18,10 +18,11 @@ FROM davidar/bootsh:stage1 AS build-stage2
 FROM build-$TAG AS build
 COPY tarballs /src/tarballs
 WORKDIR /tmp
-COPY configure configure-musl.sh init.sh install.sh wak.c bootsh/
+COPY configure bootsh/
+COPY scripts bootsh/scripts
 COPY src bootsh/src
 COPY lib bootsh/lib
-RUN cd bootsh && CFLAGS=-Werror ./configure && ninja && DESTDIR=/dest ./install.sh
+RUN cd bootsh && CFLAGS=-Werror ./configure && ninja && DESTDIR=/dest scripts/install.sh
 
 FROM scratch AS bootsh
 COPY --from=build /dest /
