@@ -32,6 +32,19 @@ This image contains four files:
 
 Upon running the Docker image, it will bootstrap itself by constructing a minimal root filesystem on top of this.
 
+Alternatively, you can build a minimal Linux distribution by running
+
+```sh
+scripts/build-docker.sh --kernel
+```
+
+This will produce a compressed kernel in `build/bzImage` and a compressed root filesystem in `build/initramfs.cpio.xz` (whose contents are the same as the Docker image).
+Together they occupy less than 2MB. To boot the kernel in QEMU, run
+
+```sh
+scripts/run-qemu.sh
+```
+
 ## POSIX Compliance
 
 *boot*sh implements all of the [mandatory POSIX commands](https://en.wikipedia.org/wiki/List_of_POSIX_commands)
