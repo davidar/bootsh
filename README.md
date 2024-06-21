@@ -2,7 +2,7 @@
 
 A comprehensive POSIX userspace, including a C compiler, in a single tiny (<1MB) executable.
 
-- **Bootstrappable:** *boot*sh contains a variety of builtin commands (including `grep`, `diff`, `sed`, `xzcat`, `sha1sum`, `ninja` and many more) providing a solid POSIX base to bootstrap a full GNU/Linux distribution from source.
+- **Bootstrappable:** *boot*sh contains a variety of builtin commands (including `grep`, `diff`, `sed`, `xzcat`, `sha1sum`, `ninja` and many more) providing a solid POSIX base to [bootstrap a full GNU/Linux distribution from source](https://github.com/sabotage-linux/sabotage).
 
 - **Self-hosting:** *boot*sh can compile itself from source, thanks to its builtin `cc` command which implements a full C99 compiler.
 
@@ -24,7 +24,9 @@ This image contains four files:
 
 - `/bin/sh`: the *boot*sh executable
 
-- `/bin/boot.sh` and `/bin/configure-musl.sh`: shell scripts for bootstrapping the system and building [musl libc](https://musl.libc.org/)
+- `/sbin/init`: a small shell script for constructing the root filesystem and bootstrapping musl libc from source
+
+- `/bin/configure-musl.sh`: sets up an alternative ninja-based build system for musl
 
 - `/bin/awk`: a [C script](scripts/wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
 
