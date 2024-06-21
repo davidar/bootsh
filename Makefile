@@ -11,4 +11,4 @@ clean:
 	rm -rf build lib/toybox/generated
 
 install: all
-	./install.sh
+	scripts/install.sh

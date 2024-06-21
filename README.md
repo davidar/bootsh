@@ -26,7 +26,7 @@ This image contains four files:
 
 - `/bin/boot.sh` and `/bin/configure-musl.sh`: shell scripts for bootstrapping the system and building [musl libc](https://musl.libc.org/)
 
-- `/bin/awk`: a [C script](wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
+- `/bin/awk`: a [C script](scripts/wak.c) (note the `#!/bin/cc -run` interpreter line) which is JIT compiled as needed
 
 Upon running the Docker image, it will bootstrap itself by constructing a minimal root filesystem on top of this.
 

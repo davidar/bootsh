@@ -8,14 +8,22 @@ for tag in latest stage0 stage1 stage2; do
   docker build . -t $IMAGE:$tag --build-arg TAG=$tag --platform linux/amd64,linux/i386
 done
 
-for tag in latest stage2; do
-  for arch in amd64 i386; do
-    docker run --rm --platform linux/$arch \
+if [ "$1" = "--kernel" ]; then
+  docker build . --target output -o build/ --build-arg TAG=latest --platform linux/i386
+fi
+
+if [ "$1" = "--test" ]; then
+  for tag in latest stage2; do
+    for arch in amd64 i386; do
+      docker run --rm --platform linux/$arch \
         -v $PWD/test-cc:/tmp/test-cc \
         -v $PWD/lib/toybox:/tmp/lib/toybox \
         -v $PWD/tarballs:/src/tarballs \
-        $IMAGE:$tag -c "
+        $IMAGE:$tag sh -c "
             set -e
+
+            cd /tmp
+            export PATH=/local/bin:/bin
 
             [ -f /src/tarballs/make-4.4.1.tar.gz ] || wget http://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz -O /src/tarballs/make-4.4.1.tar.gz
             tar -xf /src/tarballs/make-4.4.1.tar.gz
@@ -46,8 +54,9 @@ for tag in latest stage2; do
 
             echo All tests passed!
         "
+    done
   done
-done
+fi
 
 for tag in latest stage0 stage1 stage2; do
   for arch in amd64 i386; do

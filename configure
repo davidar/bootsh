@@ -28,7 +28,7 @@ if ! $HOSTCC -Wl,--fatal-warnings -static $tmpc -o $tmpc.out 2>&1; then
     CFLAGS="$CFLAGS -nostdinc"
     HOSTCC="$PWD/sysroot/bin/musl-gcc"
     if [ ! -x "$HOSTCC" ]; then
-        echo "Run ./make-sysroot.sh to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
+        echo "Run scripts/make-sysroot.sh to install a local copy of musl, or set HOSTCC to the path of musl-gcc"
         exit 1
     fi
 fi
@@ -315,7 +315,7 @@ CONFIG_PRINTENV=y
 # CONFIG_READELF is not set
 CONFIG_READLINK=y
 # CONFIG_REALPATH is not set
-# CONFIG_REBOOT is not set
+CONFIG_REBOOT=y
 # CONFIG_RESET is not set
 # CONFIG_REV is not set
 # CONFIG_RMMOD is not set
@@ -356,7 +356,7 @@ CONFIG_YES=y
 # CONFIG_FTPPUT is not set
 # CONFIG_HOST is not set
 # CONFIG_HTTPD is not set
-# CONFIG_IFCONFIG is not set
+CONFIG_IFCONFIG=y
 # CONFIG_MICROCOM is not set
 # CONFIG_NETCAT is not set
 # CONFIG_NETSTAT is not set
@@ -383,17 +383,17 @@ CONFIG_SHA224SUM=y
 CONFIG_SHA256SUM=y
 CONFIG_SHA384SUM=y
 CONFIG_SHA512SUM=y
-# CONFIG_MKNOD is not set
+CONFIG_MKNOD=y
 # CONFIG_MKNOD_Z is not set
 CONFIG_MKTEMP=y
-# CONFIG_MOUNT is not set
+CONFIG_MOUNT=y
 # CONFIG_PASSWD is not set
 # CONFIG_PASSWD_SAD is not set
 # CONFIG_PIDOF is not set
 CONFIG_SEQ=y
 # CONFIG_SU is not set
 # CONFIG_SYNC is not set
-# CONFIG_UMOUNT is not set
+CONFIG_UMOUNT=y
 
 #
 # Example commands

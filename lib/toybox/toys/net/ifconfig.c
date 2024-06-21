@@ -529,7 +529,7 @@ void ifconfig_main(void)
             // Handle /netmask
             if (mask >= 0) {
               // sin_addr probably isn't unaligned, but just in case...
-              mask = htonl((~0)<<(32-mask));
+              mask = htonl(((uint32_t)~0)<<(32-mask));
               memcpy(&si->sin_addr, &mask, 4);
               xioctl(TT.sockfd, SIOCSIFNETMASK, &ifre);
             }
