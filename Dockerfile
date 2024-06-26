@@ -1,15 +1,11 @@
 ARG TAG=latest
 
-FROM alpine AS alpine-amd64
-
-FROM alpine AS alpine-386
-RUN apk add setarch
-SHELL [ "setarch", "i386", "/bin/sh", "-c" ]
-
-ARG TARGETARCH
-FROM alpine-$TARGETARCH AS build-latest
-RUN apk add build-base
-RUN apk add ninja
+FROM davidar/sabotage AS sabotage-amd64
+SHELL [ "/bin/linux64", "/bin/sh", "-c" ]
+FROM davidar/sabotage AS sabotage-386
+SHELL [ "/bin/linux32", "/bin/sh", "-c" ]
+FROM sabotage-$TARGETARCH AS build-latest
+RUN butch install samurai
 
 FROM davidar/bootsh:latest AS build-stage0
 FROM davidar/bootsh:stage0 AS build-stage1
@@ -22,7 +18,7 @@ COPY configure Makefile bootsh/
 COPY scripts bootsh/scripts
 COPY src bootsh/src
 COPY lib bootsh/lib
-RUN cd bootsh && CFLAGS=-Werror ./configure && ninja && DESTDIR=/dest scripts/install.sh
+RUN cd bootsh && CFLAGS=-Werror ./configure && samu && DESTDIR=/dest scripts/install.sh
 
 FROM alpine AS cpio
 RUN apk add xz
