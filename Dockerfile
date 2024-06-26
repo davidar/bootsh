@@ -18,7 +18,7 @@ FROM davidar/bootsh:stage1 AS build-stage2
 FROM build-$TAG AS build
 COPY tarballs /src/tarballs
 WORKDIR /tmp
-COPY configure bootsh/
+COPY configure Makefile bootsh/
 COPY scripts bootsh/scripts
 COPY src bootsh/src
 COPY lib bootsh/lib
@@ -45,6 +45,6 @@ COPY --from=kernel /bzImage /
 
 FROM scratch AS bootsh
 COPY --from=build /dest /
-ENTRYPOINT [ "/sbin/init" ]
+ENTRYPOINT [ "/bin/init" ]
 CMD [ "/bin/sh" ]
-SHELL [ "/sbin/init", "/bin/sh", "-c" ]
+SHELL [ "/bin/init", "/bin/sh", "-c" ]

@@ -9,6 +9,7 @@ src/samu/samu:
 
 clean:
 	rm -rf build lib/toybox/generated
+	$(MAKE) -C src/samu clean
 
 install: all
 	scripts/install.sh

@@ -1,0 +1,18 @@
+FROM davidar/bootsh:latest AS stage0
+ADD https://github.com/sabotage-linux/sabotage.git /src
+RUN /src/utils/boot-stage0.sh
+
+FROM stage0 AS stage0-amd64
+SHELL [ "/bin/linux64", "/bin/sh", "-c" ]
+FROM stage0 AS stage0-386
+SHELL [ "/bin/linux32", "/bin/sh", "-c" ]
+FROM stage0-$TARGETARCH AS stage1
+
+RUN butch install stage1
+RUN /src/utils/clean-stage1.sh
+RUN /src/utils/rebuild-stage1.sh
+RUN rm -rf /src/build /src/logs /src/tarballs
+
+FROM scratch
+COPY --from=stage1 / /
+CMD [ "/bin/sh" ]
