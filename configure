@@ -249,7 +249,7 @@ CONFIG_BZCAT=y
 # CONFIG_CHCON is not set
 # CONFIG_CHROOT is not set
 # CONFIG_CHRT is not set
-# CONFIG_CLEAR is not set
+CONFIG_CLEAR=y
 # CONFIG_COUNT is not set
 # CONFIG_DEVMEM is not set
 # CONFIG_DOS2UNIX is not set
