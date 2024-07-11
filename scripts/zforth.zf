@@ -1,0 +1,198 @@
+#!/bin/zf
+
+( system calls )
+
+: emit    0 sys ;
+: .       1 sys ;
+: tell    2 sys ;
+: quit    128 sys ;
+: sin     129 sys ;
+: include 130 sys ;
+: save    131 sys ;
+
+
+( dictionary access for regular variable-length cells. These are shortcuts
+  through the primitive operations are !!, @@ and ,, )
+
+: !    0 !! ;
+: @    0 @@ ;
+: ,    0 ,, ;
+: #    0 ## ;
+
+( dictionary access for jmp instructions; these make sure to always use the
+  maximium cell size for the target address to allow safe stubbing and
+  updating of a jump address. `64` is the magic number for ZF_ACCESS_VAR_MAX,
+  see zforth.c for details )
+
+: !j	 64 !! ;
+: ,j	 64 ,, ;
+
+( compiler state )
+
+: [ 0 compiling ! ; immediate
+: ] 1 compiling ! ;
+: postpone 1 _postpone ! ; immediate
+
+
+( some operators and shortcuts )
+: 1+ 1 + ;
+: 1- 1 - ;
+: over 1 pick ;
+: +!   dup @ rot + swap ! ;
+: inc  1 swap +! ;
+: dec  -1 swap +! ;
+: <    - <0 ;
+: >    swap < ;
+: <=   over over >r >r < r> r> = + ;
+: >=   swap <= ;
+: =0   0 = ;
+: not  =0 ;
+: !=   = not ;
+: cr   10 emit ;
+: br 32 emit ;
+: ..   dup . ;
+: here h @ ;
+
+
+( memory management )
+
+: allot  h +!  ;
+: var : ' lit , here 5 allot here swap ! 5 allot postpone ; ;
+: const : ' lit , , postpone ; ;
+
+( 'begin' gets the current address, a jump or conditional jump back is generated
+  by 'again', 'until' )
+
+: begin   here ; immediate
+: again   ' jmp , , ; immediate
+: until   ' jmp0 , , ; immediate
+
+
+( '{ ... ... ... n x}' repeat n times definition - eg. : 5hello { ." hello " 5 x} ; )
+
+: { ( -- ) ' lit , 0 , ' >r , here ; immediate
+: x} ( -- ) ' r> , ' 1+ , ' dup , ' >r , ' = , postpone until ' r> , ' drop , ; immediate
+
+
+( vectored execution - execute XT eg. ' hello exe )
+
+: exe ( XT -- ) ' lit , here dup , ' >r , ' >r , ' exit , here swap ! ; immediate
+
+( execute XT n times  e.g. ' hello 3 times )
+: times ( XT n -- ) { >r dup >r exe r> r> dup x} drop drop ;
+
+
+( 'if' prepares conditional jump, the target address '0' will later be
+  overwritten by the 'else' or 'fi' words. Note that ,j and !j are used for
+  writing the jump target address to the dictionary, this makes sure that the
+  target address is always written with the same cell size)
+
+: if      ' jmp0 , here 0 ,j ; immediate
+: unless  ' not , postpone if ; immediate
+: else    ' jmp , here 0 ,j swap here swap !j ; immediate
+: fi      here swap !j ; immediate
+
+
+( forth style 'do' and 'loop', including loop iterators 'i' and 'j' )
+
+: i ' lit , 0 , ' pickr , ; immediate
+: j ' lit , 2 , ' pickr , ; immediate
+: do ' swap , ' >r , ' >r , here ; immediate
+: loop+ ' r> , ' + , ' dup , ' >r , ' lit , 1 , ' pickr , ' >= , ' jmp0 , , ' r> , ' drop , ' r> , ' drop , ; immediate
+: loop ' lit , 1 , postpone loop+ ;  immediate
+
+
+( Create string literal, puts length and address on the stack )
+
+: s" compiling @ if ' lits , here 0 , fi here begin key dup 34 = if drop
+     compiling @ if here swap - swap ! else dup here swap - fi exit else , fi
+     again ; immediate
+
+( Print string literal )
+
+: ." compiling @ if postpone s" ' tell , else begin key dup 34 = if drop exit else emit fi again
+     fi ; immediate
+
+
+
+( methods for handling the dictionary )
+
+( 'next' increases the given dictionary address by the size of the cell
+  located at that address )
+
+: next dup # + ;
+
+( 'words' generates a list of all define words )
+
+: name dup @ 31 & swap next dup next rot tell @ ;
+: words latest @ begin name br dup 0 = until cr drop ;
+: prim? ( w -- bool ) @ 32 & ;
+: a->xt ( w -- xt ) dup dup @ 31 & swap next next + swap prim? if @ fi ;
+: xt->a ( xt -- w ) latest @ begin dup a->xt 2 pick = if swap drop exit fi next @ dup 0 = until swap drop ;
+: lit?jmp? ( a -- a boolean ) dup @ dup 1 = swap dup 18 = swap 19 = + + ;
+: disas ( a -- a ) dup dup . br br @ xt->a name drop lit?jmp? if br next dup @ . fi cr ;
+
+( 'see' needs starting address on stack: e.g. ' words see )
+: see ( xt -- ) dup xt->a name cr drop begin disas next dup @ =0 until drop ;
+
+( 'dump' memory make hex dump len bytes from addr )
+: hex_t ' lit ,  here dup , s" 0123456789abcdef" allot swap ! ; immediate
+: *hex_t hex_t ;
+: .hex *hex_t + @ emit ;
+: >nib ( n -- low high ) dup 15 & swap -16 & 16 / ;
+: ffemit ( n -- ) >nib .hex .hex ;
+: ffffemit ( n -- ) >nib >nib >nib { .hex 4 x} ;
+: @LSB ( addr -- LSB ) 2 @@ 255 & ;
+: between? ( n low_lim high_lim -- bool ) 2 pick > rot rot > & ; 
+: 8hex ( a -- a_new ) { dup @LSB ffemit 32 emit 1+ 8 x} 32 emit ;
+: 16ascii ( a -- a_new ) 124 emit { dup @LSB dup 31 127 between? if emit else drop 46 emit fi 1+ 16 x} 124 emit ;
+: .addr ( a -- ) ffffemit ."    " ;
+: 16line ( a -- a_new ) dup .addr dup { 8hex 2 x} drop 16ascii cr ;
+: dump ( addr len -- ) over + swap begin 16line over over < until drop drop ; 
+
+
+
+( calculate and draw mandelbrot fracal )
+
+: chars    s" .--=o+*#% " ;
+: output   5 / chars drop + @ emit ;
+
+( Ar Ai Br Bi -- Cr Ci : Add two complex numbers )
+
+: c+       rot + rot rot + swap ;
+
+( Ar Ai -- A²r A²i : Square a complex number )
+
+: c2       swap dup dup * rot dup dup * rot swap - rot rot 2 * * ;
+
+( Ar Ai -- abs A  : absolute value of complex number )
+
+: abs      * 2 pick dup * + ;
+
+( Cr Ci n Zr Ci -- Cr Ci n Zr Ci : do one iteration of complex Z²+C  )
+
+: iter
+	c2
+	4 pick 4 pick c+
+	rot 1 + rot rot ;
+
+( Cr Ci -- n : find number of iterations before complex point C goes out of bounds )
+
+: point
+	0 0 0
+	begin
+		iter
+		over over abs 4 >
+		3 pick 48 >
+		+
+	until
+	drop drop rot rot drop drop ;
+
+: rows   ;
+: mandel 0.5 -2.0 do
+           1.0 -1.0 do
+             j i point output
+           0.040 loop+ cr
+         0.08 loop+ ;
+
+mandel

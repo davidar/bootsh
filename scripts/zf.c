@@ -1006,6 +1006,7 @@ static void handle_char(char c)
 
 		if(len > 0) {
 			len = 0;
+			if (buf[0] == '#' && buf[1] == '!') return;
 			handle_word(buf);
 		}
 	}
