@@ -1,0 +1,189 @@
+#!/bin/kl
+; Kilo LISP derived operators
+; Nils M Holm, 2019
+; In the public domain
+
+(setq t 't)
+
+(setq list (lambda x x))
+
+(setq null (lambda (x) (eq x nil)))
+(setq not null)
+
+(setq caar (lambda (x) (car (car x))))
+(setq cadr (lambda (x) (car (cdr x))))
+(setq cdar (lambda (x) (cdr (car x))))
+(setq cddr (lambda (x) (cdr (cdr x))))
+(setq caaar (lambda (x) (car (car (car x)))))
+(setq caadr (lambda (x) (car (car (cdr x)))))
+(setq cadar (lambda (x) (car (cdr (car x)))))
+(setq caddr (lambda (x) (car (cdr (cdr x)))))
+(setq cdaar (lambda (x) (cdr (car (car x)))))
+(setq cdadr (lambda (x) (cdr (car (cdr x)))))
+(setq cddar (lambda (x) (cdr (cdr (car x)))))
+(setq cdddr (lambda (x) (cdr (cdr (cdr x)))))
+
+(setq reconc
+  (lambda (a b)
+    (if (null a)
+        b
+        (reconc (cdr a)
+                (cons (car a) b)))))
+
+(setq rever
+  (lambda (a)
+    (reconc a nil)))
+
+(setq conc
+  (lambda a
+    (if (null a)
+        nil
+        (reconc (rever (car a))
+                (apply conc (cdr a))))))
+
+(setq cond
+  (macro
+    (lambda cs
+      (if (null cs)
+          nil
+          (if (null (cdar cs))
+              (list 'ifnot (caar cs)
+                           (cons 'cond (cdr cs)))
+              (if (eq 'else (caar cs))
+                  (cons 'prog (cdar cs))
+                  (list 'if (caar cs)
+                            (cons 'prog (cdar cs))
+                            (cons 'cond (cdr cs)))))))))
+
+(setq and
+  (macro
+    (lambda xs
+      (cond ((null xs))
+            ((null (cdr xs)) (car xs))
+            (else (list 'if (car xs)
+                            (cons 'and (cdr xs))
+                            nil))))))
+
+(setq qquote
+  (macro
+    (lambda (x)
+      (cond ((atom x)
+              (list 'quote x))
+            ((eq 'unquote (car x))
+              (cadr x))
+            ((and (not (atom (car x)))
+                  (eq 'unquote (caar x)))
+              (list 'cons (cadar x)
+                          (list 'qquote (cdr x))))
+            ((and (not (atom (car x)))
+                  (eq 'splice (caar x)))
+              (list 'conc (cadar x)
+                          (list 'qquote (cdr x))))
+            (else
+              (list 'cons (list 'qquote (car x))
+                          (list 'qquote (cdr x))))))))
+
+(setq let
+  (macro
+    (lambda (bs x . xs)
+      ((lambda (s)
+         (setq s
+           (lambda (bs vs as)
+             (if (null bs)
+                 (list vs as)
+                 (s (cdr bs)
+                    (cons (caar bs) vs)
+                    (cons (cadar bs) as)))))
+         (apply (lambda (vs as)
+                  @((lambda ,vs ,x . ,xs) . ,as))
+                (s bs nil nil)))
+       nil))))
+
+(setq map
+  (lambda (f a . b)
+    (if (null b)
+        (let ((m1 nil))
+          (setq m1
+            (lambda (a)
+              (if (null a)
+                  nil
+                  (cons (f (car a))
+                        (m1 (cdr a))))))
+          (m1 a))
+        (let ((m2 nil))
+          (setq m2
+            (lambda (a b)
+              (if (null a)
+                  nil
+                  (cons (f (car a) (car b))
+                        (m2 (cdr a) (cdr b))))))
+          (m2 a (car b))))))
+
+(setq labels
+  (macro
+    (lambda (bs x . xs)
+      (let ((vs (map car bs))
+            (as (map cadr bs)))
+        (let ((ns (map (lambda (v)
+                         (list v nil))
+                       vs))
+              (is (map (lambda (v a)
+                         (list 'setq v a))
+                       vs as)))
+          @(let ,ns ,@is ,x . ,xs))))))
+ 
+(setq or
+  (macro
+    (lambda xs
+      (cond ((null xs) nil)
+            ((null (cdr xs)) (car xs))
+            (else @(ifnot ,(car xs)
+                          (or . ,(cdr xs))))))))
+
+(setq nreconc
+  (lambda (a b)
+    (if (null a)
+        b
+        (let ((h (cdr a)))
+          (setcdr a b)
+          (nreconc h a)))))
+
+(setq nrever
+  (lambda (a)
+    (nreconc a nil)))
+
+(setq nconc
+  (lambda a
+    (if (null a)
+        nil
+        (nreconc (nrever (car a))
+                 (apply nconc (cdr a))))))
+
+(setq memb
+  (lambda (x a)
+    (cond ((null a) nil)
+          ((eq x (car a)) a)
+          (else (memb x (cdr a))))))
+
+(setq assoc
+  (lambda (x a)
+    (cond ((null a) nil)
+          ((eq x (caar a)) (car a))
+          (else (assoc x (cdr a))))))
+
+(setq equal
+  (lambda (a b)
+    (cond ((eq a b))
+          ((and (not (atom a))
+                (not (atom b))
+                (equal (car a) (car b))
+                (equal (cdr a) (cdr b))))
+          (else nil))))
+
+(setq loop
+  (macro
+    (lambda (a bs x . xs)
+      (let ((vs (map car bs))
+            (as (map cadr bs)))
+        @((labels ((,a (lambda ,vs ,x . ,xs)))
+                  ,a) . ,as)))))

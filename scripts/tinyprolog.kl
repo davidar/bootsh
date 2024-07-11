@@ -1,0 +1,107 @@
+#!/bin/klisp
+;; https://t3x.org/lisp64k/prolog.html
+;; This program is based on a tiny Prolog interpreter in MacLisp
+;; by Ken Kahn, as published in SAIL AIList Digest V1, #47, 1983.
+;;
+;; I (NMH) have applied the following modifications:
+;; - translation to Kilo LISP
+;; - variables are resolved in list values, so lists
+;;   can be used in goals, see APPEND example
+;; - all frames print without user interaction
+;; - renaming uses atoms, because there are no numbers
+;; - TRY (formerly TRY-EACH) function has fewer variables
+;; - variable names are shorter
+
+(setq varp
+  (lambda (x)
+    (and (not (atom x))
+         (eq (car x) '//))))
+
+(setq lookup
+  (lambda (x a)
+    (cond ((null a) nil)
+          ((equal x (caar a)) (car a))
+          (else (lookup x (cdr a))))))
+
+(setq value
+  (lambda (x e)
+    (if (varp x)
+        (let ((b (lookup x e)))
+          (if (null b)
+              x
+              (value (cadr b) e)))
+        x)))
+
+(setq rename
+  (lambda (term n)
+    (cond ((atom term) term)
+          ((varp term) (conc term n))
+          (else (cons (rename (car term) n)
+                      (rename (cdr term) n))))))
+
+(setq resolve
+  (lambda (x e)
+    (cond ((atom x) x)
+          ((varp x) (resolve (value x e) e))
+          (else (cons (resolve (car x) e)
+                      (resolve (cdr x) e))))))
+
+(setq prframes
+  (lambda (e)
+    (print '/ )
+    (loop pr ((ee e))
+      (cond ((cdr ee)
+              (cond ((eq '0 (caddr (caar ee)))
+                      (prin (cadr (caar ee)))
+                      (prin '/=)
+                      (print (resolve (caar ee) e))))
+              (pr (cdr ee)))))))
+
+(setq unify
+  (lambda (x y e)
+    (let ((x (value x e))
+          (y (value y e)))
+      (cond ((varp x) (cons (list x y) e))
+            ((varp y) (cons (list y x) e))
+            ((or (atom x) (atom y))
+              (and (eq x y) e))
+            (else
+              (let ((ne (unify (car x) (car y) e)))
+                (and ne (unify (cdr x) (cdr y) ne))))))))
+
+(setq succ
+  (lambda (x)
+    (let ((n (memb x #01234567890abcdefghijklmnopqrstuvwxyz)))
+      (if (or (null n)
+              (null (cdr n)))
+          (error 'too/ many/ variables)
+          (cadr n)))))
+
+(setq try
+  (lambda (goals rules db e n)
+    (if (null rules)
+        nil
+        (let ((asn (rename (car rules) (list n))))
+          (let ((ne (unify (car goals) (car asn) e))) 
+            (cond ((null ne)
+                    (try goals (cdr rules) db e n))
+                  ((prove (conc (cdr asn) (cdr goals)) 
+                          ne
+                          db
+                          (succ n)))
+                  (else
+                    (try goals (cdr rules) db e n))))))))
+
+(setq prove
+  (lambda (goals e db n)
+    (cond ((null goals)
+            (prframes e))
+          (else
+            (try goals db db e n)))))
+
+(setq prolog
+  (lambda (db goal)
+    (prove (list (rename goal '(0)))
+           '((bottom))
+           db
+           '1)))

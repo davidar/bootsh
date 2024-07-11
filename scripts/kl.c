@@ -658,6 +658,12 @@ void load(char *s) {
 	Input = open(s, O_RDONLY);
 	if (Input < 0) error("load", strsym(s));
 	Loads++;
+	int c = rdchci();
+	if (c == '#') {
+		while (c != '\n') c = rdchci();
+	} else {
+		Rejected = c;
+	}
 	for (;;) {
 		Acc = xread();
 		if (EOT == Acc) break;
@@ -703,31 +709,6 @@ void suspend(char *s) {
 void doread(int fd, void *b, int k) {
 	if (read(fd, b, k) != k)
 		error("read error", UNDEF);
-}
-
-void fasload(char *s) {
-	int	fd, k, n;
-	byte	buf[BUFLEN];
-	char	*badimg;
-
-	badimg = "bad image";
-	fd = open(s, O_RDONLY);
-	BINARY;
-	if (fd < 0) return;
-	k = strlen(MAGIC)+1;
-	doread(fd, buf, k+8);
-	n = (buf[k] << 8) | buf[k+1];
-	Freelist = (buf[k+2] << 8) | buf[k+3];
-	Symbols = (buf[k+4] << 8) | buf[k+5];
-	Id = (buf[k+6] << 8) | buf[k+7];
-	if (n != NNODES || memcmp(buf, MAGIC, k) != 0)
-		error(badimg, UNDEF);
-	doread(fd, Car, NNODES * sizeof(cell));
-	doread(fd, Cdr, NNODES * sizeof(cell));
-	doread(fd, Tag, NNODES);
-	if (read(fd, buf, 1) != 0)
-		error(badimg, UNDEF);
-	close(fd);
 }
 
 int builtin(int x) {
@@ -1163,7 +1144,7 @@ int kbbrk(void) { return Error = 1; }
 int main(int argc, char **argv) {
 	init();
 	if (CATCH) exit(1);
-	fasload(argc>1? argv[1]: "klisp");
+	for (int i = 1; i < argc; i++) load(argv[i]);
 	CATCH;
 	KBDINT;
 	for (;;) {
