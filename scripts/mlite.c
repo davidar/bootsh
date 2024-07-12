@@ -96,14 +96,6 @@
  */
 #define set(a, b)	{ new = b; a = new; }
 
-#ifndef DEFAULT_LIBRARY_PATH
- #define DEFAULT_LIBRARY_PATH \
-		"."				\
-		":~/.mlite"			\
-		":/u/share/mlite"		\
-		":/usr/local/share/mlite"
-#endif
-
 #ifndef INITIAL_SEGMENT_SIZE
  #define INITIAL_SEGMENT_SIZE	32768
 #endif
@@ -433,7 +425,7 @@ operator Op_init[] = {
 
 /* Short cuts for accessing predefined symbols */
 cell	S_callcc, S_cons, S_else, S_equal, S_extensions,
-	S_greater, S_ignore, S_it, S_less, S_library_path,
+	S_greater, S_ignore, S_it, S_less,
 	S_list, S_loading, S_primlist, S_raise, S_ref, S_register,
 	S_quasiquote, S_quote, S_unquote, S_unquote_splicing,
 	S_unregister, S_tuple, S_typecheck;
@@ -5960,22 +5952,6 @@ char *copy_string(char *s) {
 	return new;
 }
 
-void dump_image(char *p);
-
-cell pp_dump_image(cell x) {
-	char	*path = copy_string(string(car(x)));
-	FILE	*f;
-
-	f = fopen(string(car(x)), "r");
-	if (f != NULL) {
-		fclose(f);
-		return error("dump_image: file exists", car(x));
-	}
-	dump_image(path);
-	free(path);
-	return UNIT;
-}
-
 cell pp_error(cell x) {
 	return error(string(car(x)), cadr(x));
 }
@@ -6159,7 +6135,6 @@ PRIM Core_primitives[] = {
  { "vec",                 pp_vec,                 1,  1, { ___,___,___ } },
  { "~",                   pp_neg,                 1,  1, { REA,___,___ } },
  /* Functions not covered by TML */
- { "dump_image",          pp_dump_image,          1,  1, { STR,___,___ } },
  { "error",               pp_error,               2,  2, { STR,___,___ } },
  { "gensym",              pp_gensym,              1,  1, { ___,___,___ } },
  { "stats",               pp_stats,               1,  1, { ___,___,___ } },
@@ -6887,248 +6862,6 @@ void repl(void) {
  * Startup and Initialization
  */
 
-/* Variables to dump to image file */
-cell *Image_vars[] = {
-	&Free_list, &Free_vecs, &Symbols, &Environment,
-	&Ops, &S_callcc, &S_cons, &S_else, &S_equal,
-	&S_extensions, &S_greater, &S_ignore, &S_it, &S_less,
-	&S_library_path, &S_loading, &S_primlist, &S_quasiquote,
-	&S_quote, &S_raise, &S_ref, &S_register, &S_unquote,
-	&S_unquote_splicing, &S_unregister, &S_also, &S_begin,
-	&S_define, &S_define_syntax, &S_define_type, &S_if, &S_fn,
-	&S_from, &S_letrec, &S_or, &S_quote, &S_setb, &S_to,
-	&S_tuple, &S_list, &S_typecheck,
-NULL };
-
-struct magic {
-	char	id[2];			/* "mL"		*/
-	char	version[10];		/* "yyyy-mm-dd"	*/
-	char	cell_size[1];		/* size + '0'	*/
-	char    mantissa_size[1];	/* size + '0'	*/
-	char	byte_order[8];		/* e.g. "4321"	*/
-	char	prim_slots[8];		/* see code	*/
-};
-
-void dump_image(char *p) {
-	FILE		*f;
-	cell		n, **v;
-	int		i, k;
-	struct magic	m;
-	char		buf[100];
-
-	f = fopen(p, "wb");
-	if (f == NULL) {
-		error("cannot create image file",
-			make_string(p, (int) strlen(p)));
-		return;
-	}
-	memset(&m, '_', sizeof(m));
-	strncpy(m.id, "mL", sizeof(m.id));
-	strncpy(m.version, VERSION, sizeof(m.version));
-	m.cell_size[0] = sizeof(cell)+'0';
-	m.mantissa_size[0] = MANTISSA_SEGMENTS+'0';
-	n = ENDIANNESS;
-	memcpy(m.byte_order, &n, sizeof(n)>8? 8: sizeof(n));
-	n = Last_prim;
-	memcpy(m.prim_slots, &n, sizeof(n)>8? 8: sizeof(n));
-	fwrite(&m, sizeof(m), 1, f);
-	i = Cons_pool_size;
-	fwrite(&i, sizeof(int), 1, f);
-	i = Vec_pool_size;
-	fwrite(&i, sizeof(int), 1, f);
-	v = Image_vars;
-	i = 0;
-	while (v[i]) {
-		fwrite(v[i], sizeof(cell), 1, f);
-		i++;
-	}
-	if (	fwrite(Car, 1, Cons_pool_size*sizeof(cell), f)
-		 != Cons_pool_size*sizeof(cell) ||
-		fwrite(Cdr, 1, Cons_pool_size*sizeof(cell), f)
-		 != Cons_pool_size*sizeof(cell) ||
-		fwrite(Tag, 1, Cons_pool_size, f) != Cons_pool_size ||
-		fwrite(Vectors, 1, Vec_pool_size*sizeof(cell), f)
-		 != Vec_pool_size*sizeof(cell)
-	) {
-		fclose(f);
-		error("image dump failed", NOEXPR);
-		return;
-	}
-	fclose(f);
-	k = gc();
-	if (!Quiet_mode) {
-		sprintf(buf, "image dumped: %d nodes used, %d free",
-				Cons_pool_size-k, k);
-		pr(buf); nl();
-	}
-}
-
-int xfread(cell name, void *buf, int siz, int n, FILE *f) {
-	if (fread(buf, siz, n, f) != n) {
-		error("image file read error", name);
-		return -1;
-	}
-	return 0;
-}
-
-int load_image(char *p) {
-	FILE		*f;
-	cell		n, **v;
-	int		i;
-	struct magic	m;
-	int		ok = 1;
-	int		image_nodes, image_vcells;
-	cell		name;
-
-	name = make_string(p, (int) strlen(p));
-	f = fopen(p, "rb");
-	if (f == NULL)
-		return -1;
-	if (xfread(name, &m, sizeof(m), 1, f)) return -1;
-	if (memcmp(m.id, "mL", 2)) {
-		error("error in image file (magic match failed)", name);
-		ok = 0;
-	}
-	if (memcmp(m.version, VERSION, 10)) {
-		error("error in image file (wrong version)", name);
-		ok = 0;
-	}
-	if (m.cell_size[0]-'0' != sizeof(cell)) {
-		error("error in image file (wrong cell size)", name);
-		ok = 0;
-	}
-	if (m.mantissa_size[0]-'0' != MANTISSA_SEGMENTS) {
-		error("error in image file (wrong mantissa size)", name);
-		ok = 0;
-	}
-	memcpy(&n, m.byte_order, sizeof(cell));
-	if (n != ENDIANNESS) {
-		error("error in image file (wrong architecture)", name);
-		ok = 0;
-	}
-	memcpy(&n, m.prim_slots, sizeof(cell));
-	if (n != Last_prim) {
-		error("error in image file (wrong number of primitives)",
-			name);
-		ok = 0;
-	}
-	memset(Tag, 0, Cons_pool_size);
-	if (xfread(name, &image_nodes, sizeof(int), 1, f)) return -1;
-	if (xfread(name, &image_vcells, sizeof(int), 1, f)) return -1;
-	while (image_nodes > Cons_pool_size) {
-		if (	Memory_limit_kn &&
-			Cons_pool_size + Cons_segment_size > Memory_limit_kn
-		) {
-			error("image too big (too many conses)", NOEXPR);
-			ok = 0;
-			break;
-		}
-		new_cons_segment();
-	}
-	while (image_vcells > Vec_pool_size) {
-		if (	Memory_limit_kn &&
-			Vec_pool_size + Vec_segment_size > Memory_limit_kn
-		) {
-			error("image too big (too many vcells)", NOEXPR);
-			ok = 0;
-			break;
-		}
-		new_vec_segment();
-	}
-	v = Image_vars;
-	i = 0;
-	while (v[i]) {
-		if (xfread(name, v[i], sizeof(cell), 1, f)) return -1;
-		i++;
-	}
-	if (	ok &&
-		(fread(Car, 1, image_nodes*sizeof(cell), f)
-		  != image_nodes*sizeof(cell) ||
-		 fread(Cdr, 1, image_nodes*sizeof(cell), f)
-		  != image_nodes*sizeof(cell) ||
-		 fread(Tag, 1, image_nodes, f) != image_nodes ||
-		 fread(Vectors, 1, image_vcells*sizeof(cell), f)
-		  != image_vcells*sizeof(cell) ||
-		 fgetc(f) != EOF)
-	) {
-		error("error in image file (wrong size)", NOEXPR);
-		ok = 1;
-	}
-	fclose(f);
-	if (Error_flag)
-		fatal("unusable image");
-	return 0;
-}
-
-cell get_library_path(void) {
-	char	*s;
-
-	s = getenv("MLITE_LIBRARY_PATH");
-	if (s == NULL)
-		s = DEFAULT_LIBRARY_PATH;
-	return make_string(s, (int) strlen(s));
-}
-
-char *libname(char *argv0) {
-	char	*name;
-
-	// if (argv0 == NULL || argv0[0] == 0)
-		argv0 = "mlite";
-	name = strrchr(argv0, '/');
-	name = name? &name[1]: argv0;
-	return name;
-}
-
-void load_library(char *argv0) {
-	char	*path, buf[256], *p;
-	char	libdir[240], libfile[256];
-	char	*home, *image;
-	cell	new;
-
-	image = libname(argv0);
-	path = copy_string(string(box_value(S_library_path)));
-	home = getenv("HOME");
-	if (home == NULL)
-		home = ".";
-	p = strtok(path, ":");
-	while (p != NULL) {
-		if (p[0] == '~') {
-			if (strlen(p) + strlen(home) >= sizeof(libdir)-1)
-				fatal("load_library: path too long");
-			sprintf(libdir, "%s%s", home, &p[1]);
-		}
-		else {
-			if (strlen(p) >= sizeof(libdir)-1)
-				fatal("load_library: path too long");
-			strcpy(libdir, p);
-		}
-		if (strlen(image) + strlen(libdir) + strlen(".image")
-			>= sizeof(libfile)-1
-		)
-			fatal("load_library: path too long");
-		sprintf(libfile, "%s/%s.image", libdir, image);
-		if (strcmp(image, "-") && load_image(libfile) == 0) {
-			free(path);
-			/* *library-path* is overwritten by load_image() */
-			set(box_value(S_library_path), get_library_path());
-			return;
-		}
-		if (strlen(image) + strlen(libdir) + strlen(".m")
-			>= sizeof(libfile)-1
-		)
-			fatal("load_library: path too long");
-		sprintf(libfile, "%s/%s.m", libdir,
-			!strcmp(image, "-")? "mlite": image);
-		if (load(libfile) == 0) {
-			free(path);
-			return;
-		}
-		p = strtok(NULL, ":");
-	}
-	sprintf(buf, "found neither \"%s.image\" nor \"%s.m\"", image, image);
-	fatal(buf);
-}
-
 void grow_primitives(void) {
 	Max_prims += PRIM_SEG_SIZE;
 	Primitives = (PRIM *) realloc(Primitives, sizeof(PRIM) * Max_prims);
@@ -7170,9 +6903,6 @@ void make_initial_env(void) {
 	S_it = cadr(Environment);
 	Environment = extend(symbol_ref("*extensions*"), NIL, Environment);
 	S_extensions = cadr(Environment);
-	Environment = extend(symbol_ref("*library-path*"), NIL, Environment);
-	S_library_path = cadr(Environment);
-	set(box_value(S_library_path), get_library_path());
 	Environment = extend(symbol_ref("*loading*"), FALSE, Environment);
 	S_loading = cadr(Environment);
 	Callcc_magic = -1;
@@ -7305,7 +7035,7 @@ void usage(int quit) {
 	pr("Usage: mlite [-h?] [-i name] [-gqv] [-f prog [args]] ");
 	pr("[-m size[m]]");
 	nl();
-	pr("             [-l prog] [-t count] [-d image] [-- [args]]");
+	pr("             [-l prog] [-t count] [-- [args]]");
 	nl();
 	if (quit) bye(1);
 }
@@ -7318,7 +7048,6 @@ void long_usage() {
 	pr("-i name         base name of image file (must be first option!)");
 	nl();
 	pr("-i -            ignore image, load mlite.m instead"); nl();
-	pr("-d file         dump heap image to file and exit"); nl();
 	pr("-f file [args]  run program and exit (implies -q)"); nl();
 	pr("-g              print GC summaries (-gg = more)"); nl();
 	pr("-l file         load program (may be repeated)"); nl();
@@ -7331,7 +7060,7 @@ void long_usage() {
 	nl();
 }
 
-void version_info(char *name) {
+void version_info() {
 	char	buf[100];
 	cell	x;
 
@@ -7350,14 +7079,6 @@ void version_info(char *name) {
  #endif
 #endif
 	nl();
-	pr("heap image:      ");
-	if (!strcmp(name, "-"))
-		pr("n/a");
-	else {
-		pr(name); pr(".image");
-	}
-	nl();
-	pr("library path:    "); pr(string(box_value(S_library_path))); nl();
 	pr("memory limit:    ");
 	if (Memory_limit_kn) {
 		sprintf(buf, "%ld", Memory_limit_kn / 1024);
@@ -7401,7 +7122,6 @@ long get_size_k(char *s) {
 
 int main(int argc, char **argv) {
 	int	run_script;
-	char	*argv0;
 
 	if (argc > 1 && !strcmp(argv[1], "-i")) {
 		if (argc < 2) {
@@ -7413,8 +7133,8 @@ int main(int argc, char **argv) {
 	init();
 	signal(SIGQUIT, keyboard_quit);
 	signal(SIGTERM, terminated);
-	load_library(argv[0]);
-	argv0 = *argv++;
+	if (load(argv[0]) != 0) fatal("Unable to load library file");
+	argv++;
 	init_extensions();
 	while (*argv != NULL) {
 		if (**argv != '-')
@@ -7424,12 +7144,6 @@ int main(int argc, char **argv) {
 			switch (**argv)  {
 			case '-':
 				Command_line = ++argv;
-				break;
-			case 'd':
-				if (argv[1] == NULL)
-					usage(1);
-				dump_image(argv[1]);
-				bye(Error_flag? 1: 0);
 				break;
 			case 'f':
 			case 'l':
@@ -7476,7 +7190,7 @@ int main(int argc, char **argv) {
 				*argv += strlen(*argv);
 				break;
 			case 'v':
-				version_info(argv0);
+				version_info();
 				bye(0);
 				break;
 			case 'h':
