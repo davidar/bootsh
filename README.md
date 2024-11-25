@@ -24,7 +24,7 @@ This image contains four files:
 
 - `/bin/sh`: the *boot*sh executable
 
-- `/sbin/init`: a small shell script for constructing the root filesystem and bootstrapping musl libc from source
+- `/bin/init`: a small shell script for constructing the root filesystem and bootstrapping musl libc from source
 
 - `/bin/configure-musl.sh`: sets up an alternative ninja-based build system for musl
 
