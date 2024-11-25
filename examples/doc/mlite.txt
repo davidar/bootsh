@@ -1,0 +1,501 @@
+
+
+mLite Quick Summary
+===================
+
+LEXEMES
+
+;; comment to end of line
+(* (* nestable *) comment *)
+
+identifier      [a-zA-Z:_'][a-zA-Z:_'0-9]*
+operator symbol [!@$%^&*-+=<>/~`]+
+
+id = identifier | operator symbol
+:id = :identifier (constructor)
+Note: every constructor is an id, but only
+      id's starting with a : are constructors.
+
+unit  ()
+tuple (x1, x2, ...)
+list  []
+      [ x, ... ]
+      [ x :: list ]
+bool  true | false
+char  #"c"
+str   "c..."
+int   123
+real  123.456 1.2e34 0.1 1.0
+fun   fn p1 = x1 | p2 = x2 | ...
+      fn p1 p2 ... = x
+
+
+PATTERNS
+
+- unit, tuple, list, bool, char, str, int, real match themselves
+- id matches any object, binds to that object
+- _ matches any object
+- tuples and lists match recursively
+- constructors match any object constructed by them
+
+Example:
+
+[(1,x), (2,y) :: t]  matches  [(1,5), (2,7), (3, 9)]
+and binds x=5, y=7, t=[(3,9)] (because [a,b] = [a :: [b]]).
+
+
+GUARDS
+
+A pattern may be followed by an expression limiting the match
+(a guard):
+
+fn (a, b) where a < b = ...
+
+Simple guards can be placed inside of a pattern (implicit guard):
+
+fun sgn x < 0 = ~1
+      | x > 0 = 1
+      | _     = 0
+
+When the equal operator or function application is to be used
+inside of a guard, the guard must be parenthesized:
+
+fn (a, b) where (a mod b = 0) = ...
+fn (f x) = ...
+
+
+DECLARATIONS
+
+val pat = expr and ...
+	Bind variables in pat to values in expr.
+
+fun id pat = expr | ... and ...
+	Bind id to function.
+
+fun id pat1 pat2 ... = expr
+	Currying: fn a b = ... is short for fn a = fn b = ...
+	Currying cannot be combined with |.
+
+type :id = :cons | ...
+	Define type :id as union of the given constructors.
+	Each constructor has the form :id (atomic object)
+	or :id ( x, ... ) where x may be an id (variable)
+	or :id (type).
+	Example:
+	type :list = :nil | :cons (x, :list);
+	:cons (1, :cons (2, :nil))
+
+local ldecls1 in ldecls2 end
+	Create bindings in ldecls2 with the bindings of ldecls1
+	in effect. Only the bindings of ldecls2 persist. The
+	ldecls1 are local to the ldecls2.
+	ldecls may be fun or val declarations. Multiple ldecls
+	may be separated by ;.
+
+infix id1 R id2, ...
+infixr id2 R id2, ...
+	Create new left-associative or right-associative (infixr)
+	infix operator. R is in {<,=,>} and specifies the precedence
+	of the new operator. E.g. infix :cons = :: would assign the
+	precedence of :: to :cons; infix +++ > div would assign the
+	+++ operator a precedence that is higher than div's.
+
+nonfix id, ...
+	Remove the given infix operators.
+
+
+EXPRESSIONS
+
+unit, bool, int, real, char, str
+	Evaluate to themselves
+
+[x1, ...]
+	Evaluates to a list with x1,... reduced to normal forms.
+
+(x1, x2, ...)
+	Evaluates to a tuple with x1,... reduced to normal forms.
+
+fn pat = expr | ...
+fn pat ... = expr
+	Create anonymous functions.
+
+#int L
+#int Tk
+	Equals ref(x, int) where x is a list or a k-tuple.
+
+(x1; ...)
+	Evaluate all expressions x1,... in the given order, from
+	left to right (usually for effect).
+
+f x
+	Apply f to x.
+	f g x    =  (f g) x
+	f ` g x  =  f (g x)
+	Note: f ` g associates to the right.
+
+x R y
+	Infix operation. x R y  =  R (x, y). Operator precedence
+	(see next section) applies. Function application binds
+	stronger than infix operation, e.g.  f x + 1  =  (f x) + 1.
+	Use f ` x + 1 or f (x + 1) to override.
+
+expr1 also expr2 also ...
+	Short-circuit logical AND. Return the first expri that
+	evaluates to false. When all expri's are true, return the
+	last expression in the chain.
+
+expr1 or expr2 or ...
+	Short-circuit logical OR. Return the first expri that
+	evaluates to a true (non-false) value, else return false.
+	`also' binds stronger than `or'.
+
+expr handle :id1 = expr1 | ...
+	Handle all exceptions :id1,... raised by an expression.
+
+raise :id
+	Raise exception :id. `handle' binds stronger than `raise'.
+
+if predicate then consequent else alternate
+	Evaluate the predicate expression. When it is non-false,
+	evaluate and return the consequent expressions, else
+	evaluate and return the alternate expression.
+
+case expr of pat1 = expr1 | ...
+	This is the same as (fn pat1 = expr1 | ...) expr.
+
+instream >> expr
+	Evaluate expr with input read from instream.
+
+outstream << expr
+	Evaluate expr with output written to outstream.
+
+
+BINARY OPERATORS
+
+Prec  Assoc  Operators
+------------------------
+High  Right  o
+------------------------
+      Right  ^
+------------------------
+      Left   * div rem /
+------------------------
+      Left   + -
+------------------------
+      Right  :: @
+------------------------
+      Left   < <= <> =
+	     >= ~< ~<=
+	     ~<> ~= ~>
+	     ~>=
+------------------------
+Low   Right  `
+------------------------
+
+POLYMORPHIC OPERATORS
+
+        int     real    char    str     tuple   list    vec
+        -----   -----   -----   -----   -----   -----   -----
+< = ... +       +       +       +       -       -       -
+@       -       -       -       +       -       +       -
+sub     -       -       -       +       +       +       -
+ref     -       -       -       +       +       +       +
+set     -       -       -       +       +       -       +
+len     -       -       -       +       +       +       +
+rev     -       -       -       +       -       +       -
+clone	+	+	+	+	+	+	+
+
+
+FUNCTIONS
+
+Arithmetics
+
+n = integer, r = real, b = bool, c = char, s = string, f = function
+L = list, Tk = k-tuple, V = vector, SI = instream, SO = outstream,
+x = any type.
+
+r1 * r2 --> r
+	Product.
+
+r1 + r2 --> r
+	Sum.
+
+r1 - r2 --> r
+	Difference.
+
+r1 / r2 --> r
+	Quotient.
+
+r1 <  r2 --> b   c1 <  c2 --> b   s1 <  s2 --> b
+r1 <= r2 --> b   c1 <= c2 --> b   s1 <= s2 --> b
+r1 <> r2 --> b   c1 <> c2 --> b   s1 <> s2 --> b
+r1 =  r2 --> b   c1 =  c2 --> b   s1 =  s2 --> b
+r1 >  r2 --> b   c1 >  c2 --> b   s1 >= s2 --> b
+r1 >= r2 --> b   c1 >= c2 --> b   s1 >  s2 --> b
+	Less-than, less/equal, not-equal, equal, greater-than, and
+	greater/equal predicates. Work lexically on chars and strs.
+
+abs r --> r
+	Magnitude.
+
+ceil r --> n
+	Ceiling.
+
+n1 div n2 --> n
+	Floored division (integer division).
+
+floor r --> r
+	Floor.
+
+gcd (n1, n2) --> n
+	Greatest common divisor.
+
+lcm (n1, n2) --> n
+	Least common multiple.
+
+max (r1, r2) --> r
+	Maximum.
+
+min (r1, r2) --> r
+	Minimum.
+
+n1 mod n2 --> n
+	Modulus (floored division remainder).
+
+f1 o f2 --> f
+	Function composition.
+
+n1 rem n2 --> n
+	Truncated division remainder.
+
+sgn r --> n
+	Sign.
+
+trunc r --> n
+	Truncate (remove fractional part).
+
+sqrt r --> r
+	Square root.
+
+~ r --> r
+	Negate.
+
+r1 ~<  r2 --> b   c1 ~<  c2 --> b   s1 ~<  s2 --> b
+r1 ~<= r2 --> b   c1 ~<= c2 --> b   s1 ~<= s2 --> b
+r1 ~<> r2 --> b   c1 ~<> c2 --> b   s1 ~<> s2 --> b
+r1 ~=  r2 --> b   c1 ~=  c2 --> b   s1 ~=  s2 --> b
+r1 ~>  r2 --> b   c1 ~>  c2 --> b   s1 ~>= s2 --> b
+r1 ~>= r2 --> b   c1 ~>= c2 --> b   s1 ~>  s2 --> b
+	Less-than, less/equal, not-equal, equal, greater-than, and
+	greater/equal predicates. Work lexically on chars and strs,
+	but fold case before comparing.
+
+
+Structural Operations
+
+x :: L --> L
+	Cons (attach element to front of list).
+
+L1 @ L2 --> L
+s1 @ s2 --> s
+	Concatenate.
+
+append_map f L --> L
+	Map f over the elements of L, appending the results e.g:
+	append_map f [1,2,3]  =  f 1  @  f 2  @  f 3
+
+clone x --> x
+	Create an exact copy of x. For all types except for the
+	vector, this is an identity operation, because only vectors
+	are mutable.
+
+x1 eql x2 --> b
+	Return true, if x1 and x2 are equal. Two objects are equal,
+	if they are the same type and x1=x2. Two tuples are equal, if
+	they have pairwise equal elements. Same for lists. The eql
+	function allows x1 and x2 to have incompatible types, returning
+	false in this case.
+
+explode s --> L
+	Convert string to list of char.
+
+filter f L --> L
+	Extract elements x satisfying f x.
+
+fold (f,x) L --> L
+	Fold left-associatively, e.g.
+	fold (f,x) [1,2,3]  =  f (f (f (1, 2), 3), x)
+
+foldr (f,x) L --> L
+	Fold right-associatively, e.g.
+	foldr (f,x) [1,2,3]  =  f (1, f (2, f (3, x)))
+
+foreach f L --> ()
+	Map f over the elements of L for effect, e.g:
+	foreach f [1,2,3]  =  (f 1; f 2; f 3; ())
+
+implode L --> s
+	Convert list of char to string.
+
+iota (n1, n2) --> L
+	Return [n1, n1+1, ... n2].
+
+iota n --> L
+	Return [1, 2, ... n].
+
+len L --> n
+len s --> n
+len Tk --> n (k)
+len V --> n
+	Return the length of a list, string, vector, or the order
+	of a k-tuple (k).
+
+map f L --> L
+	Map f over the elements of L, e.g:
+	map f [1,2,3]  =  [f 1, f 2, f 3]
+
+newstr (n, c) --> s
+	Create a string of the length n containing c's.
+
+newvec (n, x) --> s
+	Create a vector of the length n containing x's.
+
+order x --> n
+	Return the order of x, where order () = 0, order Tk = k for
+	k > 1 and and order x = 1 for all other objects.
+
+ref (L, n) --> x
+ref (Tk, n) --> x
+ref (V, n) --> x
+ref (s, n) --> c
+	Extract the n'th element of the given list, k-tuple, vector,
+	or string.
+
+rev L --> L
+rev s --> s
+	Reverse a list or string.
+
+set (Tk, n, x) --> Tk
+set (s, n, c) --> s
+	Return a new k-tuple or string with the n'th element
+	replaced by x or s.
+
+set (V, n, x) --> V
+	DESTRUCTIVELY change the n'th element of vector V to x.
+
+setvec (V, n1, n2, x) --> V
+	DESTRUCTIVELY change the elements n1 through n2-1 of
+	vector V to x.
+
+sub (L, n1, n2) --> L
+sub (s, n1, n2) --> s
+	Extract the sublist or substring containing the elements
+	n1 through n2-1 of the original object.
+
+zip L1 L2 --> L
+	Combine the elements of L1 and L2 pairwise, giving a list
+	of tuples, e.g.:
+	zip [1,2,3] [4,5,6]  -->  [(1,4),(2,5),(3,6)]
+
+zipwith f L1 L2 --> L
+	Combine the elements of L1 and L2 pairwise using the
+	function f:
+	zipwith f [1,2,3] [4,5,6]  =  [f (1,4), f (2,5), f (3,6)]
+
+
+Type Predicates and Conversion
+
+bool x --> b
+	Is a bool?
+
+char x --> b
+	Is a char?
+
+chr n --> c
+	Character at code point n.
+
+int x --> b
+	Is an int.
+
+not x --> b
+	Logical not (x = false).
+
+ntoa r --> s
+	Convert number to string.
+
+ord c --> n
+	Code point of c.
+
+real x --> b
+	Is a real. Note: int x implies real x.
+
+ston s --> r | false
+	Convert string to integer or real (if s contains a ".").
+
+str x --> b
+	Is a string?
+
+vec x --> b
+	Is a vector?
+
+
+Char Functions
+
+c_alphabetic c --> b
+	Is c in the english alphabet?
+
+c_downcase c --> c
+	If c_upper c, return its lower case variant, else return c.
+
+c_lower c --> b
+	Is c a lower-case alphabetic char?
+
+c_numeric c --> b
+	Is c a decimal digit?
+
+c_upcase c --> c
+	If c_lower c, return its upper case variant, else return c.
+
+c_upper c --> b
+	Is c an upper-case alphabetic char?
+
+c_whitespace c --> b
+	Is c a non-printing char (blank, HT, LF, FF, CR)?
+
+
+I/O Functions
+
+close SI --> ()
+close SO --> ()
+	Close stream.
+
+eof x --> b
+	Does x denote the end-of-file (EOF) of a stream?
+
+instream s --> SI
+	Open a file for reading. A non-existent file is an error.
+
+load s --> ()
+	Load and evaluate the expressions in the file s.
+
+outstream s --> SO
+	Open file for writing. Existing files will be truncated.
+
+peekc () --> c
+	Return the next char from the current input stream without
+	consuming it. (May return EOF.)
+
+print x --> ()
+	Print a human-readable representation of x.
+
+println x --> ()
+	Same as (print x; print #"newline").
+
+readc () --> c
+	Read and return the next char from the current input stream.
+	(May return EOF.)
+
+readln () --> s
+	Read and return the next line from the current input stream.
+	(May return EOF.)
+

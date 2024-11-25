@@ -1,0 +1,320 @@
+
+	================================================================
+	|              KLONG  **  A SIMPLE ARRAY LANGUAGE              |
+	================================================================
+
+	                   A Really Short Introduction
+                                 By Nils M Holm
+                              n m h @ t 3 x . o r g
+
+	::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+	Klong tends to be terse. This is a table formatter:
+
+	fmtc::{(-|/{#$x}'x)$x}
+	fmtt::{+fmtc'+x}
+
+	"fmtc" (format column) converts the elements of a list to
+	strings and right-justifies them so that all strings have the
+	same length.
+
+	"fmtt" (format table) does the same for a two-dimensional array.
+
+	In case you are confused now, note that Klong is a mathematical
+	notation rather than a programming language. If you expect it to
+	be a programming language, you will only be frustrated and
+	dismiss it as a "write-only language" and think that it looks
+	like "line-noise".
+
+	While you read program code in most languages line by line, or
+	maybe even just scan over blocks of text, this will bring you
+	nowhere when trying to understand Klong. You will have to take
+	your time and read and write programs one character at a time.
+	This makes sense, because a single operator, like :^ (Reshape)
+	may do something quite complex, like reshaping an array:
+
+	[2 2 2]:^[1 2 3 4 5 6 7 8]
+
+	means: reshape the vector [1 2 3 4 5 6 7 8] to an array of the
+	dimensions (2,2,2). It will give you:
+
+	[[[1 2]    :"      1------2   "
+	  [3 4]]   :"     /      /|   "
+	 [[5 6]    :"    /      / |   "
+	  [7 8]]]  :"   3------4  6   "
+	           :"   |      | /    "
+	           :"   |      |/     "
+	           :"   7------8      "
+
+	(:"something" is a comment.)
+
+	Klong expressions consist of monadic (single-operand) prefix
+	operations, dyadic (two-operand) infix operations, and function
+	applications. They have no precedence rules and evaluate from
+	the right to the left, i.e.
+
+	1-2-3
+
+	means
+
+	1-(2-3)
+
+	but, as usual, parentheses can be used to regroup operations.
+
+	A Klong function is simply a program in braces. The function
+
+	{x+1}
+
+	would increment its argument by 1. There are no argument lists;
+	a function containing the symbol "x" is automatically a monadic
+	function receiving its only argument in "x".
+
+	A function (or any object) can by assigned to a variable using
+	the "::" (Define) operator:
+
+	inc::{x+1}
+
+	However, since Klong is terse, it often does not make sense to
+	assign a name to a function. For instance, here is factorial:
+
+	*/1+!x
+
+	(Times Over (one Plus Enumerate x)). It generates a list of the
+	numbers from 0..x-1, adds one to each element, resulting in 1..x,
+	and then multiplies all elements of that list. Giving a name to
+	the function would not really help, especially once you got used
+	to spotting idioms:
+
+	*/1+!x
+	fac(x)
+
+	Functions (which are also called "verbs") can be augmented by
+	"adverbs". For example,
+
+	#'x
+
+	(Size-Each x) will return a list containing the size of each
+	element of x:
+
+	#'["hi" "world" [1 2 3]]  -->  [2 5 3]
+
+	The Times-Over in factorial is also an augmented verb. "/"
+	(Over) folds a verb over an object:
+
+	f/[1 2 3 4]  =  f(f(f(1,2),3),4)
+	*/[1 2 3 4]  =  ((1*2)*3)*4
+
+	It would be called "fold" or "reduce" in other languages.
+
+	Let's get back to the table formatter.
+
+	Once you get used to it, it's quite readable. You just have to
+	adjust your code-reading habits a bit. Here's how to approach
+	a function like the above:
+
+	fmtc::{(-|/{#$x}'x)$x}
+
+	There is a parenthesized group, so we deal with that first:
+
+	fmtc::{(-|/{#$x}'x)$x}
+	       ^^^^^^^^^^^^
+	In the group there's another function, Size of Format of x,
+	applied to each member of x:
+
+	fmtc::{(-|/{#$x}'x)$x}
+	           ^^^^^^^
+	(Size of Format of x)-Each x. Note that the "x" of the inner
+	function is different from the "x" of the outer function! This
+	expression computes the size of the representation (Format) of
+	each member of a list:
+
+	 {$x}'[1 23 456]  -->  ["1" "23" "456"]   :"Format-Each"
+	{#$x}'[1 23 456]  -->  [1 2 3]       :"(Size of Format)-Each"
+
+	The next step is
+
+	fmtc::{(-|/{#$x}'x)$x}
+	        ^^^
+	(Negate Max-Over it, "it" being the result of the previous
+	operation). "It", in this context, is the list of sizes obtained
+	in the previous step. "Max-Over it" is the maximum of the sizes,
+	"Negate Max-Over it" is the negative maximum size:
+
+	 |/[1 2 3]  -->  3
+	-|/[1 2 3]  -->  -3
+
+	The rest of the function:
+
+	fmtc::{(-|/{#$x}'x)$x}
+                           ^^
+	(Format x with it, "it" here being the negative maximum size
+	from the previous step.) "$" is an "atomic operator", i.e. it
+	is automatically applied to each member of a list, e.g.:
+
+	3$[1 23 456]  -->  ["1  "
+	                    "23 "
+	                    "456"]
+
+	So each member of "x" is being formatted with "it". Dyadic
+	Format (Format2) with a negative left value "v" right-adjusts
+	its right value in a field of size #v (magnitude of v). So the
+	function right-justifies all members of its argument in strings
+	of the length of the greatest member:
+
+	(-3)$[1 23 456]  -->  ["  1"
+	                       " 23"
+	                       "456"]
+
+	and hence:
+
+	fmtc([1 23 456])  -->  ["  1"
+	                        " 23"
+	                        "456"]
+
+	Now for fmtt:
+
+	fmtt::{+fmtc'+x}
+
+	(Transpose fmtc-Each Transpose x). Remember to read from the
+	right to the left:
+
+	- Transpose x
+	- fmtc-Each it
+	- Transpose it
+
+	So +fmtc'+x swaps rows and columns of a table, formats each row,
+	and transposes the result back. Because fmtc'x would format the
+	rows of a table, +fmtc'+x formats its columns. Voila, a table
+	formatter.
+
+	BTW, you can really try the above with Klong, because it always
+	binds the result of the most recent computation to the variable
+	"it" (user input indented):
+
+	        fmtc::{(-|/{#$x}'x)$x}
+	:monad
+	        fmtt::{+fmtc'+x} 
+	:monad
+	        :"Factorials, ordered by column"
+	        +[3 3]:^*\1+!9
+	[[1 24 5040]
+	 [2 120 40320]
+	 [6 720 362880]]
+	        +it
+	[[1 2 6]
+	 [24 120 720]
+	 [5040 40320 362880]]
+	        fmtc'it
+	[["1" "2" "6"]
+	 [" 24" "120" "720"]
+	 ["  5040" " 40320" "362880"]]
+	        +it
+	[["1" " 24" "  5040"]
+	 ["2" "120" " 40320"]
+	 ["6" "720" "362880"]]
+
+	Nice, isn't it? A table formatter in just 38 characters of code.
+
+	One thing that is interesting about this program is that there
+	are no loops or conditionals in it. This does not mean that
+	there are no such things in Klong, it only means you do not need
+	them very often. You use adverbs to do most of the heavy-lifting.
+
+	This program computes the square root of 2:
+
+	{(x+2%x)%2}:~2
+
+	The part in front of the :~ adverb is the formula that computes
+	the next iteration in Newton's method:
+
+	(x Plus 2 Divide x) Divide 2
+
+	The :~ (Converge) adverb applies that function to its right
+	argument initially and then to its own result over and over
+	again until it finds a fixpoint, i.e. a point where x = f(x).
+	The :~ operator has a cousin called \~ (Scan-Converge) that
+	collects the intermediate results:
+
+	{(x+2%x)%2}\~2  -->  [2
+	                      1.5
+	                      1.41666666666666666
+	                      1.4142156862745098
+	                      1.41421356237468991
+	                      1.41421356237309504]
+
+	(As we can see, Newton's methods converges really fast!)
+
+	Of course, Klong has more control constructs. Here is a function
+	that computes the maximal depth of a tree (a list of lists):
+
+	dp:{:[@x;0;1+|/dp'x]}
+
+	(If Atom x Then 0 Else 1 Plus Max-Over dp-Each x)
+
+	It uses the :[a;b;c] syntax that means "if a then b else c".
+	The function works as follows: If "x" is an atom (@x, Atom x),
+	then the result is 0. Else the result is 1 Plus Max-Over
+	dp-Each x -- the depth of the deepest element of x plus 1.
+
+	Are you getting the hang of it?
+
+	There are looping constructs, too, but they are rarely used.
+
+	{x<1000}{x*2}:~1  -->  1024
+
+	When :~ has a left argument, it is called While, and the above
+	expressions reads "While x Less 1000, x Times 2, starting at 1".
+	While also has a cousin that scans intermediate results:
+
+	{x<1000}{x*2}\~1  -->  [1 2 4 8 16 32 64 128 256 512]
+
+	However, the above result could be retrieved more easily and
+	more readably using
+
+	{2^x}'!10
+
+	(2 Power x)-Each Enumerate 10. !x creates a list of integers
+	from 0 to x-1 and {2^x}' maps them to their respective powers
+	of two.
+
+	If you have to resort to conditionals and recursion, though,
+	Klong has those, too. Here's the Peter-Ackermann function:
+
+	ack::{:[0=x;y+1:|0=y;ack(x-1;1);ack(x-1;ack(x;y-1))]}
+
+	or, if you prefer a multi-line version:
+
+	ack::{:[0=x;y+1
+	      :|0=y;ack(x-1;1)
+	      ;ack(x-1;ack(x;y-1))]}
+
+	The :| means "else-if". The ";" in a function call, like f(1;2),
+	separates arguments to a dyadic or triadic function, while in a
+	conditional expression, it separates the predicate and the "true"
+	and "false" branches.
+
+	In programs (but outside of argument lists and conditionals),
+	it indicates a sequence:
+
+	sqr::{[a];a::x;{(x+a%x)%2}:~a}
+
+	Here it separates three parts. The first one, [a], indicates
+	that the function bound to "sqr" has a local variable called
+	"a". The second one (a::x, a Define x) assigns the value of the
+	argument "x" to "a". The third one is a generalized form of the
+	expression computing the square root of two, as shown earlier.
+
+	When "sqr" is called, the first part is skipped (because it is
+	a declaration), the subsequent expressions are evaluated from
+	left to right, and the result of the last one is returned. So
+	"sqr" computes the square root of any (positive) number.
+
+	Klong programs typically manipulate arrays or lists as a whole
+	rather than operating on individual elements. They also use
+	adverbs for finding fixpoints or creating sequences. This is
+	quite an abstract approach that requires careful planning and
+	thinking. Typing speed does not really matter when solving
+	problems in Klong. Understanding the problem properly does.
+
+	================================================================
+

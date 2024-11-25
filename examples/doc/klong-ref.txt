@@ -1,0 +1,2394 @@
+
+	================================================================
+	|              KLONG  **  A SIMPLE ARRAY LANGUAGE              |
+	================================================================
+
+	                       Version 2022-12-12
+	                         By Nils M Holm
+	                      n m h @ t 3 x . o r g
+
+	----------------------------------------------------------------
+	CONTENTS
+	----------------------------------------------------------------
+
+	SYNOPSIS
+	LEXEMES
+	SYNTAX
+	SEMANTICS : VALUES
+	SEMANTICS : VERBS
+	SEMANTICS : PROJECTION
+	SEMANTICS : ARGUMENTS
+	SEMANTICS : CONDITIONALS
+	SEMANTICS : ADVERBS
+	SEMANTICS : ARRAYS
+	SEMANTICS : I/O CHANNELS
+	SEMANTICS : OPERATORS
+	SEMANTICS : FUNCTIONS
+	SEMANTICS : VARIABLES
+	SEMANTICS : MODULES
+	INTERACTION
+	INTERACTION : LINE EDITING
+
+	----------------------------------------------------------------
+	SYNOPSIS
+	----------------------------------------------------------------
+
+	Klong is an expression-based language that is inspired by K,
+	which is in turn inspired by APL. A Klong program is basically
+	a set of functions that manipulate list or array structures.
+	You might also think of Klong as a glorified calculator with a
+	massive set of functions for transforming arrays in various
+	ways.
+
+	One major difference from K is that Klong syntax is unambiguous.
+	In K, semantic information is sometimes required to understand
+	the syntax of a program, while in Klong, the syntax alone is
+	enough to understand the meaning of a program. Of course, the
+	ambiguity is by intention in K, because it allows you to write
+	very short expressions.
+
+	For instance, the K expression f/x (f over x) may fold "f" over
+	"x" or it may find the fixpoint of f(x), depending on the type
+	of "f". In its dyadic form, x f/y, "/" may have three different
+	meanings: fold, while, and iterate, depending on the type of "x".
+	Klong uses different operators in this case: f/x (Over), f:~x
+	(Converge), x f:~y (While), and x f:*y (Iterate). Converge and
+	While are distinguished by their context (arity).
+
+	Also, Klong does not overload operators to the same degree as
+	K does. For instance, in K x_y can denote "drop" or "cut",
+	depending on the type of the operand "x". Klong uses :_ for cut
+	(and allows integers in the place of "x", e.g.: 3:_y).
+
+	Klong's syntax is similar to K's, so some very simple K programs
+	will run in Klong, but the similarity is superficial.
+
+	This is the Klong language reference. If you are not familiar
+	with K, J, APL, or a similar language, you might want to read
+	the introduction instead.
+
+	----------------------------------------------------------------
+	LEXEMES
+	----------------------------------------------------------------
+
+	Every program is eventually composed of small lexical entities
+	(lexemes, tokens) consisting of one or multiple ASCII characters.
+
+	This is an overview of the lexemes that exist in Klong. Basic
+	regular expression (regex) syntax (using just the . * + [] \ ?
+	operators) is used to describe lexemes. All other characters
+	represent themselves.
+
+	    . denotes any character
+	    * denotes zero or more appearances of the previous component
+	    + denotes one or more appearances of the previous component
+	    ? indicates that the previous component is optional
+	[...] denotes any character contained between the brackets;
+	      ranges may be abbreviated, e.g. 0-9 for 0123456789
+	    \ indicates that the following character is a literal
+	      character and not a regex operator
+
+	:".*"                                                  [Comment]
+
+	A comment. The entire lexeme will be ignored. The regex is in
+	fact a lie. See [String], below, for an explanation.
+	Examples: :"this is a lie"
+	          :"say ""hi"""
+
+	[a-zA-Z\.][a-zA-Z0-9\.]*                                [Symbol]
+
+	A symbolic name, may be used to name variables. Upper and lower
+	case is distinguished.
+	Examples: foo F00F .d X.
+
+	Note that names starting with "." are reserved for system use.
+
+	[!$%&*+,-\./;<=>?@\\^_|~]                             [Operator]
+	:[!$%&*+,-\./;<=>?@\\^_|~]                            [Operator]
+
+	A symbol naming an operator. All operator names are one or two
+	characters long. When an operator is two characters long, the
+	first character is a colon (:). See also [Shift], below.
+	Examples: + @ :^
+
+	Note: there are two non-shifted two-character operators named
+	\~ (Scan-Converging) and \* (Scan-Iterating).
+
+	-?[0-9]+                                               [Integer]
+
+	Integer number with optional negative sign. There is no limit on
+	the values of integers. Note that the minus sign will only be
+	recognized in contexts where a constant is expected (in list and
+	dictionaty literals), because in expression contexts, -1 will
+	parse as the "-" operator applied to "1".
+	Examples: 0 1 -1 1267650600228229401496703205376
+
+	-?[0-9]+\.[0-9]*                                   [Real Number]
+	-?[0-9]+e[+-]?[0-9]+                               [Real Number]
+	-?[0-9]+\.[0-9]*e[+-]?[0-9]+                       [Real Number]
+
+	Real numbers consist of an integer part plus an optional
+	fractional part (after a "." character) and an optional
+	exponent part (after an "e" character). Note that the "-"
+	prefix will not always be recognized, see [Integers], above.
+	Examples: 0.0 0. -1.0 3.1415927 1e6 6.62607004e-34
+
+	Note: 1. is a valid real number, but .1 is not (it is a symbol).
+
+	-?0b[01]+                                       [Binary Integer]
+	-?0o[0-7]+                                       [Octal Integer]
+	-?0x[0-9a-fA-F]                           [Hexa-Decimal Integer]
+
+	Integer numbers may be specified using an alternative base by
+	prepending a 0b (binary), 0o (octal), or 0x (hex) prefix to the
+	digits. Upper or lower case letters may be used in hex numbers.
+	Examples: 0b101010 0o777 0xcafe 0xDEAD
+
+	0c.                                                  [Character]
+
+	The 0c prefix is used to specify character literals. Unprintable
+	characters cannot be specified using 0c. "0c " denotes a blank.
+	Examples: 0c0 0ca 0cA 0c* 0c~
+
+	".*"                                                    [String]
+
+	A string is (almost) any sequence of characters enclosed by
+	double quote characters. To include a double quote character in
+	a string, it has to be duplicated, so the above regex is not
+	entirely correct. A comment is a shifted string (see below).
+	Examples: ""
+	          "hello, world"
+	          "say ""hello""!"
+
+	:lexeme                                                  [Shift]
+
+	The : character is used as a "shift" operator that changes the
+	meaning of the following lexeme.
+
+	:operator
+	When applied to an operator symbol, it forms a two-character
+	operator symbol. E.g.: :^ :$ :=
+
+	:string
+	A shifted string is a comment.
+
+	:symbol
+	A shifted symbol is being "quoted", i.e. the symbol no longer
+	denotes a variable, but a literal symbol name, e.g. :foo, :.d.
+
+	:number, :character
+	Shifting other lexemes does not have any effect. The shift sign
+	will be ignored in these cases.
+
+	----------------------------------------------------------------
+	SYNTAX
+	----------------------------------------------------------------
+
+	The complete Klong syntax will be given here in EBNF notation.
+	An EBNF grammar consists of rules of the form
+
+	a := b c
+
+	meaning "a" can be written as "b c". Rules can be recursive and
+	| means "or", so
+
+	x := y | y x
+
+	would mean "'x' can be a 'y' or a 'y' followed by another 'x'",
+	which basically means "'x' can be any (positive) number of 'y's".
+
+	y+ is short for the above rule "x" (at least one "y").
+
+	y* is short for (y+|"") where "" means "nothing". Parentheses
+	are used for grouping.
+
+	Literal lexemes appear in quotes, e.g.:
+
+	f := '{' p '}'
+
+	meaning "an 'f' is formed by a left brace, followed by a 'p' and
+	a right brace".
+
+	NOTE: a newline character translates to a semicolon in Klong,
+	except in functions, dictionaries, conditional expressions,
+	and lists. So
+
+	a()
+	b()
+
+	is equal to a();b(), but
+
+	[1
+	 2
+	 3]
+
+	is equal to [1 2 3] and
+
+	:[x;
+	  y;
+	  z]
+
+	is equal to :[x;y;z] and
+
+	f::{.d("hello ");
+	    .p("world!");
+	    []}
+
+	is a valid function definition.
+
+	Here is the full Klong grammar (an informal description can be
+	found at the end of this section):
+	................................................................
+
+	# A program is a ';'-separated sequence of expressions.
+
+	p := e
+	   | e ';' p
+
+	# An expression is a factor or a dyadic operation applied to
+	# a factor and an expression. I.e. dyads associate to the right.
+
+	e := x
+	   | x d e
+
+	# A factor is a lexeme class (C) or a variable (V) applied to
+	# arguments (a) or a function (f) or a function applied to
+	# arguments or a monadic operator (m) applied to an expression
+	# or a parenthesized expression or a conditional expression (c)
+	# or a list (L) or a dictionary (D).
+
+	x := C
+	   | V a
+	   | f
+	   | f a
+	   | m e
+	   | '(' e ')'
+	   | c
+	   | L
+	   | D
+
+	# Lexeme classes are the sets of the lexemes specified in the
+	# previous section, except for operators.
+
+	C := I   # integer
+	   | H   # character
+	   | R   # real number
+	   | S   # string
+	   | V   # variable (symbol)
+	   | Y   # (quoted) symbol
+
+	# A conditional expression has two forms: :[e1;e2;e3] means "if
+	# e1 is true, evaluate to e2, else evaluate to e3".
+	# :[e1;e2:|e3;e4;e5] is short for :[e1;e2:[e3;e4;e5]], i.e. the
+	# ":|" acts as an "else-if" operator. There may be any number of
+	# ":|" operators in a conditional.
+
+	c := ':[' ( e ';' e ':|' )* e ';' e ';' e ']'
+
+	# A monadic operator is an operator followed by some optional
+	# adverbs or a function or a variable, each followed by at least
+	# one adverb.
+
+	m := O A*
+	   | f A+
+	   | V A+
+
+	# A dyadic operator is an operator or a function or a variable,
+	# each followed by some optional adverbs.
+
+	d := O A*
+	   | f A*
+	   | V A*
+
+	# A function is a program delimited by braces. Deja vu? A
+	# function may be projected onto on some of its arguments,
+	# giving a projection. A variable can also be used to form
+	# a projection.
+
+	f := '{' p '}'
+	   | '{' p '}' P
+	   | V P
+
+	# Arguments are delimited by parentheses and separated by
+	# semicolons. There are up to three arguments.
+
+	a := '(' ')'
+	   | '(' e ')'
+	   | '(' e ';' e ')'
+	   | '(' e ':' e ';' e ')'
+
+	# Projected argument lists are like argument lists (a), but at
+	# least one argument must be omitted.
+
+	P := '(' ';' e ')'
+	   | '(' e ';' ')'
+	   | '(' ';' e ';' e ')'
+	   | '(' e ';' ';' e ')'
+	   | '(' e ';' e ';' ')'
+	   | '(' ';' ';' e ')'
+	   | '(' ';' e ';' ')'
+	   | '(' e ';' ';' ')'
+
+	# A list is any number of class lexemes (or lists) delimited by
+	# square brackets.
+
+	L := '[' (C|L)* ']'
+
+	# A dictionary is a sequence of tuples delimited bt ':{' and '}'.
+
+	D := ':{' t* '}'
+
+	# A tuple is a list of two elements.
+
+	t := '[' (C|L) (C|L) ']'
+
+	# The following rules are for compatibility with earlier Klong
+	# versions; they allow to use the :() operator instead of () for
+	# function application.
+
+	x := V :a
+	   | f :a
+
+	f := '{' p '}' :P
+	   | V :P
+	................................................................
+
+	Informally speaking, a Klong program is an expression or
+	a sequence of expressions separated by semicolons. Each
+	expression is one out of these:
+
+	- a factor (like a string, a function, a number, etc)
+	- a prefix monadic verb applied to an expression
+	- an infix dyadic verb applied to two expressions,
+	  associating to the right, so 1-2-3 means 1-(2-3)
+	- a function application
+	- a conditional expression
+
+	A verb is an operator or a function or a variable (bound to a
+	function). They may be followed by on one multiple adverbs.
+
+	----------------------------------------------------------------
+	SEMANTICS : VALUES
+	----------------------------------------------------------------
+
+	Numbers (integer, real), characters, strings, lists, and
+	dictionaries all evaluate to their respective values. The
+	notation X --> V is used to denote that an expression X
+	evaluates to a value V.
+
+	    Integer --> Integer
+	Real Number --> Real Number
+	  Character --> Character
+	     String --> String
+	       List --> List
+	 Dictionary --> Dictionary
+
+	All of the above expressions represent constant values, i.e. no
+	computation is involved in their evaluation. In particular, all
+	members of lists and dictionaries are already in their evaluated
+	forms. Lists (and therefore also the tuples in dictionaries)
+	auto-quote variables, so
+
+	[Symbol] --> [Symbol]
+
+	Quoted symbols are values, so they also evaluate to themselves.
+
+	:Symbol --> :Symbol
+
+	Variables evaluate to the values that are currently bound to
+	them. The :: (define) operator is used to change the value of
+	a variable (except for "x", "y", and "z"). See [Define].
+
+	Variable --> value
+
+	Functions are first-class values. They also evaluate to
+	themselves:
+
+	Function --> Function
+
+	----------------------------------------------------------------
+	SEMANTICS : VERBS
+	----------------------------------------------------------------
+
+	Operators and functions act as "verbs" in expressions. Both map
+	values to values. There are three kinds of operators:
+
+	Monadic operators (or monads) take a single argument and appear
+	in prefix positions, like +x, @x, or #x.
+
+	Dyadic operators (or dyads) take two arguments and appear in
+	infix positions, like x-y, x*y, x:^y.
+
+	Functions have four different flavors called nilad, monad, dyad,
+	and triad, taking 0, 1, 2, and 3 arguments respectively. All
+	types of functions expect their arguments in argument lists.
+	When a function is bound to a name, the argument list can be
+	appended directly to the name:
+
+	f0()
+	f1(1)
+	f2(1;2)
+	f3(1;2;3)
+
+	All verbs return a value that depends on the specific function
+	or operator.
+
+	All operators are built into the Klong language, and no new
+	operators can be defined by Klong programs. Functions are mostly
+	defined by programs, but there are also some pre-defined Klong
+	functions. The semantics of operators and pre-defined functions
+	will be explained in detail in the sections about OPERATORS and
+	FUNCTIONS.
+
+	Functions are programs delimited by curly braces. They return
+	the value of the last expression in their programs, e.g. the
+	function
+
+	{f();g();h()}
+
+	would return the value of h().
+
+	A named function is defined by assigning an anonymous function
+	to a variable, e.g.:
+
+	square::{x*x}
+
+	The type of a function (nilad, monad, dyad, triad) is determined
+	by the variables that appear in the function. When a function
+	contains the symbol "x", it is a monad, when it contains the
+	symbol "y", it is a dyad, and when it contains the symbol "z",
+	it is a triad. A function not containing any of these symbols is
+	a nilad. E.g.:
+
+	{1}      :"nilad"
+	{x}      :"monad"
+	{x+y}    :"dyad"
+	{x+y*z}  :"triad"
+
+	In function calls, the first argument is assigned to "x", the
+	second one to "y", and the third one to "z". It is an error to
+	supply more or fewer arguments than a function expects.
+
+	A function containing only the symbol "y" is still a dyad
+	(ignoring its first argument), and any function containing "z"
+	is still a triad (possibly ignoring some of its arguments):
+
+	{y}   :"dyad"
+	{z}   :"triad"
+	{x+z} :"triad"
+	{y+z} :"triad"
+
+	A function contained in a function does not influence the type
+	of the outer function. For example,
+
+	{f({x+y})}
+
+	is a nilad that passes the dyad {x+y} to "f".
+
+	Functions may appear in monads when combined with an adverb:
+
+	{x+y}/[1 2 3]
+
+	or as dyads in expressions:
+
+	1{x+y}2
+	f::{x+y}; 1f 2
+
+	Functions may have local variables that are specified in a list
+	at the beginning of the function:
+
+	{[variables];program}
+
+	For instance, the function
+
+	{[f];f::x;y@(f'y)?1}
+
+	defines the local variable "f", assigns it the value of the
+	argument "x", and then uses it in some computation. See the
+	section on "Adverbs and Function Arguments" for an explanation.
+
+	Local variables are bound dynamically: they have an undefined
+	value initially and when the function defining them returns,
+	they are re-assigned the value they had before the function
+	was entered. So
+
+	a::1;{[a];a::2}();a
+
+	will evaluate to 1. Using local variables in escaping functions,
+	i.e. in functions returned by functions, is discouraged, because
+	their values may change after returning the function.
+
+	----------------------------------------------------------------
+	SEMANTICS : PROJECTION
+	----------------------------------------------------------------
+
+	A projection is a new function that is created by projecting an
+	existing function onto at least one of its arguments, resulting
+	in the partial application of the original function.
+
+	The notation of projection is that of function application where
+	the arguments onto which the function is being projected are
+	omitted. For instance,
+
+	Projection   Equivalent function
+	{x-y}(5;)    {5-x}
+	{x-y}(;5)    {x-5}
+
+	and, given a ternary function f3:
+
+	Projection   Equivalent function
+	f3(1;2;)     {f3(1;2;x)}
+	f3(1;;3)     {f3(1;x;3)}
+	f3(;2;3)     {f3(x;2;3)}
+	f3(;;3)      {f3(x;y;3)}
+	f3(;2;)      {f3(x;2;y)}
+	f3(1;;)      {f3(1;x;y)}
+
+	The projection of a triad is a dyad or a monad, depending on the
+	number of arguments onto which the triad is being projected. The
+	projection of a dyad is always a monad. There is no projection
+	of a monad or nilad.
+
+	Alternatively, monads and nilads can be considered to be their
+	own projections (onto zero arguments), but there is no special
+	syntax for this case. Any function that is being projected onto
+	all of its arguments is simply the function itself.
+
+	Projections are ordinary functions and can be used in all places
+	where a verb is expected. For instance:
+
+	f::{x,y}
+	f(;0)'[1 2 3]  -->  [[1 0] [2 0] [3 0]]
+	f(0;)'[1 2 3]  -->  [[0 1] [0 2] [0 3]]
+
+	g::{x,y,z}
+	1g(;2;)3       -->  [1 2 3]
+
+	----------------------------------------------------------------
+	SEMANTICS : ARGUMENTS
+	----------------------------------------------------------------
+
+	There are basically two types of operators in Klong: ones that
+	accept compound data types as arguments and those that expect
+	atoms exclusively. For instance, the | (reverse) operator
+	expects a compound data type, a list, returning a list with the
+	original elements in reverse order:
+
+	|[1 2 3]  -->  [3 2 1]
+
+	It is not a type error to pass a non-list to "|" -- in this case
+	it will just return its argument (identity). The operation is
+	just designed to primarily work on lists.
+
+	Then there are operations that work on atoms exclusively. An
+	"atom" is a data object that cannot be decomposed into smaller
+	units. Basically all non-list objects are atoms while lists can
+	be decomposed into list elements. A string can be viewed as a
+	list of characters, so it is also non-atomic. The empty string
+	"" and the empty list [] (nil) are atoms.
+
+	For instance, the + (plus) operator is an "atomic operator", i.e.
+	it expects atoms as its arguments:
+
+	5+7  -->  12
+
+	However, you can also pass lists to +. There are three cases to
+	distinguish: the first element can be a list, the second one,
+	or both:
+
+	     [1 2 3]+4  -->  [5 6 7]
+	     1+[2 3 4]  -->  [3 4 5]
+	[1 2 3]+[4 5 6] -->  [5 7 9]
+
+	When one operand is a list, the other operand it combined with
+	each member of that list. When both operands are lists, their
+	elements are combined pairwise.
+
+	Lists can also be written in the form a,b,c instead of [a b c],
+	where "," is the "join" operator (see [Join]). The difference to
+	bracket notation is that the elements can be dynamic, i.e. you
+	can write (a+1),(a+2),a+3 and the values of the list elements
+	will be computed at run time.
+
+	Given the Join operator, the above reductions can be written
+	like this:
+
+	      [a b c]+d  -->  (a+d),(b+d),c+d
+	      a+[b c d]  -->  (a+b),(a+c),a+d
+	[a b c]+[d e f]  -->  (a+d),(b+e),c+f
+
+	This notation is useful, because atomic operators can do even
+	more than the above: they can recurse into nested lists. For
+	instance,
+
+	[a [b c] d]+e  -->  ((a+e),,((b+e),c+e)),d+e
+	                    :"[a+e] [[b+e] [c+e]] [d+e]"
+
+	(The monadic "," (List) packages an object in a list, e.g.
+	 ,1 --> [1], and ,[1] --> [[1]]).
+
+	Even lists of different sizes can be combined, as long as they
+	adhere to certain rules:
+
+	[[a b] [c d] [e f]]+[1 2 3]
+	                   -->  (,((a+1),b+1)),(,((c+2),d+2)),,(e+3),f+3
+	                        :"[[a+1 b+2] [c+1 d+2] [e+1 f+2]]"
+
+	As long as atoms match atoms, atoms match lists, or lists match
+	lists of equal length while descending into the operands, list
+	operands of different shapes (see [Shape]) can be combined. For
+	example:
+
+	[a b c d]+1                          [a b c d]
+	                                      1 1 1 1
+
+	[[a b] [c d] [e f]]+[1 2 3]          [[a b] [c d] [e f]]
+	                                       1 1   2 2   3 3 
+
+	[[[a b] [c d]] [e f]]+[[1 2] 3]      [[[a b] [c d]] [e f]]
+	                                        1 1   2 2    3 3
+
+	However:
+
+	[a b]+[1 2 3]                        Does not match
+
+	Monadic operators can also be atomic. When an atomic monad is
+	applied to a list, the operator is applied to each element of
+	the list, recursively, no matter what shape it has:
+
+	-[[1 2 3] [4 5 6]]  -->  [[-1 -2 -3] [-4 -5 -6]]
+	  -[1 [2 [3] 4] 5]  -->  [-1 [-2 [-3] -4] -5]
+
+	----------------------------------------------------------------
+	SEMANTICS : CONDITIONALS
+	----------------------------------------------------------------
+
+	A conditional expression has the general form :[p;c;a], where "p"
+	is the predicate, "c" the consequent, and "a" the alternative of
+	the expression. The predicate is being evaluated first. When it
+	yields a "true" value, the consequent is evaluated and otherwise
+	the alternative is evaluated, so the value of the expression
+	depends on the predicate.
+
+	A predicate value is considered to be "false", if it is zero (0),
+	nil ([]), or the empty string (""). All other values are treated
+	as "true" values. 1 and 0 are the canonical truth values.
+
+	Examples: :[1;:yes;:no]  -->  :yes
+	          :[0;:yes;:no]  -->  :no
+
+	Multiple predicate-consequent pairs can be contained in a
+	conditional expression by using the :| (Else-If) operator:
+
+	:[p1;c1:|p2;c2:|...:|pN;cN;a]
+
+	In this case, the first consequent (c1) will evaluate only if
+	the first predicate (p1) is true, the second consequent (c2)
+	will evaluate when then p1 is false but p2 is true, etc. The
+	alternative (a) will only evaluate if all predicates are false.
+
+	Formally,
+
+	:[p1;c1:|p2;c2:|...:|pN;cN;a]
+
+	is equal to
+
+	:[p1;c1;:[p2;c2;:[...:[pN;cN;a]...]]]
+
+	Example: ack::{:[0=x;y+1
+	               :|0=y;ack(x-1;1)
+	               ;ack(x-1;ack(x;y-1))]}
+
+	----------------------------------------------------------------
+	SEMANTICS : ADVERBS
+	----------------------------------------------------------------
+
+	An adverb is an operator that is being attached to a verb,
+	thereby modifying the behavior of the verb. In this section,
+	"f" denotes a verb (function, operator, or variable bound to
+	a function) and "a" and "b" denotes operands. "aI" denotes the
+	i'th member of "a", and "aN" denotes its last member.
+
+	f'a                                                       [Each]
+
+	If "a" is a list, apply "f" to each member of "a":
+
+	f'a  -->  f(a1),...,f(aN)
+
+	If "a" is an atom, return f(a). If "a" is [], ignore "f" and
+	return [].
+
+	If "a" is a dictionary, apply "f" to each tuple stored in the
+	dictionary. The resulting list will be in some random order.
+	Applying {x} (the identity function) to a dictionary turns it
+	into a list of tuples.
+
+	Example: -'[1 2 3]  -->  [-1 -2 -3]
+	................................................................
+
+	a f'b                                                   [Each-2]
+
+	Each-2 is like each, but applies "f" pairwise to elements of "a"
+	and "b":
+
+	a f'b  -->  f(a1;b1),...,f(aN;bN)
+
+	If both "a" and "b" are atoms, return f(a;b). If either "a" or
+	"b" is [], ignore "f" and return []. When the lengths of "a" and
+	"b" differ, ignore any excess elements of the longer list.
+
+	Example: [1 2 3],'[4 5 6]  -->  [[1 4] [2 5] [3 6]]
+	................................................................
+
+	a f:\b                                               [Each-Left]
+	a f:/b                                              [Each-Right]
+
+	If "b" is a list, both of these adverbs combine "a" with each
+	element of "b", where :\ uses "a" as the left operand of "f",
+	and :/ uses it as its right operand:
+
+	a f:\b  -->  f(a;b1),...,f(a;bN)
+	a f:/b  -->  f(b1;a),...,f(bN;a)
+
+	If "b" is an atom, then
+
+	a f:\b  -->  f(a;b)
+	a f:/b  -->  f(b;a)
+
+	When "b" is [], ignore "a" and "f" and return [].
+
+	Examples: 1,:\[2 3 4]  -->  [[1 2] [1 3] [1 4]]
+	          1,:/[2 3 4]  -->  [[2 1] [3 1] [4 1]]
+	................................................................
+
+	f:'a                                                 [Each-Pair]
+
+	If "a" is a list of more than one element, apply "f" to each
+	consecutive pair of "a":
+
+	f:'a  -->  f(a1;a2),f(a2;a3),...,f(aN-1;aN)
+
+	If "a" is an atom or a single-element list, ignore "f" and
+	return "a".
+
+	Example: ,:'[1 2 3 4]  -->  [[1 2] [2 3] [3 4]]
+	................................................................
+
+	f/a                                                       [Over]
+
+	If "a" is a list, fold "f" over "a":
+
+	f/a  -->  f(...f(f(a1;a2);a3)...;aN))
+	+/a  -->  ((...(a1+a2)+...)+aN)
+
+	If "a" is a single-element list, return the single element.
+
+	If "a" is an atom, ignore "f" and return "a".
+
+	Example: +/[1 2 3 4]  -->  10
+	................................................................
+
+	a f/b                                             [Over-Neutral]
+
+	This is like "/", but with a neutral element "a" that will be
+	returned when "b" is [] or combined with the first element of
+	"b" otherwise:
+
+	a f/[]  -->  a
+	a f/b   -->  f(...f(f(a;b1);b2)...;bN)
+
+	For example, +/[] will give [], but 0+/[] will give 0.
+
+	Of course, dyadic "/" can also be used to abbreviate an
+	expression by supplying a not-so-neutral "neutral element".
+	For instance, a++/b can be abbreviated to a+/b.
+
+	If both "a" and "b" are atoms, "a f/b" will give f(a;b).
+
+	Formally, "a f/b" is equal to f/a,b
+
+	Example: 0,/[1 2 3]  -->  [0 1 2 3]
+	         1+/[2 3 4]  -->  10
+	................................................................
+
+	f:~a                                                  [Converge]
+
+	Find the fixpoint of f(a), if any. The fixpoint of "f" is a value
+	"a" for which f(a) = a. For example,
+
+	{(x+2%x)%2}:~2 
+
+	converges toward the square root of two using Newton's method.
+	Starting with x=2:
+
+	(2+2%2)%2              -->  1.5
+	(1.5+2%1.5)%2          -->  1.41666
+	(1.41666+2%1.41666)%2  -->  1.41421  :"next value is the same"
+	(1.41421+2%1.41421)%2  -->  1.41421
+
+	(Of course, the precision of the actual implementation will
+	 probably be higher.)
+
+	Example: ,/:~["f" ["l" "at"] "ten"]  -->  "flatten"
+	................................................................
+
+	a f:~b                                                   [While]
+
+	Compute b::f(b) while a(b) is true. Formally:
+
+	- if a(b) is false, return b
+	- else assign b::f(b) and start over
+
+	Example: {x<1000}{x*2}:~1  -->  1024
+	................................................................
+
+	a f:*b                                                 [Iterate]
+
+	Apply "f" recursively to "b" "a" times. More formally:
+
+	- if "a" is zero, return b
+	- else assign b::f(b) and a::a-1 and start over
+
+	Example: 3{1,x}:*[]  -->  [1 1 1]
+	................................................................
+
+	f\a                                                  [Scan-Over]
+	a f\b                                        [Scan-Over-Neutral]
+
+	"\" is like "/", but collects intermediate results in a list and
+	returns that list. In the resulting list,
+
+	- the first slot will contain a1
+	- the second slot will contain f(a1;a2)
+	- the third slot will contain f(f(a1;a2);a3)
+	- the last slot will contain f(...f(a1;a2)...;aN)
+	  (which is the result of f/a)
+
+	If only one single argument is supplied, the argument will be
+	returned in a list, e.g.: +\1 --> [1].
+
+	"a f\b" is equal to f\a,b.
+
+	Examples:  ,\[1 2 3]  -->  [1 [1 2] [1 2 3]]
+	          0,\[1 2 3]  -->  [0 [0 1] [0 1 2] [0 1 2 3]]
+	................................................................
+
+	f\~a                                           [Scan-Converging]
+
+	Monadic \~ is like monadic :~, but returns a list of all
+	intermediate results instead of just the end result. The
+	last element of the list will be same as the result of a
+	corresponding :~ application. For instance:
+
+	{(x+2%x)%2}\~2 
+
+	will produce a list containing a series that converges toward
+	the square root of 2.
+
+	Example: ,/\~["a" ["b"] "c"]  -->  [["a" ["b"] "c"]
+	                                    ["a" "b" "c"]
+	                                    "abc"]
+	................................................................
+
+	a f\~b                                              [Scan-While]
+
+	This adverb is (almost) like is non-scanning counterpart, :~,
+	but it collects intermediate results in a list and returns that
+	list.
+
+	However, \~ will only collect values of X that satisfy a(X),
+	while :~ will return the first value that does *not* satisfy
+	a(X). E.g.:
+
+	{x<10}{x+1}:~1  -->  10
+	{x<10}{x+1}:\1  -->  [1 2 3 4 5 6 7 8 9]
+
+	Example: {x<100}{x*2}\~1  -->  [1 2 4 8 16 32 64]
+	................................................................
+
+	a f\*b                                          [Scan-Iterating]
+
+	This adverbs is like its non-scanning counterpart, but collects
+	intermediate results in a list and return that list.
+
+	Example: 3{1,x}\*[]  -->  [[] [1] [1 1] [1 1 1]]
+	................................................................
+
+	Multiple Adverbs
+
+	Multiple adverbs can be attached to a verb. In this case, the
+	first adverb modifies the verb, giving a new verb, and the next
+	adverb modifies the new verb. Note that subsequent adverbs must
+	be adverbs of monadic verbs, because the first verb-adverb
+	combination in a chain of adverbs forms a monad. So ,/' (Join-
+	Over-Each) would work, but ,/:' (Join-Over-Each-Pair) would not,
+	because :' expects a dyadic verb.
+
+	Examples:
+
+	+/' (Plus-Over-Each) would apply Plus-Over to each member of a
+	list:
+
+	+/'[[1 2 3] [4 5 6] [7 8 9]]  -->  [6 15 24]
+
+	,/:~ (Flatten-Over-Converging) would apply Flatten-Over until a
+	fixpoint is reached:
+
+	,/:~[1 [2 [3 [4] 5] 6] 7]  -->  [1 2 3 4 5 6 7]
+
+	,/\~ (Flatten-Over-Scan-Converging) explains why ,/:~ flattens
+	any object:
+
+	,/\~[1 [2 [3 [4] 5] 6] 7]  -->  [[1 [2 [3 [4] 5] 6] 7]
+	                                  [1 2 [3 [4] 5] 6 7]
+	                                   [1 2 3 [4] 5 6 7]
+	                                    [1 2 3 4 5 6 7]]
+	................................................................
+
+	Adverbs and Function Arguments
+
+	Note that function arguments ("x","y","z") cannot be verbs in
+	verb-adverb combinations, because they will be eta-expanded!
+
+	E.g.:
+
+	{x'y}({-x};[1 2 3])  :"BZZZT, WRONG!"
+
+	will not work, because it eta-expands "x", thereby creating two
+	conflicting instances of "x":
+
+	{{x(x)}'y}({-x};[1 2 3])
+
+	Because the inner "x" gets values from "y", it will try to apply
+	"1" to itself, resulting in an error. In cases like this one,
+	you have to rename "x" first:
+
+	{[f];f::x;f'y}({-x};[1 2 3])
+
+	----------------------------------------------------------------
+	SEMANTICS : ARRAYS
+	----------------------------------------------------------------
+
+	An array is a list with a symmetric shape, as determined by the
+	"^" (Shape) operator. All arrays are lists, but not all lists
+	are arrays. For example:
+
+	^[[1 2]
+	  [3 4]
+	  [5 6]]  -->  [3 2]
+
+	is an array of the shape 3,2, or a list of three elements,
+	each having a size of two elements. All shapes are given in
+	row-major order.
+
+	This is a vector, but not a matrix:
+
+	^[[1 2]
+	  [3]
+	  [4 5]]  -->  [3]
+
+	Above is a list of three elements, because the shape is not
+	symmetric at column level ([3] has only one element).
+
+	Of course, arrays may have more than two dimensions:
+
+	^[[[1 2 3 4]
+	   [5 6 7 8]]
+	  [[9 0 1 2]
+	   [3 4 5 6]]
+	  [[7 8 9 0]
+	   [1 2 3 4]]]  -->  [3 2 4]
+
+	^[5 5 5 5 5]:^0  -->  [5 5 5 5 5]
+
+	(The :^ (Reshape) operator reshapes an object; see [Reshape].)
+
+	----------------------------------------------------------------
+	SEMANTICS : I/O CHANNELS
+	----------------------------------------------------------------
+
+	Input and output in Klong is based on channels. Functions like
+	.rl (Read-line) and .p (Print) read and write the current input
+	and output channels. The current input channel is called the
+	From Channel, and the current output is called the To Channel.
+
+	Initially, the From Channel is connected to .cin, which in turn
+	corresponds to the standard input of the Klong interpreter. The
+	To Channel is connected to .cout, the standard output of Klong,
+	and there is a third channel, .cerr, which is the standard error
+	or log channel of the interpreter.
+
+	Here is a simple-minded Unix cat(1) utility that just echoes
+	input from the From Channel to the To Channel:
+
+	cat::{.mi{.p(x);.rl()}:~.rl()}
+
+	The .mi function returns truth as long as there is "more input"
+	available from the current From Channel. So what this function
+	does is "While More-Input, (Print x, Read-Line), starting with
+	Read-line".
+
+	Additional input channels can be opened with the Input-Channel
+	(.ic) function and selected with the From-Channel (.fc) function.
+	Here is a function that types the content of a file:
+
+	type::{.fc(.ic(x));cat()}
+
+	The function opens the input channel "x" and selects it as the
+	current From Channel. With the new From Channel established, it
+	calls "cat", which now reads from that channel.
+
+	The channel is never closed here. Klong will automatically close
+	it at some time.
+
+	Similarly, a new output channel can be established using
+	the Output-Channel (.oc) and To Channel (.tc) functions.
+	The following function copies file "x" to "y":
+
+	copy::{[of];.tc(of::.oc(y));type(x);.cc(of)}
+
+	Note that "copy" does close the output channel. This is not
+	strictly necessary, but makes sure that all output has been
+	written to "y" when "copy" returns. Alternatively, the .fl
+	function can be used to flush the current To Channel without
+	closing it.
+
+	NOTE: in interactive mode, the From and To Channels are reset to
+	.cin and ,cout after program run time, but without closing any
+	additional channels first. So expressions like
+
+	.tc(.oc("foo"));.p("hello!")
+
+	are not guaranteed to finish their output at any specific time.
+	To make sure that output is written, use:
+
+	.tc(T::.oc("foo"));.p("hello!");.cc(T)
+
+	or
+
+	.tc(.oc("foo"));.p("hello!");.fl()
+
+	----------------------------------------------------------------
+	SEMANTICS : OPERATORS
+	----------------------------------------------------------------
+
+	a:=b                                                     [Amend]
+
+	"a" must be a list or string and "b" must be a list where the
+	first element can have any type and the remaining elements must
+	be integers. It returns a new object of a's type where a@b2
+	through a@bN are replaced by b1. When "a" is a string, b1 must
+	be a character or a string. The first element of "a" has an
+	index of 0.
+
+	When both "a" and b1 are strings, Amend replaces each substring
+	of "a" starting at b2..bN by b1. Note that no index b2..bN must
+	be larger than #a or a range error will occur. When b1 is
+	replaced at a position past (#a)-#b1, the amended string will
+	grow by the required amount. For instance:
+
+	"aa":="bc",1 --> "abc".
+
+	Examples:    "-----":=0cx,[1 3]  -->  "-x-x-"
+	                   [1 2 3]:=0,1  -->  [1 0 3]
+	          "-------":="xx",[1 4]  -->  "-xx-xx-"
+	                 "abc":="def",3  -->  "abcdef"
+	................................................................
+
+	a:-b                                            [Amend-in-Depth]
+
+	:- is like :=, but "a" may be a multi-dimensional array. The :-
+	operator replaces one single element in that array. The sequence
+	of indices b1..bN is used to locate the target element in an
+	N-dimensional array. The number of indices must match the rank
+	of the array.
+
+	Example: [[1 2] [3 4]]:-42,[0 1]  -->  [[1 42] [3 4]]
+	              [[[0]]]:-1,[0 0 0]  -->  [[[1]]]
+	................................................................
+
+	@a                                                        [Atom]
+
+	@ returns 1, if "a" is an atom and otherwise 0. All objects
+	except for non-empty lists and non-empty strings are atoms.
+
+	Examples:      @""  -->  1
+	               @[]  -->  1
+	              @123  -->  1
+	          @[1 2 3]  -->  0
+	................................................................
+
+	:#a                                                       [Char]
+
+	Return the character at the code point "a".
+
+	Monadic :# is an atomic operator.
+
+	Examples: :#64  -->  0cA
+	          :#10  -->  :"newline character"
+	................................................................
+
+	a:_b                                                       [Cut]
+
+	Cut the list "b" before the elements at positions given in "a".
+	"a" must be an integer or a list of integers. When it is a list
+	of integers, its elements must be in monotonically increasing
+	order. :_ returns a new list containing consecutive segments of
+	"b". 
+
+	When "a" is zero or #b or contains two subsequent equal indices,
+	nil (or an empty string if "b" is a string) will be inserted.
+
+	Examples:      2:_[1 2 3 4]  -->  [[1 2] [3 4]]
+	          [2 3 5]:_"abcdef"  -->  ["ab" "c" "de" "f"]
+	                     0:_[1]  -->  [[] [1]]
+	                   3:_"abc"  -->  ["abc" ""]
+	               [1 1]:_[1 2]  -->  [[1] [] [2]]
+	................................................................
+
+	a::b                                                    [Define]
+
+	Assign "b" to the variable "a" and return "b". When a local
+	variable named "a" exists, the value will be assigned to it,
+	otherwise the global variable "a" will be assigned the value.
+
+	Note that :: cannot be used to assign values to the function
+	variables "x", "y", and "z" (they are read-only).
+
+	Examples:        a::[1 2 3];a  -->  [1 2 3]
+	          a::1;{[a];a::2}();a  -->  1
+	................................................................
+
+	a%b                                                     [Divide]
+
+	Return the quotient of "a" and "b". The result is always a real
+	number, even if the result has a fractional part of 0.
+
+	"%" is an atomic operator.
+
+	Examples: 10%2  -->  5.0
+	          10%8  -->  1.25
+	................................................................
+
+	a_b                                                       [Drop]
+
+	When "b" is a list or string, drop "a" elements or characters
+	from it, returning the remaining list. Dropping more elements
+	than contained in "b" will yield the empty list/string. A
+	negative value for "a" will drop elements from the end of "b".
+
+	When "b" is a dictionary, remove the entry with the key "a" from
+	it. Dictionary removal is in situ, i.e. the dictionary will be
+	modified. Other objects will be copied.
+
+	Examples: 3_[1 2 3 4 5]  -->  [4 5]
+	          (-3)_"abcdef"  -->  "abc"
+	             17_[1 2 3]  -->  []
+	               (-5)_"x"  -->  ""
+	                  0_[1]  -->  [1]
+	................................................................
+
+	!a                                                   [Enumerate]
+
+	Create a list of integers from 0 to a-1. !0 gives [].
+
+	Examples: !0   -->  []
+	          !1   -->  [1]
+	          !10  -->  [0 1 2 3 4 5 6 7 8 9]
+	................................................................
+
+	a=b                                                      [Equal]
+
+	Return 1, if "a" and "b" are equal, otherwise return 0.
+
+	Numbers are equal, if they have the same value.
+	Characters are equal, if (#a)=#b.
+	Strings and symbols are equal, if they contain the same
+	characters in the same positions.
+
+	"=" is an atomic operator. In particular it means that it
+	cannot compare lists, but only elements of lists. Use "~"
+	(Match) to compare lists.
+
+	Real numbers should not be compared with "=". Use "~" instead.
+
+	Examples:             1=1  -->  1
+	              "foo"="foo"  -->  1
+	                :foo=:foo  -->  1
+	                  0cx=0cx  -->  1
+	          [1 2 3]=[1 4 3]  -->  [1 0 1]
+	................................................................
+
+	&a                                                [Expand/Where]
+
+	Expand "a" to a list of subsequent integers X, starting at 0,
+	where each XI is included aI times. When "a" is zero or an
+	empty list, return nil. When "a" is a positive integer, return
+	a list of that many zeros.
+
+	In combination with predicates this function is also called
+	Where, since it compresses a list of boolean values to indices,
+	e.g.:
+
+	 [1 2 3 4 5]=[0 2 0 4 5]  -->  [0 1 0 1 1]
+	&[1 2 3 4 5]=[0 2 0 4 5]  -->  [1 3 4]
+
+	Examples:           &0  -->   []
+	                    &5  -->   [0 0 0 0 0]
+	              &[1 2 3]  -->   [0 1 1 2 2 2]
+	          &[0 1 0 1 0]  -->   [1 3]
+	................................................................
+
+	a?b                                                       [Find]
+
+	Find each occurrence of "b" in "a". "a" must be a list, string,
+	or dictionary. When "a" is a dictionary, return the value
+	associated with the given key. When "a" is a list or string,
+	return a list containing the position of each match.
+
+	When both "a" and "b" are strings, return a list containing each
+	position of the substring "b" inside of "a". The empty string ""
+	is contained between any two characters of a string, even before
+	the first and after the last character.
+
+	In any case a return value of nil indicates that "b" is not
+	contained in "a", except when "a" is a dictionary. When a key
+	cannot be found in a dictionary, Find will return :undefined.
+	(See [Undefined].)
+
+	Examples: [1 2 3 1 2 1]?1  -->  [0 3 5]
+	                [1 2 3]?4  -->  []
+	              "hello"?0cl  -->  [2 3]
+	            "xyyyyz"?"yy"  -->  [1 2 3]
+	                    ""?""  -->  [0]
+	              :{[1 []]}?1  -->  []
+	               :{[1 2]}?3  -->  :undefined
+	................................................................
+
+	*a                                                       [First]
+
+	Return the first element of "a", i.e. the first element of a
+	list or the first character of a string. When "a" is an atom,
+	return that atom.
+
+	Examples:  *[1 2 3]  -->  1
+	             *"abc"  --> 0ca
+	                *""  -->  ""
+	                *[]  -->  []
+	                 *1  -->  1
+	................................................................
+
+	_a                                                       [Floor]
+
+	Return "a" rounded toward negative infinity. When "a" is an
+	integer, this is an identity operation. If "a" can be converted
+	to integer without loss of precision after rounding, it will be
+	converted. Otherwise, a floored real number will be returned.
+
+	Note: loss of precision is predicted by comparing real number
+	precision to the exponent, which is a conservative guess.
+
+	Examples:   _123  -->  123
+	          _123.9  -->  123
+	          _1e100  -->  1.0e+100  :"if precision < 100 digits"
+	................................................................
+
+	a:$b                                                      [Form]
+
+	Convert string "b" to the type of the object of "a". When "b"
+	can be converted to the desired type, an object of that type
+	will be returned. When such a conversion is not possible, :$
+	will return :undefined.
+
+	When "a" is an integer, "b" may not represent a real number.
+	When "a" is a real number, a real number will be returned, even
+	if "b" represents an integer. When "a" is a character, "b" must
+	contain exactly one character. When "a" is a symbol, "b" must
+	contain the name of a valid symbol (optionally including a
+	leading ":" character).
+
+	:$ is an atomic operator.
+
+	Examples:     1:$"-123"  -->  -123
+	            1.0:$"1.23"  -->  1.23
+	               0c0:$"x"  -->  0cx
+	           "":$"string"  -->  "string"
+	           :x:$"symbol"  -->  :symbol
+	          :x:$":symbol"  -->  :symbol
+	................................................................
+
+	$a                                                      [Format]
+
+	Write the external representation of "a" to a string and return
+	it. The "external representation" of an object is the form in
+	which Klong would display it.
+
+	"$" is an atomic operator.
+
+	Examples:    $123  -->  "123"
+	          $123.45  -->  "123.45"
+	          $"test"  -->  "test"
+	             $0cx  -->  "x"
+	            $:foo  -->  ":foo"
+	................................................................
+
+	a$b                                                    [Format2]
+
+	Dyadic "$" is like its monadic cousin, but also pads its result
+	with blanks. The minimal size of the output string is specified
+	in "a", which must be an integer. "b" is the object to format.
+	When the value of "a" is negative, the result string is padded
+	to the right, else it is padded to the left.
+
+	When "a" is real number of the form n.m and "b" is also a real
+	number, the representation of "b" will have "n" integer digits
+	and "m" fractional digits. The integer part will be padded with
+	blanks and the fractional part will be padded with zeros.
+
+	"$" is an atomic operator.
+
+	Examples:     0$123  -->  "123"
+	          (-5)$-123  -->  " -123"
+	            5$"xyz"  -->  "xyz  "
+	          (-5)$:foo  -->  " :foo"
+	         5.3$123.45  -->  "  123.450"
+	................................................................
+
+	>a                                                  [Grade-Down]
+	<a                                                    [Grade-Up]
+
+	Impose the given order ("<" = ascending, ">" = descending") onto
+	the elements of "a", which must be a list or string. Return a
+	list of indices reflecting the desired order. Elements of "a"
+	must be comparable by dyadic "<" (Less).
+
+	In addition, "<" and ">" will compare lists by comparing their
+	elements pairwise and recursively. E.g. [1 [2] 3] is considered
+	to be "less" than [1 [4] 0], because 1=1 and 2<4 (3>0 does not
+	matter, because 2<4 already finishes the comparison).
+
+	When "a" is a string, these operators will grade its characters.
+
+	To sort a list "a", use a@<a ("a" At Grade-Up "a") or a@>a.
+
+	Examples:     <[1 2 3 4 5]  -->  [0 1 2 3 4]
+	              >[1 2 3 4 5]  -->  [4 3 2 1 0]
+	           <"hello, world"  -->  [6 5 11 1 0 2 3 10 8 4 9 7]
+	            >[[1] [2] [3]]  -->  [2 1 0]
+	................................................................
+
+	=a                                                       [Group]
+
+	Return a list of lists ("groups") where each group contains the
+	index of each occurrence of one element within "a". "a" must be
+	a list or string. The indices of all elements of "a" that are
+	equal according to "~" (Match) will appear in the same group in
+	ascending order.
+
+	="" and =[] will yield [].
+
+	Examples:   =[1 2 3 4]  -->  [[0] [1] [2] [3]]
+	          ="hello foo"  -->  [[0] [1] [2 3] [4 7 8] [5] [6]]
+	................................................................
+
+	a@b                                                   [At/Index]
+	a@b                                                   [At/Apply]
+
+	Extract one or multiple elements from "a" at (zero-based)
+	positions given in "b". In this case "a" may be a list or a
+	string.
+
+	When "b" is an integer, extract a single element at the given
+	position and return it.
+
+	When "b" is a list, return a list containing the extracted
+	elements. All members of "b" must be integers in this case.
+	The order of indices in "b" does not matter. The same index
+	may occur multiple times.
+
+	When "a" is a function, "b" (if it is an atom) or the members
+	of "b" (if it is a list) will be passed as arguments to the
+	function and the result will be returned.
+
+	Examples:         [1 2 3 4 5]@2  -->  3
+	            [1 2 3 4 5]@[1 2 3]  -->  [2 3 4]
+	            [1 2 3 4 5]@[0 0 0]  -->  [1 1 1]
+	          "hello world"@[3 7 2]  -->  "lol"
+	                       {x}@:foo  -->  :foo
+	                 {y+x*x}@[2 3]   -->  7
+	................................................................
+
+	a:@b                                            [Index-in-Depth]
+
+	:@ is like "@" but, when applied to an array, extracts a single
+	element from a multi-dimensional array. The indices in "b" are
+	used to locate the element. The number of indices must match
+	the rank of the array.
+
+	If "a" is a function, :@ is equal to "@".
+
+	Examples: [[1 2] [3 4]]:@[0 1]  -->  2
+	              [[[1]]]:@[0 0 0]  -->  1
+	                {y+x*x}:@[2 3]  -->  7
+	................................................................
+
+	a:%b                                            [Integer-Divide]
+
+	Return the integer part of the quotient of "a" and "b". Both "a"
+	and "b" must be integers. The result is always an integer.
+
+	Formally, a = (b*a:%b) + a!b .
+
+	":%" is an atomic operator.
+
+	Examples: 10:%2  -->  5
+	          10:%8  -->  1
+	................................................................
+
+	a,b                                                       [Join]
+
+	The "," operator joins objects of any type, forming lists or
+	strings.
+
+	If "a" and "b" are lists, append them.
+	If "a" is a list and "b" is not, attach "b" at the end of "a".
+	If "a" is a not list and "b" is one, attach "a" to the front of
+	"b".
+	If "a" and "b" are strings, append them.
+	If "a" is a string and "b" is a char, attach "b" to the end of
+	"a".
+	If "a" is a char and "b" is a string, attach "a" to the front of
+	"b".
+
+	If "a" is a dictionary and "b" is a tuple (a list of two members)
+	or vice versa, add the tuple to the dictionary. Any entry with
+	the same key will be replaced by the new entry. The head of the
+	tuple is the key and the second element is the payload.
+
+	Otherwise, create a tuple containing "a" and "b" in that order.
+
+	Join always returns a fresh list, but dictionaries will be
+	updated by replacing old entries in situ.
+
+	Examples:  [1 2 3],[4 5 6]  -->  [1 2 3 4 5 6]
+	                   1,[2 3]  -->  [1 2 3]
+	                   [1 2],3  -->  [1 2 3]
+	               "abc","def"  -->  "abcdef"
+	                  "ab",0cc  -->  "abc"
+	                  0ca,"bc"  -->  "abc"
+	                       1,2  -->  [1 2]
+	                     "a",1  -->  ["a" 1]
+	               [[1 2 3]],4  -->  [[1 2 3] 4]
+	                   1,2,3,4  -->  [1 2 3 4]
+	            [1 2],:{[1 0]}  -->  :{[1 2]}
+	            :{[1 0]},[1 2]  -->  :{[1 2]}
+	................................................................
+
+	a<b                                                       [Less]
+
+	Return 1, if "a" is less than "b", otherwise return 0.
+
+	Numbers are compared by value.
+	Characters are compared by ASCII code.
+	Strings and symbols are compared lexicographically.
+
+	"<" is an atomic operator; it cannot compare lists, but only
+	elements of lists.
+
+	Examples:              1<2  -->  1
+	               "bar"<"foo"  -->  1
+	                 :abc<:xyz  -->  1
+	                   0c0<0c9  -->  1
+	           [1 2 3]<[1 4 3]  -->  [0 1 0]
+	................................................................
+
+	,a                                                        [List]
+
+	"," packages any object in a single-element list.
+
+	Examples:    ,1  -->  [1]
+	          ,:foo  -->  [:foo]
+	          ,"xyz" -->  ["xyz"]
+	           ,[1]  -->  [[1]]
+	................................................................
+
+	a~b                                                      [Match]
+
+	"~" is like "=", but can also compare lists and real numbers. It
+	uses "=" (Equal) to compare integers, characters, symbols and
+	strings.
+
+	Two real numbers "a" and "b" match, if they are "sufficiently
+	similar", where the exact definition of "sufficiently similar"
+	is too complex to be discussed here. For the curious reader:
+	the current implementation uses a relative epsilon algorithm.
+	For instance, given
+
+	sq2::{(x+2%x)%2}:~1 :"square root of 2"
+
+	the following expression will be true:
+
+	sq2~sq2+10*.e
+
+	although the operands of Match differ by 10 times Epsilon.
+
+	Two lists match if all of their elements match pairwise. "~"
+	descends into sublists.
+
+	Examples:                  1~1  -->  1
+	                   "foo"~"foo"  -->  1
+	                     :foo~:foo  -->  1
+	                       0cx~0cx  -->  1
+	               [1 2 3]~[1 2 3]  -->  1
+	           [1 [2] 3]~[1 [4] 3]  -->  0
+	................................................................
+
+	a|b                                                     [Max/Or]
+
+	Return the larger one of two numbers.
+
+	When both "a" and "b" are in the set {0,1} (booleans), then "|"
+	acts as an "or" operator, as you can easily prove using a truth
+	table:
+
+	a  b  max/or
+	0  0    0
+	0  1    1
+	1  0    1
+	1  1    1
+
+	Dyadic "|" is an atomic operator.
+
+	Examples:       0|1  -->  1
+	           123|-123  -->  123
+	            1.0|1.1  -->  1.1
+	................................................................
+
+	a&b                                                    [Min/And]
+
+	Return the smaller one of two numbers.
+
+	When both "a" and "b" are in the set {0,1} (booleans), then "&"
+	acts as an "and" operator, as you can easily prove using a truth
+	table:
+
+	a  b  min/and
+	0  0     0
+	0  1     0
+	1  0     0
+	1  1     1
+
+	Dyadic "&" is an atomic operator.
+
+	Examples:       0&1  -->  0
+	           123&-123  -->  -123
+	            1.0&1.1  -->  1.0
+	................................................................
+
+	a-b                                                      [Minus]
+
+	Subtract "b" from "a" and return the result. "a" and "b" must be
+	numbers.
+
+	"-" is an atomic operator.
+
+	Examples:  12-3  -->  9
+	          12--3  -->  15
+	          1-0.3  -->  0.7
+	................................................................
+
+	a>b                                                       [More]
+
+	Return 1, if "a" is greater than "b", otherwise return 0.
+
+	See "<" (Less) for details on comparing objects.
+
+	">" is an atomic operator; it cannot compare lists, but only
+	elements of lists.
+
+	Examples:              2>1  -->  1
+	               "foo">"bar"  -->  1
+	                 :xyz>:abc  -->  1
+	                   0c9>0c0  -->  1
+	           [1 4 3]>[1 2 3]  -->  [0 1 0]
+	................................................................
+
+	-a                                                      [Negate]
+
+	Return 0-a; "a" must be a number.
+
+	"-" is an atomic operator.
+
+	Examples:    -1  -->  -1
+	          -1.23  -->  -1.23
+	................................................................
+
+	~a                                                         [Not]
+
+	Return the negative truth value of "a", as explained in the
+	section on CONDITIONALS. It will return 1 for 0, [], and "",
+	and 0 for all other values.
+	
+	Examples:    ~0  -->  1
+	             ~1  -->  0
+	            ~[]  -->  1
+	          ~:foo  -->  0
+	................................................................
+
+	a+b                                                       [Plus]
+
+	Add "b" to "a" and return the result. "a" and "b" must both be
+	numbers.
+
+	Dyadic "+" is an atomic operator.
+
+	Examples:  12+3  -->  15
+	          12+-3  -->  9
+	          1+0.3  -->  1.3
+	................................................................
+
+	a^b                                                      [Power]
+
+	Compute "a" to the power of "b" and return the result. Both "a"
+	and "b" must be numbers. The result of a^b cannot be a complex
+	number.
+
+	Dyadic "^" is an atomic operator.
+
+	Examples:   2^0  -->  1
+	            2^1  -->  2
+	            2^8  -->  256
+	           2^-5  -->  0.03125
+	          0.3^3  -->  0.027
+	          2^0.5  -->  1.41421356237309504
+	................................................................
+
+	?a                                                       [Range]
+
+	Return a list containing unique elements from "a" in order of
+	appearance. "a" may be a list or string.
+
+	Examples:   ?[1 2 3 4]  -->  [1 2 3 4]
+	          ?[1 1 1 2 2]  -->  [1 2]
+	          ?"aaabbcccd"  -->  "abcd"
+	................................................................
+
+	%a                                                  [Reciprocal]
+
+	Return 1%a. "a" must be a number.
+
+	"%" is an atomic operator.
+
+	Examples:    %1  -->  1.0
+	             %2  -->  0.5
+	           %0.1  -->  10.0
+	................................................................
+
+	a:^b                                                   [Reshape]
+
+	:^ reshapes "b" to the shape specified in "a". The shape is
+	specified in the form returned by the "^" (Shape) operator: a
+	list of dimensions in row-major order.
+
+	The operand "b" may be in any shape. The elements of the new
+	array will be taken from "b" in sequential order:
+
+	[3 3]:^[1 2 3 4 5 6 7 8 9]  -->  [[1 2 3]
+	                                  [4 5 6]
+	                                  [7 8 9]]
+
+	When the source array contains more elements that can be stored
+	in an array of the shape "a", excess elements in "b" will be
+	ignored. When the source array contains too few elements, :^
+	will cycle through the source object, repeating the elements
+	found there:
+
+	[3 3]:^[0 1]  -->  [[0 1 0]
+	                    [1 0 1]
+	                    [0 1 0]
+
+	When the value -1 appears in the shape parameter "a", it denotes
+	half the size of the source vector, e.g.:
+
+	[-1 2]:^!10  -->  [[0 1] [2 3] [4 5] [6 7] [8 9]]
+	[2 -1]:^!10  -->  [[0 1 2 3 4] [5 6 7 8 9]]
+
+	Both "a" and "b" may be atoms:
+
+	5:^1  -->  [1 1 1 1 1]
+
+	but when "b" is an atom (or a single-argument vector), then "a"
+	may not contain the value -1.
+
+	0:^x is an identity operation returning x.
+
+	Examples:           5:^:x  -->  [:x :x :x :x :x]
+	                 [3]:^[1]  -->  [1 1 1]
+	          [2 2 2]:^[1 2 3] -->  [[[1 2] [3 1]] [[2 3] [1 2]]]
+	            [2]:^[[1 2 3]] -->  [[1 2 3] [1 2 3]]
+	................................................................
+
+	a!b                                                  [Remainder]
+
+	Return the truncated division remainder of "a" and "b". Both
+	"a" and "b" must be integers.
+
+	Formally, a = (b*a:%b) + a!b .
+
+	Dyadic "!" is an atomic operator.
+
+	Examples:    7!5  -->  2
+	            7!-5  -->  2
+	          (-7)!5  --> -2
+	           -7!-5  --> -2
+	................................................................
+
+	|a                                                     [Reverse]
+
+	Return a new list/string that contains the elements of "a" in
+	reverse order. When "a" is neither a list nor a string, return
+	it unchanged.
+
+	Examples:       |[1 2 3]  -->  [3 2 1]
+	          |"hello world"  -->  "dlrow olleh"
+	                      |1  -->  1
+	................................................................
+
+	a:+b                                                    [Rotate]
+
+	Rotate the list or string "b" by "a" elements. "a" must be an
+	integer. When "a" is positive, rotate elements to the "right",
+	i.e. drop elements from the end of "b" and append them to the
+	front. When "a" is negative, rotate "b" to the left, i.e. drop
+	from the beginning, append to the end.
+
+	"a" may be greater than #b. In this case, the number of elements
+	rotated will be a!#b.
+
+	Note that n:+M rotates the rows of a matrix M (i.e. it rotates
+	it vertically); to rotate its columns (horizontally), use n:+:\M
+	(Rotate-Each-Left).
+
+	Examples:           1:+[1 2 3 4 5]     -->  [5 1 2 3 4]
+	                    (-1):+[1 2 3 4 5]  -->  [2 3 4 5 1]
+	               1:+[[1 2] [4 5] [5 6]]  -->  [[1 2] [4 5] [5 6]]
+	           {1:+x}'[[1 2] [4 5] [5 6]]  -->  [[2 1] [5 4] [6 5]]
+	................................................................
+
+	^a                                                       [Shape]
+
+	Return the shape of "a". The shape of an atom is 0. The shape of
+	a list L of atoms is ,#L. Such a list is also called a 1-array
+	or a vector. The shape of a list of lists of equal length (M) is
+	(#M),#*M. Such a list is called a 2-array or a matrix. A list of
+	lists of unequal length is a vector.
+
+	This principle is extended to higher dimensions. An N-array A is
+	is an array with equal-sized sub-arrays in each dimension. Its
+	shape is (#A),(#*A),...,(#*...*A), where there are N-1 "*"
+	operators in the last group of that expression. All shapes are
+	written in row-major notation.
+
+	For example:
+
+	[1 2 3 4 5]    is a vector (shape [5])
+
+	[[1 2]
+	 [2 4]
+	 [5 6]]        is a matrix (shape [3 2])
+
+	[[[1 2 3 4] 
+	  [5 6 7 8]]
+	 [[9 0 1 2]
+	  [3 4 5 6]]
+	 [[7 8 9 0]
+	  [1 2 3 4]]]  is a 3-array (shape [3 2 4])
+
+	[[1] [2 3]]    is a vector (shape [2])
+
+	The shape of a string S is ,#S. A list of equally-sized strings
+	is a matrix of characters. Strings may form the innermost level
+	of higher-dimensional arrays.
+
+	Examples:        ^1  -->  0
+	              ^:xyz  -->  0
+	               ^[0]  -->  [1]
+	           ^[1 2 3]  -->  [3]
+	           ^"hello"  -->  [5]
+	           ^[[1 2]
+	             [3 4]
+	             [5 6]]  -->  [3 2]
+	           ^[1 [2]]  -->  [2]
+	          ^["abcd"
+	            "efgh"]  -->  [2 4]
+	................................................................
+
+	#a                                                        [Size]
+
+	Return the size/magnitude of "a".
+
+	For lists, the size of "a" is the number of its elements.
+	For strings, the size is the number of characters.
+	For numbers, the size is the magnitude (absolute value).
+	For characters, the size is the ASCII code.
+
+	Examples:     #[1 2 3]  -->  3
+	          #[1 [2 3] 4]  -->  3
+	          #"123456789"  -->  9
+	                 #-123  -->  123
+	                  #0cA  -->  65
+	................................................................
+
+	a:#b                                                     [Split]
+
+	Split a list or string "b" into segments of the sizes given in
+	"a". If "a" is an integer, all segments will be of the same size.
+	If "a" is a list of more than one element, sizes will be taken
+	from that list. When there are more segments than sizes, :# will
+	cycle through "a". The last segment may be shorter than
+	specified.
+
+	Examples:         2:#[1 2 3 4]  -->  [[1 2] [3 4]]
+	                  3:#[1 2 3 4]  -->  [[1 2 3] [4]]
+	                  3:#"abcdefg"  -->  ["abc" "def" "g"]
+	          [1 2]:#[1 2 3 4 5 6]  -->  [[1] [2 3] [4] [5 6]]
+	................................................................
+
+	a#b                                                       [Take]
+
+	Extract "a" elements from the front of "b". "a" must be an
+	integer and "b" must be a list or string. If "a" is negative,
+	extract elements from the end of "b". Extracting more elements
+	than contained in "b" will fill the extra slots by cycling
+	through "b". Taking 0 elements will result in an empty list
+	or string.
+
+	Examples:     1#[1 2 3]  -->  [1]
+	              2#[1 2 3]  -->  [1 2]
+	              5#[1 2 3]  -->  [1 2 3 1 2]
+	           (-2)#[1 2 3]  -->  [2 3]
+	           (-5)#[1 2 3]  -->  [2 3 1 2 3]
+	             3#"abcdef"  -->  "abc"
+	          (-3)#"abcdef"  -->  "def"
+	                   0#[]  -->  []
+	                   0#""  -->  ""
+	................................................................
+
+	a*b                                                      [Times]
+
+	Return "a" multiplied by "b". "a" and "b" must both be numbers.
+
+	Dyadic "*" is an atomic operator.
+
+	Examples:   3*4  -->  12
+	           3*-4  -->  -12
+	          0.3*7  -->  2.1
+	................................................................
+
+	+a                                                   [Transpose]
+
+	Return the transpose of the matrix (2-array) "a".
+
+	Examples:     +[[1] [2] [3]]  -->  [[1 2 3]]
+	          +[[1 2 3] [4 5 6]]  -->  [[1 4] [2 5] [3 6]]
+	                         +[]  -->  []
+
+	................................................................
+
+	:_a                                                  [Undefined]
+
+	Return truth, if "a" is undefined, i.e. the result of an
+	operation that cannot yield any meaningful result, like
+	division by zero or trying to find a non-existent key in
+	a dictionary. Else return 0.
+
+	Examples:        :_1%0  -->  1
+	          :_:{[1 2]}?3  -->  1
+	              :_:valid  -->  0
+
+	----------------------------------------------------------------
+	SEMANTICS : FUNCTIONS
+	----------------------------------------------------------------
+
+	.ac(a)                                          [Append-Channel]
+
+	See [Output-Channel].
+	................................................................
+
+	.cc(a)                                           [Close-Channel]
+
+	Close the input or output channel "a", returning []. Closing an
+	already closed channel has no effect. A channel will be closed
+	automatically when no variable refers to it and it is not the
+	current From or To Channel.
+	................................................................
+
+	.comment(a)                                            [Comment]
+
+	Read and discard lines until the current line starts with the
+	string specified in "a". Also discard the line containing the
+	end-of-comment marker and return "a".
+
+	Example: .comment("end-of-comment")
+	         this will be ignored
+	         this, too: *%(*^#)&(#
+	         end-of-comment
+	................................................................
+
+	.d(a)                                                  [Display]
+
+	See [Write].
+	................................................................
+
+	.df(a)                                             [Delete-File]
+
+	Delete the file specified in the string "a". When the file
+	cannot be deleted (non-existent, no permission, etc), signal
+	an error.
+	................................................................
+
+	.E(a)                                                 [Evaluate]
+
+	Evaluate the Klong program contained in the string "a" and
+	return its result. This is a direct interface to the Klong
+	system, e.g. .E("a::123");a will yield 123.
+	................................................................
+
+	.fc(a)                                            [From-Channel]
+	.tc(a)                                              [To-Channel]
+
+	.fc selects input channel "a" for reading and .tc selects
+	output channel "a" for writing, i.e. these functions select a
+	new From and To Channel, respectively. All input/output will
+	be redirected to the given channel. Both function will return
+	the channel that was previously in effect.
+
+	When a false value (0,[],"") is passed to these functions, they
+	restore the default From or To Channel (.cin or .cout).
+	................................................................
+
+	.fl()                                                    [Flush]
+
+	Make sure that all output sent to the To Channel is actually
+	written to the associated file or device ("flush" the channel).
+	................................................................
+
+	.ic(a)                                           [Input-Channel]
+
+	Open the file named in the string "a", link it to an input
+	channel, and return that channel. Opening a non-existent file
+	is an error.
+	................................................................
+
+	.l(a)                                                     [Load]
+
+	Load the content of the file specified in the string "a" as if
+	typed in at the interpreter prompt.
+
+	Klong will try the names "a", and a,".kg", in all directories
+	specified in the KLONGPATH environment variable. Directory names
+	in KLONGPATH are separated by colons.
+
+	When KLONGPATH is undefined, it defaults to ".:lib".
+
+	A program can be loaded from an absolute or relative path
+	(without a prefix from KLONGPATH) by starting "a" with a "/"
+	or "." character.
+
+	.l will return the last expression evaluated, i.e. it can be
+	used to load the value of a single expression from a file.
+	................................................................
+
+	.mi(a)                                              [More-Input]
+
+	This function returns 1, if the From Channel is not exhausted
+	(i.e. no reading beyond the EOF has been attempted on that
+	channel). When no more input is available, it returns 0.
+
+	This is a "negative EOF" function.
+	................................................................
+
+	.module(a)                                              [Module]
+
+	Delimit a module. See MODULES, below.
+	................................................................
+
+	.oc(a)                                          [Output-Channel]
+	.ac(a)                                          [Append-Channel]
+
+	Both of these functions open a file named in the string "a",
+	link it to an output channel, and return that channel. The
+	difference between them is that .oc truncates any existing
+	file and .ac appends to it.
+	................................................................
+
+	.pc()                                            [Process-Clock]
+
+	Return the process time consumed by the Klong interpreter so
+	far. The return value is in seconds with a fractional part
+	whose resolution depends on the operating environment and may
+	be anywhere between 50Hz and 1MHz.
+
+	The program {[t0];t0::.pc();x@[];.pc()-t0} measures the process
+	time consumed by the nilad passed to it.
+
+	This function is not avaliable in the Plan 9 port of Klong.
+	................................................................
+
+	.p(a)                                                    [Print]
+
+	Pretty-print the object "a" (like Display) and then print a
+	newline sequence. .p("") will just print a newline.
+	................................................................
+
+	.r()                                                      [Read]
+
+	Read a single data object from the currently selected input port
+	and return it. The object being read may be an atom or a list.
+	When it is a dictionary or list, the input may span multiple
+	lines.
+	................................................................
+
+	.rl()                                                [Read-Line]
+
+	Read a line from the From Channel and return it as a string.
+	If there is a line separator at the end of the line, it will
+	be stripped from the string.
+	................................................................
+
+	.rn()                                            [Random-Number]
+
+	Return a random number x, such that 0 <= x < 1.
+	................................................................
+
+	.rs(a)                                             [Read-String]
+
+	.rs is like .r, but reads its input from the string "a". It is
+	intended for the converting sequentialized compound data objects,
+	such as lists, arrays, and dictionaries, back to their internal
+	forms.
+	................................................................
+
+	.sys(a)                                                 [System]
+
+	Pass the command in the string "a" to the operating system for
+	execution and return the exit code of the command. On a Unix
+	system, the command would be executed as
+
+	sh -c "command"
+
+	and an exit code of zero would indicate success.
+	................................................................
+
+	.tc(a)                                              [To-Channel]
+
+	See [From-Channel].
+	................................................................
+
+	.w(a)                                                    [Write]
+	.d(a)                                                  [Display]
+
+	.d and .w both write "a" to the currently selected output port.
+	However, .w writes a "readable" representation of the given
+	object and .d pretty-prints the object. The "readable" output
+	is suitable for reading by .r.
+
+	For most types of object there is no difference. Only strings
+	and characters are printed in a different way:
+
+	Object       | .d(Object) | .w(Object)
+	----------------------------------------
+	0cx          |  x         | 0cx
+	"test"       |  test      | "test"
+	"say ""hi""" |  say "hi"  | "say ""hi"""
+
+	For some objects, there is no readable representation, including
+	functions, operators, the undefined object, and the "end of file"
+	object. A symbolic representation will be printed for those:
+	:nilad, :monad, :dyad, :triad, :undefined, :eof.
+
+	None of these functions terminates its output with a newline
+	sequence. Use .p (Print) to do so.
+	................................................................
+
+	.x(a)                                                     [Exit]
+
+	Terminate the Klong interpreter, returning "success" to the
+	operating system, if "a" is false (0, [], "") and "failure",
+	if "a" is not false.
+
+	----------------------------------------------------------------
+	SEMANTICS : VARIABLES
+	----------------------------------------------------------------
+
+	.a                                                   [Arguments]
+
+	This variable holds a list of strings containing the command
+	line arguments passed to a Klong program.
+	................................................................
+
+	.cin                                             [Input-Channel]
+	.cout                                           [Output-Channel]
+	.cerr                                            [Error-Channel]
+
+	These variables are bound to the standard input (.cin), standard
+	output (.cout), and standard error (.cerr) channels of the Klong
+	process. They can be selected for input or output using the
+	From-Channel (.fc) and To-Channel (.tc) functions.
+
+	The standard I/O channels cannot be closed.
+	................................................................
+
+	.cols                                                  [Columns]
+
+	This variable stores the number of columns of the screen on
+	which the Klong session is running. It defaults to 80. This
+	variable is used by the line editor, if compiled in and enabled
+	(see .edit).
+	................................................................
+
+	.e                                                     [Epsilon]
+
+	.e is the smallest value by which two real numbers 0.1 <= x < 1
+	can differ. For numbers smaller than 0.1, there would be a
+	smaller difference and number x>=1 cannot differ by .e, because
+	1+.e --> 1. the actual value of .e is implementation-dependent.
+	On a 9-digit implementation, it would be 0.000000001 (1e-9).
+
+	The logarithm to base 10 of %.e (ln(%.e)%ln(10)) equals the
+	number of digits in the mantissa of a real number (this is
+	exactly the exponent in the scientific notation of %.e).
+	................................................................
+
+	.edit                                                   [Editor]
+
+	When this variable set to a true value AND the line editor is
+	compiled into the Klong executable, then line editing and
+	history will be enabled on the Klong prompt. See the section on
+	LINE EDITING for details.
+	................................................................
+
+	.f                                                    [Function]
+
+	The variable .f is always bound to the function that is currently
+	being computed, so it allows you to write anonymous recursive
+	functions:
+
+	{:[0=x;[];1,.f(x-1)]}
+
+	Note that .f is lexically bound to the innermost function, so
+
+	{:[@x;0;1+|/{.f(x)}'x]}
+	             ^^^^^
+	would diverge. (But the effect here is due to unnecessary eta
+	expansion; {:[@x;0;1+|/.f'x]} would work fine.)
+	................................................................
+
+	.fastpow                                            [Fast-Power]
+
+	When this variable set to a true value, then expressions of the
+	form x^y will compile to .pow(x;y), which makes computations
+	involving powers of real numbers much faster (about eight times
+	on the author's hardware).
+
+	Setting .fastpow::0 will disable this feature and restore the
+	previous behavior of Klong, just in case.
+	................................................................
+
+	.h                                                        [Host]
+
+	This variable holds a unique symbol identifying the host system
+	running the Klong process. Currently, this is either :unix or
+	:plan9.
+	................................................................
+
+	it                                                          [It]
+
+	In interactive mode, "it" always holds the value of the most
+	recent successful computation. See also: INTERACTION, below.
+
+	----------------------------------------------------------------
+	SEMANTICS : MODULES
+	----------------------------------------------------------------
+
+	Klong's module mechanism is extremely simple. Its only goal is
+	to protect mutually dependent definitions inside of a module
+	from redefinition. It also allows to create (non-function)
+	variables that are local to the module. A module begins with
+
+	.module(:name)
+
+	where :name names the module. A module ends with
+
+	.module(0)
+
+	Here is a sample module.       It will be rewritten
+	                               internally as follows:
+	.module(:foo)
+	a::1                           a`foo::1;          a::a`foo
+	g::{a}                         g`foo::{a`foo};    g::g`foo
+	f::{g()}                       f`foo::{g`foo()};  f::f`foo
+	s::{a::x}                      s`foo::{a`foo::x}; s::s`foo
+	.module(0)
+
+	Note that a`b is not a valid Klong symbol, it is just a notation
+	used by the interpreter to indicate that "a" is a symbol of the
+	module "b".
+
+	Behavior is as follows:
+
+	Redefining any of the variables "a", "g", "f", "s" after the
+	end of the module will not change the values of those variables
+	inside of the module. E.g.:
+
+	a::2;f()  -->  1
+	g::0;f()  -->  1
+
+	The function "s" will only affect the "a" of "foo". If there is
+	a variable named "a" outside of "foo", it will not be affected:
+
+	a::0
+	s(2)
+	a    -->  0
+	f()  -->  2
+
+	So a module just creates a closed namespace that allows you to
+	refactor more complex programs without having to worry about
+	later (accidental) redefinition of local functions and variables.
+
+	Modules may not be nested. When loading external modules,
+	they must be loaded *before* opening a new module, e.g.:
+
+	.l("external")
+	.module(:local)
+	:"..."
+	.module(0)
+
+	Each module can access all objects defined earlier than the
+	module, even objects defined inside of other modules. There
+	is no "import" mechanism. For example,
+
+	.module(:foo)
+	bar::[1 2 3]
+	.module(0)
+	.module(:baz)
+	goo::bar  :" this refers to the 'bar' of 'foo' "
+	.module
+
+	will set the variable "goo" of the module "baz" to [1 2 3].
+	................................................................
+
+	Forward References
+
+	Mutual recursion in a module will create a forward reference,
+	like the reference to "o" in "e" in the following module:
+
+	.module(:foo)
+	e::{:[0=x;1:|1=x;0;o(x-1)]}
+	o::{:[0=x;0:|1=x;1;e(x-1)]}
+	.module(0)
+
+	In this case, "o" will only be local to the module if it was
+	undefined when the module was opened. If there already exists a
+	definition of "o" when the module :foo is opened, that instance
+	of "o" will be referred to in :foo.
+
+	To explicitly refer to o`foo (the "o" inside of the module), a
+	dummy definition of "o" should be inserted before the first
+	reference to it:
+
+	.module(:foo)
+	o::0
+	e::{:[0=x;1:|1=x;0;o(x-1)]}
+	o::{:[0=x;0:|1=x;1;e(x-1)]}
+	.module(0)
+
+	----------------------------------------------------------------
+	INTERACTION
+	----------------------------------------------------------------
+
+	]! command                                               [Shell]
+
+	Pass the given command to the Unix shell.
+	................................................................
+
+	]a topic                                               [Apropos]
+	]h topic                                                  [Help]
+
+	]htopic is short for help("topic"). In addition, ]hall will
+	list all available help texts. The "topic" must be an operator
+	symbol or operator name (e.g. :: or Define).
+	................................................................
+
+	]i dir                                               [Inventory]
+
+	List all *.kg files (Klong source programs) in the given
+	directory. When no directory is given, it defaults to the first
+	element of the KLONGPATH variable. The ]i command depends on a
+	Unix shell and the "ls" utility (it does "cd dir; ls *.kg").
+	................................................................
+
+	it                                                          [It]
+
+	This variable holds the result of the most recent successful
+	computation, so you do not have to re-type or copy-paste the
+	previous result. E.g.:
+
+	        {(x+2%x)%2}:~2
+	1.41421356237309504
+	        it^2
+	1.99999999999999997
+	................................................................
+
+	]l file                                                   [Load]
+
+	]lfile is short for .l("file").
+	................................................................
+
+	]q                                                        [Exit]
+
+	]q is short for .x(0). However, end-of-file (control-D on Unix)
+	typically also works.
+	................................................................
+
+	]t file                                             [Transcript]
+
+	Start appending user input and computed values to the given file.
+	When no file is given, stop transcript. Input will be prefixed
+	with a TAB (HT) character in the transcript file.
+
+	----------------------------------------------------------------
+	INTERACTION : LINE EDITING
+	----------------------------------------------------------------
+
+	The Klong system has an (optional) line editor that can be
+	compiled into the Klong executable. When compiled-in, the editor
+	is enabled by default, but can be disabled by setting .edit::0.
+
+	Only .cols-10 characters are available for editing. This may
+	change in a later release.
+
+	When enabled, the following (mostly EMACS-like) keys can be used
+	for line editing:
+
+	[control-A]  move to the beginning of the line
+	[control-B]  move one char to the left (backward)
+	[control-F]  move one char to the right (forward)
+	[control-E]  move to the end of the line
+
+	[control-H]  delete character to the left
+	[control-U]  delete entire line
+
+	[control-C]  abort input, return to prompt
+	[control-D]  delete char; if line is empty, exit Klong
+
+	[control-P]  move to previous history entry (*)
+	[control-N]  move to next history entry (*)
+
+	(*) These commands work only when the cursor is at the end or
+	    at the beginning of the line.
+
+	================================================================
+	|                  This is the end, my friend                  |
+	================================================================
+

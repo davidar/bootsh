@@ -1,0 +1,17 @@
+FROM davidar/bootsh:latest
+
+COPY tarballs/musl-1.2.5.tar.gz /src/tarballs/musl-1.2.5.tar.gz
+
+COPY scripts/kilo.c /bin/kilo
+COPY scripts/kl.c /bin/kl
+COPY scripts/klisp.kl /bin/klisp
+COPY scripts/klong.c /bin/klong
+COPY scripts/lua.c /bin/lua
+COPY scripts/mlite.c /bin/mll
+COPY scripts/mlite.m /bin/mlite
+COPY scripts/tinyprolog.kl /bin/tinyprolog
+COPY scripts/zf.c /bin/zf
+COPY scripts/zforth.zf /bin/zforth
+
+COPY examples/ /root/
+WORKDIR /root/

@@ -1,0 +1,43 @@
+(setq db '(((man socrates))
+           ((mortal themistoclea))
+           ((mortal (// x)) (man (// x)))))
+
+(prolog db '(mortal (// who)))
+
+;;;
+
+(setq db '(((father jack ken))
+           ((father jack karen))
+           ((grandparent (// grandparent) (// grandchild))
+            (parent (// grandparent) (// parent))
+            (parent (// parent) (// grandchild)))
+           ((mother el ken))
+           ((mother cele jack))
+           ((parent (// parent) (// child))
+            (mother (// parent) (// child)))
+           ((parent (// parent) (// child))
+            (father (// parent) (// child)))))
+
+; who is the father of Ken?
+(prolog db '(father (// who) ken))
+
+; who is the grandchild of Cele?
+(prolog db '(grandparent cele (// who)))
+
+; who is parent to whom?
+(prolog db '(parent (// parent) (// child)))
+
+;;;
+
+(setq db '(((append nil (// l) (// l)))
+           ((append ((// x) . (// xs)) (// ys) ((// x) . (// zs)))
+            (append (// xs) (// ys) (// zs)))))
+
+; what is '(a b c) concatenated to '(d e f)?
+(prolog db '(append (a b c) (d e f) (// list)))
+
+; what prepended to '(d e f) gives '(a b c d e f)?
+(prolog db '(append (// what) (d e f) (a b c d e f)))
+
+; what appended to what gives '(a b c)?
+(prolog db '(append (// a) (// b) (a b c)))

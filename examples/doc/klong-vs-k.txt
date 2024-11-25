@@ -1,0 +1,124 @@
+
+	================================================================
+	|              KLONG  **  A SIMPLE ARRAY LANGUAGE              |
+	================================================================
+
+	                 Differences Between Klong and K
+	                         By Nils M Holm
+                              n m h @ t 3 x . o r g
+
+	::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+	Klong is sufficiently similar to K to confuse you, so here is a
+	summary of things that work differently in K. This list may not
+	be complete. Please send additions via http://t3x.org/contact.
+
+	----------------------------------------------------------------
+	OBJECT SYNTAX
+	----------------------------------------------------------------
+
+	A single colon is used for quotation, so :x is like `x in K.
+
+	Lists are LISP-like in Klong, but using square brackets:
+
+	K List                        Klong List
+	1 2 3 4 5                     [1 2 3 4 5]
+	(1 2 3; 4 5 6; 7 8 9)         [[1 2 3] [4 5 6] [7 8 9]
+	((1 2; 3 4)                   [[[1 2] [3 4]] [[5 6] [7 8]]]
+	 (5 6; 7 8))
+
+	Real numbers must have at least one digit before the ".", i.e.
+	.0 is not a valid real number (but 0. is).
+
+	Symbol names may contain dots, and system function begin with a
+	dot, e.g.: .rn, .w, etc.
+
+	----------------------------------------------------------------
+	VERBS
+	----------------------------------------------------------------
+
+	Some verbs are different. They may differ in syntax, naming, or
+	semantics:
+
+	K Verb       K Syntax     Klong Syntax   Klong Verb
+	----------   ----------   ------------   --------------
+	Amend        v:x          x::y           Define
+	Item Amend   v[i;...]:x   x:=[y i...]    Amend
+	Amend        v[i;...]:x   x:-[y i...]    Amend-in-Depth
+	?            ?            :#x            Char
+	Cut/Drop     x_y          x:_y           Cut
+	Where        &x           &x             Expand/Where
+	Form         x$y          x:$y           Form
+	Format       x$y          x$y            Format2
+	?            ?            x:@y           Index-in-Depth
+	?            ?            x:%y           Integer-Divide
+	Enlist       ,x           ,x             List
+	Reshape      x#y          x:^y           Reshape
+	Rotate/Mod   x!y          x!y            Remainder
+	Rotate/Mod   x!y          x:+y           Rotate
+	Count        #x           #x             Size
+	?            ?            x:#y           Split
+	Flip         +x           +x             Transpose
+
+	There are also lots of K verbs that do not have any counterparts
+	in Klong. They are not listed here.
+
+	Unlike Amend, Define can only assign a value to a variable.
+
+	The left side of Amend and Amend-in-Depth may be a list or array.
+	Amend always returns a fresh copy and never alters values in
+	situ. See [Amend] and [Amend-in-Depth] in the Reference Manual
+	for examples.
+
+	Cut may have an integer on its left side, e.g. 1:_[1 2 3].
+
+	Form returns :undefined when it cannot decode its string
+	argument.
+
+	Remainder returns the difference between the division result and
+	the truncated (rounded to -infinity) division result.
+
+	Size returns the magnitude (absolute value) of numbers and the
+	code point of characters.
+
+	----------------------------------------------------------------
+	ADVERBS
+	----------------------------------------------------------------
+
+	Som adverbs also differ from their K counterparts:
+
+	K Adverb     K syntax     Klong Syntax   Klong Adverb
+	----------   ----------   ------------   -----------------
+	Each         x f'y        x f'y          Each2
+	Each-Right   x f/:y       x f:\y         Each-Left
+	Each-Pair    x f':y       x f:'y         Each-Pair
+	Each-Left    y f\:x       x f:/y         Each-Right
+	Over Dyad    f/x          f/x            Over
+	Over Dyad    x f/y        x f/y          Over/Neutral
+	Over Monad   f/x          f:~x           Converge
+	Over Monad   x f/y        x f:~y         While
+	Over Monad   x f/y        x f:*y         Iterate
+	Scan Dyad    f\x          f\x            Scan-Over
+	Scan Dyad    x f\y        x f\y          Scan-Over-Neutral
+	Scan Monad   f\x          f\~x           Scan-Converging
+	Scan Monad   f\x          x f\~x         Scan-While
+	Scan Monad   f\x          x f\*x         Scan-Iterating
+
+	Each-Pair combines elements in the opposite order, e.g.:
+	-:'[1 2 3 4]  -->  (1-2),(2-3),(3-4)
+
+	Each-Left and Each-Right are opposites in K and Klong, and in
+	addition, arguments are expected in a different order in one
+	case. Look closely!
+
+	Scan-While collects only elements that satisfy the condition,
+	e.g.: {x<10}{x+1}\~1  -->  [1 2 3 4 5 6 7 8 9]
+
+	----------------------------------------------------------------
+	MISCELLANEA
+	----------------------------------------------------------------
+
+	Dictionaries are always altered in situ.
+
+	================================================================
+

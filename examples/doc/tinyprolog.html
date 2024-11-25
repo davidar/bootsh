@@ -1,0 +1,317 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+<TITLE>LISPy things in 64K - T3X.ORG</TITLE>
+<LINK rel="stylesheet" type="text/css" href="../t3x.css">
+<META name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<STYLE>
+H1, H2 { text-align: center; margin: 0; line-height: 120%; }
+DL { text-align: center; }
+</STYLE>
+</HEAD>
+<BODY>
+
+<DIV class=header>http://<A href="../index.html">t3x.org</A>/<A href="index.html">lisp64k</A>/<A href="logic.html">logic.html</A></DIV>
+
+<HR>
+
+<P><TABLE class=nav><TR>
+ <TD class=nl>previous: <A href="numbers.html">natural numbers</A></TD>
+ <TD class=nc><A href="toc.html">contents</A></TD>
+ <TD class=nr>next: <A href="eval.html">meta-circular evaluation</A></TD>
+</TR></TABLE></P>
+
+<H1>LISPy things you can do in 64K&nbsp;bytes of core</H1>
+<H2>Logic Programming</H2>
+
+<P>No discussion of LISP would be complete without an implementation of PROLOG.
+Naturally, an interpreter that can be fit in less than 7K nodes of LISP
+memory cannot be very complex. The one discussed here is probably as small
+and basic as a PROLOG interpreter can get. It is based on a tiny PROLOG
+written by Ken Kahn in 1983 <A href="refs.html#7">[7]</A>. It originally
+ran in MACLISP on a PDP-10.
+The size of the <A href="prolog.html">interpreter</A> is really
+surprising: less than 100 lines of code, about 2.5K bytes, and it
+allocates less than 900 nodes of memory.
+</P>
+
+<P>PROLOG is interesting, because it performs logical inference and
+backtracking, i.e. it will derive facts that were not explicitly given
+to it and it will systematically find <EM>all</EM> solutions to a given
+problem.
+</P>
+
+<P>The following programs will be presented as databases of "clauses"
+(facts and rules) and all expressions submitted to PROLOG will be assumed
+to be <EM>queries</EM>. For example,
+</P>
+
+<PRE class=program>
+(quote ((man socrates)))
+</PRE>
+
+<P>would be a "fact" that states that Socrates is a man, and
+
+<PRE class=program>
+(quote ((mortal (// x)) (man (// x))))
+</PRE>
+
+<P>would be a "rule" stating that "X is mortal, if X is a man". A rule is
+a sequence of "terms", where the first one is the "head" of the rule
+and and the subsequent ones, called "goals", form the "body" of the rule.
+A rule basically says, in order to prove the head, prove all goals
+of the body. Using PROLOG syntax, the above program would look like
+this:</P>
+
+<PRE>
+man(socrates).
+mortal(X) :- man(X).
+</PRE>
+
+<P>A "fact" is just a rule with an empty body: nothing needs to be proven
+for the rule to be true.
+</P>
+
+<P>
+Given a database containing the above rules, queries can be submitted to
+PROLOG. (Below, Themistoclea is added to the database, who is mortal,
+but not a man.)
+</P>
+
+<PRE class=program>
+* (load 'src//<A href="prolog.html">prolog</A>)
+t
+
+* (setq db '(((man socrates))
+             ((mortal themistoclea))
+             ((mortal (// x)) (man (// x)))))
+db
+
+* (prolog db '(man socrates))
+                                   ; <SPAN class=hl>mind the gap!</SPAN>
+nil
+
+* (prolog db '(man aristotle))
+nil                                ; <SPAN class=hl>no blank line here!</SPAN>
+
+* (prolog db '(mortal (// who)))
+
+who = themistoclea
+
+who = socrates
+nil
+
+* _
+</PRE>
+
+<P>The first query, <CODE>(man socrates)</CODE>, asks the system, "is
+Socrates a man?" and PROLOG answers "yes" by printing a blank line. Yes,
+the interface is minimalistic! The next query asks if Aristotle is a man,
+to which the system responds "no" (by not printing a blank line). Of
+course, Aristotle is a man, but this cannot be inferred from the rules
+in the database, so the answer is no.
+</P>
+
+<P>The final query asks "who is mortal?", where the expression
+<CODE>(// who)</CODE> denotes the variable "who".  The query delivers
+the answers "who = themistoclea" and "who = socrates". The fact that
+Themistoclea is mortal is contained in the database, but the fact that
+Socrates is mortal was inferred from the fact that he is a man and the
+rule stating that men are mortal.
+</P>
+
+<P>The basic functionality of the PROLOG system is contained in four
+functions of about 30 lines of code in total. The
+<A href="prolog.html#unify">UNIFY</A> function attempts to unify two
+terms. Unification is a little bit like pattern matching: it compares
+two terms, which are LISP lists, and binds variables contained
+in one term to the corresponding counterparts in the other term. UNIFY is
+written in LISP, so it can be explored interactively:
+</P>
+
+<PRE class=program>
+* (unify '(foo bar baz)
+         '(foo bar baz) '((bottom)))
+((bottom))
+
+* (unify '(foo bar baz)
+         '(foo baz wrong) '((bottom)))
+nil
+
+* (unify '((// foo)  bar)
+         '(foo-value bar) '((bottom)))
+(((/ foo) foo-value) (bottom))
+
+* (unify '((// foo) (// foo))
+         '(first    second)   '((bottom)))
+nil
+</PRE>
+
+<P>The third argument of UNIFY is an environment in which variables are
+bound to values. <CODE>((Bottom))</CODE> is the empty environment.
+When the two terms of UNIFY match, it returns a new environment,
+and otherwise it returns NIL. In the third example above, unification
+succeeds and binds FOO to FOO-VALUE. The last example first binds
+FOO to FIRST and then attempts to bind FOO to SECOND&nbsp;&mdash;&nbsp;but
+FOO is already bound to FIRST, so this is a contradiction and unification
+fails.
+</P>
+
+<P>Variables can bind to variables, too, making those variables the
+same (or, more correctly, making them <EM>co-refer</EM> to the same value):
+</P>
+
+<PRE class=program>
+* (unify '((// foo))
+         '((// bar)) '((bottom)))
+(((/ foo) (/ bar)) (bottom))
+
+* (unify '((// foo) (// bar))
+         '(first    second)
+	 '(((// foo) (// bar)) (bottom)))
+nil
+</PRE>
+
+<P>Here the second unification fails, because it binds FOO and BAR to
+different values, but the environment says that FOO and BAR co-refer,
+i.e. they <EM>must</EM> refer to the same value.
+</P>
+
+<P>The <A href="prolog.html#try">TRY</A> function attempts to prove a
+clause (GOALS) in an environment (E) given a database (DB). The
+variable RULES points to a clause in the database. N is for renaming
+variables, but explaining this at this point would be a major detour.
+</P>
+
+<P>What TRY basically does is this: unify the head of the first rule
+R1 in the database with the head of the given clause (GOALS). When
+unification fails, try the next rule. When unification succeeds,
+giving a new environment NE, try to prove the concatenation of the
+bodies of R1 and GOALS in NE. When the proof does not succeed, try
+the next rule in the database. When running out of rules, return NIL.
+</P>
+
+<P>The <A href="prolog.html#prove">PROVE</A> function just passes its
+variables to TRY, but in addition it prints the current "frame" when
+an empty clause is passed to it. A "frame" is a list of all instantiations
+(bindings) of the variables contained in a query. An empty clause means
+that there is nothing to prove, so the values bound to the variables
+form a valid solution.
+</P>
+
+<P>The <A href="prolog.html#prolog">PROLOG</A> function merely passes
+the given database and query (GOALS) to PROVE and provides some initial
+values, such as an empty environment.
+</P>
+
+<P>Here are some more queries, this time using the
+<A href="prolog.html#genealogy">genealogy database</A> from the
+original source code:
+</P>
+
+<PRE class=program>
+* ; who is the father of Ken?
+  (prolog db '(father (// who) ken))
+ 
+who = jack
+nil
+
+* ; who is the grandchild of Cele?
+  (prolog db '(grandparent cele (// who)))
+
+who = ken
+
+who = karen
+nil
+
+* ; who is parent to whom?
+  (prolog db '(parent (// parent) (// child)))
+ 
+child = ken
+parent = el
+ 
+child = jack
+parent = cele
+ 
+child = ken
+parent = jack
+ 
+child = karen
+parent = jack
+nil
+</PRE>
+
+<P>The last query is particularly interesting, because each frame
+printed as a solution contains multiple variables, i.e. the PROLOG
+system prints all valid parent/child combinations that can be
+inferred from the clauses in the database.
+</P>
+
+<P>A <A href="prolog.html#mod">minor modification</A> allows the tiny
+PROLOG system to operate on lists, thereby supporting clauses like this:
+</P>
+
+<PRE class=program>
+; In PROLOG:
+; append([], L, L).
+; append([X|Xs], Ys, [X|Zs]) :- append(Xs, Ys, Zs).
+
+(setq db
+  '(((append nil (// l) (// l)))
+    ((append ((// x) . (// xs)) (// ys) ((// x) . (// zs)))
+     (append (// xs) (// ys) (// zs)))))
+</PRE>
+
+<P>The APPEND goal appends the lists X and Y, instantiating Z with the
+result. Being a PROLOG goal, though, there are even more interesting things
+you can do with APPEND:
+</P>
+
+<PRE class=program>
+; what is '(a b c) concatenated to '(d e f)?
+* (prolog db '(append (a b c) (d e f) (// list)))
+
+list = (a b c d e f)
+nil
+
+; what prepended to '(d e f) gives '(a b c d e f)?
+* (prolog db '(append (// what) (d e f) (a b c d e f)))
+
+what = (a b c)
+nil
+
+; what appended to what gives '(a b c)?
+(prolog db '(append (// a) (// b) (a b c)))
+ 
+b = (a b c)
+a = nil
+ 
+b = (b c)
+a = (a)
+ 
+b = (c)
+a = (a b)
+ 
+b = nil
+a = (a b c)
+nil
+</PRE>
+
+<P>So a basic PROLOG system can be implemented in 7K nodes of LISP
+memory with lots of leeway. What about <A href="eval.html">LISP itself</A>?
+
+<P><TABLE class=nav><TR>
+ <TD class=nl>previous: <A href="numbers.html">natural numbers</A></TD>
+ <TD class=nc><A href="toc.html">contents</A></TD>
+ <TD class=nr>next: <A href="eval.html">meta-circular evaluation</A></TD>
+</TR></TABLE></P>
+
+<HR>
+
+<P><A href="../contact.html">contact</A> &nbsp;|&nbsp;
+<A href="../privacy.html">privacy</A>
+</P>
+
+</BODY>
+</HTML>

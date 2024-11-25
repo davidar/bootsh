@@ -1,0 +1,432 @@
+; Kilo LISP tests
+; Nils M Holm, 2019
+; In the public domain
+
+; not tested: read, prin, prin1, print, suspend
+
+; prelude
+
+(setq e nil)
+
+(setq test3
+  (lambda (q r x)
+    (cond ((not (equal r x))
+            (prin 'failed/:)
+            (print q)
+            (prin 'expected/:)
+            (print x)
+            (prin 'but/ got/:)
+            (print r)
+            (setq e (cons t e)))
+          (else q))))
+
+(setq test
+  (macro
+    (lambda (q x)
+      @(test3 ',q ,q ,x))))
+
+; comment with special characters: ( ; ) @ ,
+
+; nil, t, quote
+
+(test nil nil)
+(test () nil)
+(test t t)
+(test 'foo 'foo)
+(test '123 '123)
+(test 'foo-123 'foo-123)
+(test '(a b c) '(a b c))
+(test '(a . b) '(a . b))
+(test '(a.b) '(a.b))
+(test '(a b .c) '(a b . c))
+(test '((caar.cdar).(cadr.cddr)) '((caar . cdar) cadr . cddr))
+(test #abc '(a b c))
+(test '#abc '(quote (a b c)))
+
+; lambda
+
+(test ((lambda (x) x) 'foo) 'foo)
+(test ((lambda (x y) x) 'foo 'bar) 'foo)
+(test ((lambda (x y) y) 'foo 'bar) 'bar)
+(test ((lambda (x y z) x) 'foo 'bar 'baz) 'foo)
+(test ((lambda (x y z) y) 'foo 'bar 'baz) 'bar)
+(test ((lambda (x y z) z) 'foo 'bar 'baz) 'baz)
+
+(test ((lambda (x y . z) x) 'foo 'bar 'baz) 'foo)
+(test ((lambda (x y . z) y) 'foo 'bar 'baz) 'bar)
+(test ((lambda (x y . z) z) 'foo 'bar 'baz) '(baz))
+(test ((lambda (x y . z) z) 'foo 'bar 'baz 'goo) '(baz goo))
+(test ((lambda (x y . z) z) 'foo 'bar) nil)
+(test ((lambda (x . y) y) 'foo) nil)
+(test ((lambda (x . y) y) 'foo 'bar) '(bar))
+(test ((lambda (x . y) y) 'foo 'bar 'baz) '(bar baz))
+(test ((lambda x x)) nil)
+(test ((lambda x x) 'foo) '(foo))
+(test ((lambda x x) 'foo 'bar) '(foo bar))
+
+(test ((lambda (x) '1 '2 '3 x) 'foo) 'foo)
+
+(test (((lambda (x) (lambda (y) (x y))) (lambda (x) x)) 'foo) 'foo)
+
+(test ((lambda (x)
+         ((lambda (f)
+            ((lambda (x)
+               (f))
+             'dynamic))
+          (lambda () x)))
+       'lexical)
+      'lexical)
+
+; apply
+
+(test (apply (lambda (x) x) '(foo)) 'foo)
+(test (apply (lambda (x y) x) '(foo bar)) 'foo)
+(test (apply (lambda (x y) y) '(foo bar)) 'bar)
+(test (apply (lambda (x y z) x) '(foo bar baz)) 'foo)
+(test (apply (lambda (x y z) y) '(foo bar baz)) 'bar)
+(test (apply (lambda (x y z) z) '(foo bar baz)) 'baz)
+
+(test (apply (lambda (x y . z) y) '(foo bar baz)) 'bar)
+(test (apply (lambda (x . y) y) '(foo bar)) '(bar))
+(test (apply (lambda x x) nil) nil)
+(test (apply (lambda x x) '(foo bar)) '(foo bar))
+
+; if
+
+(test (if t '2 '3) '2)
+(test (if nil '2 '3) '3)
+(test (if 'x '2 '3) '2)
+(test (if '(x) '2 '3) '2)
+(test (if '1 (if '2 '3 '4) (if '5 '6 '7)) '3)
+(test (if nil (if '2 '3 '4) (if '5 '6 '7)) '6)
+(test (if '1 (if nil '3 '4) (if '5 '6 '7)) '4)
+(test (if nil (if nil '3 '4) (if nil '6 '7)) '7)
+
+; ifnot
+
+(test (ifnot t '2) t)
+(test (ifnot '1 '2) '1)
+(test (ifnot '(1) '2) '(1))
+(test (ifnot nil '2) '2)
+(test (ifnot '1 (ifnot '2 '3)) '1)
+(test (ifnot nil (ifnot '2 '3)) '2)
+(test (ifnot nil (ifnot nil '3)) '3)
+
+; prog
+
+(test (prog) nil)
+(test (prog '1) '1)
+(test (prog '1 '2) '2)
+(test (prog '1 '2 '3) '3)
+
+; setq
+
+(setq variable 'foo)
+(test variable 'foo)
+
+(test ((lambda (variable)
+         (setq variable 'baz) variable)
+       'bar)
+      'baz)
+(test variable 'foo)
+
+(setq variable '(foo bar))
+(test variable '(foo bar))
+
+; macro
+
+(setq kwote
+  (macro
+    (lambda (x)
+      ((lambda x x) 'quote x))))
+
+(test (kwote nil) nil)
+(test (kwote foo) 'foo)
+(test (kwote (foo bar baz)) '(foo bar baz))
+(test (kwote #123) '(quote (1 2 3)))
+(test (kwote (kwote foo)) '(kwote foo))
+
+(setq listq
+  (macro
+    (lambda x
+      (if (null x)
+          nil
+          (list 'cons
+                (list 'quote (car x))
+                (cons 'listq (cdr x)))))))
+
+(test (listq) nil)
+(test (listq foo) '(foo))
+(test (listq a b c) '(a b c))
+(test (listq #12345) '((quote (1 2 3 4 5))))
+(test (listq (foo bar) (baz goo)) '((foo bar) (baz goo)))
+
+; primitive built-in functions
+
+(test (cons 'a 'b) '(a . b))
+(test (cons 'a nil) '(a))
+(test (cons 'a '(b c)) '(a b c))
+(test (cons '(a b) '(c d)) '((a b) c d))
+(test (cons nil nil) '(nil))
+
+(test (car '(a . b)) 'a)
+(test (car '(a)) 'a)
+(test (car '(a b c)) 'a)
+(test (car '((a . b) . (c . d))) '(a . b))
+(test (car #12345) '1)
+
+(test (cdr '(a . b)) 'b)
+(test (cdr '(a)) nil)
+(test (cdr '(a b c)) '(b c))
+(test (cdr '((a . b) . (c . d))) '(c . d))
+(test (cdr #12345) '(2 3 4 5))
+
+(test (atom nil) t)
+(test (atom t) t)
+(test (atom 'foo) t)
+(test (atom '(foo . bar)) nil)
+(test (atom '(foo bar)) nil)
+(test (atom #12345) nil)
+
+(test (eq t t) t)
+(test (eq nil t) nil)
+(test (eq t nil) nil)
+(test (eq nil nil) t)
+(test (eq 'foo 'foo) t)
+(test (eq 'foo 'bar) nil)
+(test (eq (cons '1 nil) (cons '1 nil)) nil)
+(test ((lambda (x) (eq x x)) (cons '1 nil)) t)
+(test (eq 'foo '(bar)) nil)
+(test (eq '(a . b) 'foo) nil)
+
+(test (eofp nil) nil)
+(test (eofp t) nil)
+(test (eofp 'foo) nil)
+(test (eofp '(foo . bar)) nil)
+(test (eofp '(foo bar)) nil)
+(test (eofp #12345) nil)
+
+(test (atom (gensym)) t)
+
+(test (atom (gc)) t)
+
+(test (setcar '(a . b) 'foo) '(foo . b))
+
+(test (setcdr '(a . b) 'foo) '(a . foo))
+
+(test (load 'src//tree) t)
+(test (tree #123) '(((i i) (i i)) ((i i) (i i))))
+
+(test (apply cons '(a b)) '(a . b))
+(test (apply car '((a b))) 'a)
+(test (apply cdr '((a b))) '(b))
+(test (apply atom '(foo)) t)
+(test (apply eq '(foo foo)) t)
+(test (apply eofp '(foo)) nil)
+(test (atom (apply gensym nil)) t)
+(test (atom (apply gc nil)) t)
+(test (apply setcar '((foo . bar) baz)) '(baz . bar))
+(test (apply setcdr '((foo . bar) baz)) '(foo . baz))
+
+; derived special forms
+
+(test (let () 'foo) 'foo)
+(test (let ((a '1)) a) '1)
+(test (let ((a '1)) (let ((b a)) b)) '1)
+(test (let ((a '1)
+            (b '2)
+            (c '3))
+        (list a b c))
+      '(1 2 3))
+(test (let ((x 'lexical))
+        (let ((f (lambda () x)))
+          (let ((x 'dynamic))
+            (f))))
+      'lexical)
+
+(test (labels () 'foo) 'foo)
+(test (labels ((a '1)) a) '1)
+(test (labels ((a '1) (b a)) b) '1)
+(test (labels ((e (lambda (x) (if (eq x nil) t   (o (cdr x)))))
+               (o (lambda (x) (if (eq x nil) nil (e (cdr x))))))
+        (list (e #1234) (o #1234)))
+      '(t nil))
+(test (labels ((compl (lambda (p)
+                        (lambda (x)
+                          (eq nil (p x)))))
+               (pair  (compl atom)))
+        (list (pair nil)
+              (pair '(a . b))
+              (pair 'foo)
+              (pair #123)))
+      '(nil t nil t))
+
+(test (and) t)
+(test (and 'foo) 'foo)
+(test (and 'foo 'bar 'baz) 'baz)
+(test (and nil 'bar 'baz) nil)
+(test (and 'foo nil 'baz) nil)
+(test (and 'foo 'bar nil) nil)
+
+(test (or) nil)
+(test (or 'foo) 'foo)
+(test (or 'foo 'bar) 'foo)
+(test (or 'foo 'bar 'baz) 'foo)
+(test (or nil 'bar 'baz) 'bar)
+(test (or nil nil 'baz) 'baz)
+(test (or nil nil nil) nil)
+
+(test (cond) nil)
+(test (cond (t 'foo) (t 'bar)) 'foo)
+(test (cond (nil 'foo) (t 'bar)) 'bar)
+(test (cond (nil 'foo) (nil 'bar)) nil)
+(test (cond (nil 'foo) (else 'bar)) 'bar)
+(test (cond ((cons 'foo 'bar))) '(foo . bar))
+
+(test (loop a ((x #12345))
+        (if (eq nil x)
+            'foo
+            (a (cdr x))))
+      'foo)
+
+(test (loop a ((x #123)
+               (y nil))
+        (if (eq nil x)
+            y
+            (a (cdr x) (cons x y))))
+      '((3) (2 3) (1 2 3)))
+
+(test (loop a ((ax #123) (y nil))
+        (loop b ((bx #abc) (z nil))
+          (if (eq nil bx)
+              (if (eq nil ax)
+                  y
+                  (a (cdr ax) (cons z y)))
+              (b (cdr bx) (cons bx z)))))
+      '(((c) (b c) (a b c))
+        ((c) (b c) (a b c))
+        ((c) (b c) (a b c))))
+
+(setq foo 'bar)
+(test (qquote foo) 'foo)
+(test (qquote (unquote foo)) 'bar)
+(test (qquote ((splice (list foo)))) '(bar))
+(test @foo 'foo)
+(test @,foo 'bar)
+(test @(,@(list foo)) '(bar))
+(test @(1 ,(list '2 '3) 4) '(1 (2 3) 4))
+(test @(1 ,@(list '2 '3) 4) '(1 2 3 4))
+(test (let ((g 'g001))
+        (let ((b @(1 2 3 ,g)))
+          @(lambda (,g) (prog ,@b))))
+      '(lambda (g001) (prog 1 2 3 g001)))
+
+; derived functions
+
+(test (null nil) t)
+(test (null t) nil)
+(test (null 'foo) nil)
+(test (null '(foo)) nil)
+
+(test (not nil) t)
+(test (not t) nil)
+(test (not 'foo) nil)
+(test (not '(foo)) nil)
+
+(test (list) nil)
+(test (list '1) '(1))
+(test (list '1 '2 '3 '4 '5) '(1 2 3 4 5))
+(test (list '(foo bar) (eq '1 '1)) '((foo bar) t))
+
+(setq tree '(  ((caaar . cdaar) . (cadar . cddar))
+             . ((caadr . cdadr) . (caddr . cdddr))  ))
+
+(test (caar tree) '(caaar . cdaar))
+(test (cadr tree) '(caadr . cdadr))
+(test (cdar tree) '(cadar . cddar))
+(test (cddr tree) '(caddr . cdddr))
+
+(test (caaar tree) 'caaar)
+(test (caadr tree) 'caadr)
+(test (cadar tree) 'cadar)
+(test (caddr tree) 'caddr)
+(test (cdaar tree) 'cdaar)
+(test (cdadr tree) 'cdadr)
+(test (cddar tree) 'cddar)
+(test (cdddr tree) 'cdddr)
+
+(test (reconc '(1 2 3) '(a b c)) '(3 2 1 a b c))
+(test (reconc '(1 2 3) '(a . b)) '(3 2 1 a . b))
+(test (reconc '(1 2 3) 'a) '(3 2 1 . a))
+(test (reconc '(1 2 3) nil) '(3 2 1))
+(test (reconc nil 'a) 'a)
+(test (reconc nil '(a b c)) '(a b c))
+(test (reconc nil nil) nil)
+
+(test (nreconc '(1 2 3) '(a b c)) '(3 2 1 a b c))
+(test (nreconc '(1 2 3) '(a . b)) '(3 2 1 a . b))
+(test (nreconc '(1 2 3) 'a) '(3 2 1 . a))
+(test (nreconc '(1 2 3) nil) '(3 2 1))
+(test (nreconc nil 'a) 'a)
+(test (nreconc nil '(a b c)) '(a b c))
+(test (nreconc nil nil) nil)
+
+(test (rever '(1 2 3 4 5)) '(5 4 3 2 1))
+(test (rever nil) nil)
+
+(test (conc) nil)
+(test (conc '(a b) '(c d)) '(a b c d))
+(test (conc '(a) '(b) '(c) '(d)) '(a b c d))
+(test (conc '(a) nil nil '(b)) '(a b))
+
+(test (nconc) nil)
+(test (nconc '(a b) '(c d)) '(a b c d))
+(test (nconc '(a) '(b) '(c) '(d)) '(a b c d))
+(test (nconc '(a) nil nil '(b)) '(a b))
+
+(test (map atom nil) nil)
+(test (map atom #12345) '(t t t t t))
+(test (map atom '(1 (2) 3 (4) 5)) '(t nil t nil t))
+(test (map car '((1) (2) (3))) '(1 2 3))
+(test (map (lambda (x) (cons x nil)) #123) '((1) (2) (3)))
+
+(test (map cons nil nil) nil)
+(test (map cons #abc #123) '((a . 1) (b . 2) (c . 3)))
+(test (map (lambda (x y)
+             (cons y x)) #123 #abc)
+           '((a . 1) (b . 2) (c . 3)))
+
+(test (memb 'a #abc) #abc)
+(test (memb 'b #abc) #bc)
+(test (memb 'c #abc) #c)
+(test (memb 'z #abc) nil)
+
+(test (assoc 'a '((a.1) (b.2) (c.3))) '(a . 1))
+(test (assoc 'b '((a.1) (b.2) (c.3))) '(b . 2))
+(test (assoc 'c '((a.1) (b.2) (c.3))) '(c . 3))
+(test (assoc 'x '((a.1) (b.2) (c.3))) nil)
+
+(test (equal t t) t)
+(test (equal nil t) nil)
+(test (equal t nil) nil)
+(test (equal nil nil) t)
+(test (equal 'foo 'foo) t)
+(test (equal 'foo 'bar) nil)
+(test (equal (cons '1 nil) (cons '1 nil)) t)
+(test (equal 'foo '(bar)) nil)
+(test (equal '(a . b) 'foo) nil)
+(test (equal tree tree) t)
+(test (equal '(a (b) c) '(a  (b)  c)) t)
+(test (equal '(a (b) c) '(a (zzz) c)) nil)
+
+; postlude
+
+(prog
+  (cond (e (prin e)
+           (print 'errors))
+        (else
+           (print 'everything/ fine)))
+  t)
+
+; apply
+; it
