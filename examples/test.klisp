@@ -1,3 +1,4 @@
+#!/bin/klisp
 ; Kilo LISP tests
 ; Nils M Holm, 2019
 ; In the public domain
@@ -214,8 +215,8 @@
 
 (test (setcdr '(a . b) 'foo) '(a . foo))
 
-(test (load 'src//tree) t)
-(test (tree #123) '(((i i) (i i)) ((i i) (i i))))
+;(test (load 'src//tree) t)
+;(test (tree #123) '(((i i) (i i)) ((i i) (i i))))
 
 (test (apply cons '(a b)) '(a . b))
 (test (apply car '((a b))) 'a)

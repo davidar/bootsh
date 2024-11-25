@@ -1,3 +1,4 @@
+#!/bin/mlite -l
 ;; this is an in-line comment
 (* This is a block comment *)
 (*

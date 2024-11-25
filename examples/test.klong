@@ -1,3 +1,4 @@
+#!/bin/klong -s
 :"Klong test suite; nmh 2015--2022; public domain"
 
 .comment("end-of-comment")
