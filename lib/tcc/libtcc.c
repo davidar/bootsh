@@ -714,6 +714,14 @@ ST_FUNC void tcc_close(void)
 static int tcc_open_memfd(TCCState *s1, const char *filename, const char *data, int size)
 {
     int fd = memfd_create(filename, 0);
+    if (fd < 0) {
+        char template[] = "/tmp/tcc-XXXXXX";
+        fd = mkstemp(template);
+        if (fd < 0) {
+            tcc_error_noabort("could not create temporary file");
+            exit(1);
+        }
+    }
     do {
         int ret = write(fd, data, size);
         if (ret < 0) {

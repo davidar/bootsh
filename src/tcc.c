@@ -319,6 +319,17 @@ redo:
         if (tcc_run) {
             int fd = memfd_create("tccrun", MFD_CLOEXEC);
             s->outfile = tcc_malloc(32);
+            if (fd < 0) {
+                strcpy(s->outfile, "/tmp/tccrun-XXXXXX");
+                fd = mkstemp(s->outfile);
+                if (fd < 0) {
+                    tcc_error_noabort("could not create temporary file");
+                    exit(1);
+                }
+                tcc_output_file(s, s->outfile);
+                close(fd);
+                execve(s->outfile, argv, environ);
+            }
             snprintf(s->outfile, 32, "/proc/%d/fd/%d", getpid(), fd);
             tcc_output_file(s, s->outfile);
             fexecve(fd, argv, environ);
